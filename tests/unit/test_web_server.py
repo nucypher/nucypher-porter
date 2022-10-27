@@ -3,9 +3,8 @@ import json
 import sys
 from flask import Response, request
 
-from nucypher.control.controllers import WebController
 from nucypher.utilities.concurrency import WorkerPoolException
-
+from porter.controllers import WebController
 from porter.interfaces import PorterInterface
 
 

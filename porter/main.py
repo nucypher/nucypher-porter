@@ -1,4 +1,3 @@
-
 from pathlib import Path
 from typing import Dict, List, NamedTuple, Optional, Sequence
 
@@ -19,7 +18,6 @@ from nucypher.blockchain.eth.registry import (
     InMemoryContractRegistry,
 )
 from nucypher.characters.lawful import Ursula
-from nucypher.control.controllers import WebController
 from nucypher.crypto.powers import DecryptingPower
 from nucypher.network.nodes import Learner
 from nucypher.network.retrieval import RetrievalClient
@@ -31,6 +29,7 @@ from nucypher.policy.reservoir import (
 from nucypher.utilities.concurrency import WorkerPool
 from nucypher.utilities.logging import Logger
 from porter.controllers import PorterCLIController
+from porter.controllers import WebController
 from porter.interfaces import PorterInterface
 
 BANNER = r"""
@@ -110,6 +109,7 @@ class Porter(Learner):
         if controller:
             # TODO need to understand this better - only made it analogous to what was done for characters
             self.make_cli_controller()
+
         self.log.info(BANNER)
 
     def get_ursulas(self,

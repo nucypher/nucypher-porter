@@ -1,11 +1,31 @@
+import functools
 from typing import Dict, List, Optional
 
 from eth_typing import ChecksumAddress
 from nucypher_core import RetrievalKit, TreasureMap
 from nucypher_core.umbral import PublicKey
 
-from nucypher.control.interfaces import ControlInterface, attach_schema
 from porter import schema
+
+
+def attach_schema(schema):
+    def callable(func):
+        func._schema = schema()
+
+        @functools.wraps(func)
+        def wrapped(*args, **kwargs):
+            return func(*args, **kwargs)
+
+        return wrapped
+
+    return callable
+
+
+class ControlInterface:
+
+    def __init__(self, implementer=None, *args, **kwargs):
+        self.implementer = implementer
+        super().__init__(*args, **kwargs)
 
 
 class PorterInterface(ControlInterface):
