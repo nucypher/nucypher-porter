@@ -1,0 +1,226 @@
+import json
+from base64 import b64encode
+
+import pytest
+from eth_utils import to_canonical_address
+from nucypher_core import RetrievalKit as RetrievalKitClass, Address, MessageKit
+from nucypher_core.umbral import SecretKey
+
+from porter.fields.base import PositiveInteger, String, Base64BytesRepresentation, JSON
+from porter.fields.base import StringList
+from porter.fields.exceptions import InvalidInputData
+from porter.fields.key import Key
+from porter.fields.retrieve import RetrievalKit
+from porter.fields.ursula import UrsulaChecksumAddress
+
+
+def test_ursula_checksum_address_field(get_random_checksum_address):
+    ursula_checksum = get_random_checksum_address()
+    other_address = get_random_checksum_address()
+
+    assert ursula_checksum != other_address
+
+    field = UrsulaChecksumAddress()
+    serialized = field._serialize(value=ursula_checksum, attr=None, obj=None)
+    assert serialized == ursula_checksum
+    assert serialized != other_address
+
+    deserialized = field._deserialize(value=serialized, attr=None, data=None)
+    assert deserialized == ursula_checksum
+    assert deserialized != other_address
+
+    field._deserialize(value=ursula_checksum, attr=None, data=None)
+    field._deserialize(value=ursula_checksum.lower(), attr=None, data=None)
+    field._deserialize(value=ursula_checksum.upper(), attr=None, data=None)
+    field._deserialize(value=other_address, attr=None, data=None)
+    field._deserialize(value=other_address.lower(), attr=None, data=None)
+    field._deserialize(value=other_address.upper(), attr=None, data=None)
+
+    with pytest.raises(InvalidInputData):
+        field._deserialize(value="0xdeadbeef", attr=None, data=None)
+
+
+def test_ursula_checksum_address_string_list_field(get_random_checksum_address):
+    ursula_1 = get_random_checksum_address()
+    ursula_2 = get_random_checksum_address()
+    ursula_3 = get_random_checksum_address()
+    ursula_4 = get_random_checksum_address()
+
+    assert ursula_1 != ursula_2
+    assert ursula_2 != ursula_3
+    assert ursula_3 != ursula_4
+
+    field = StringList(UrsulaChecksumAddress)
+
+    deserialized = field._deserialize(value=f"{ursula_1},{ursula_2},{ursula_3},{ursula_4}", attr=None, data=None)
+    assert deserialized == [ursula_1, ursula_2, ursula_3, ursula_4]
+
+    # list instead
+    data = [ursula_1, ursula_2, ursula_3, ursula_4]
+    deserialized = field._deserialize(value=data, attr=None, data=None)
+    assert deserialized == data
+
+    # single entry
+    deserialized = field._deserialize(value=f"{ursula_1}", attr=None, data=None)
+    assert deserialized == [ursula_1]
+
+    deserialized = field._deserialize(value=[ursula_1], attr=None, data=None)
+    assert deserialized == [ursula_1]
+
+    with pytest.raises(InvalidInputData):
+        field._deserialize(value="0xdeadbeef", attr=None, data=None)
+
+    with pytest.raises(InvalidInputData):
+        field._deserialize(value=f"{ursula_1},{ursula_2},{ursula_3},{ursula_4},0xdeadbeef", attr=None, data=None)
+
+
+def test_retrieval_kit_field(get_random_checksum_address):
+    field = RetrievalKit()
+
+    def run_tests_on_kit(kit: RetrievalKitClass):
+        serialized = field._serialize(value=kit, attr=None, obj=None)
+        assert serialized == b64encode(bytes(kit)).decode()
+
+        deserialized = field._deserialize(value=serialized, attr=None, data=None)
+        assert isinstance(deserialized, RetrievalKitClass)
+        assert deserialized.capsule == kit.capsule
+        assert deserialized.queried_addresses == kit.queried_addresses
+
+    # kit with list of ursulas
+    encrypting_key = SecretKey.random().public_key()
+    capsule = MessageKit(encrypting_key, b'testing retrieval kit with 2 ursulas').capsule
+    ursulas = [get_random_checksum_address(), get_random_checksum_address()]
+    run_tests_on_kit(kit=RetrievalKitClass(capsule, {Address(to_canonical_address(ursula)) for ursula in ursulas}))
+
+    # kit with no ursulas
+    encrypting_key = SecretKey.random().public_key()
+    capsule = MessageKit(policy_encrypting_key=encrypting_key, plaintext=b'testing retrieval kit with no ursulas').capsule
+    run_tests_on_kit(kit=RetrievalKitClass(capsule, set()))
+
+    with pytest.raises(InvalidInputData):
+        field._deserialize(value=b"non_base_64_data", attr=None, data=None)
+
+    with pytest.raises(InvalidInputData):
+        field._deserialize(value=b64encode(b"invalid_retrieval_kit_bytes").decode(), attr=None, data=None)
+
+
+def test_key():
+    field = Key()
+
+    umbral_pub_key = SecretKey.random().public_key()
+    other_umbral_pub_key = SecretKey.random().public_key()
+
+    serialized = field._serialize(value=umbral_pub_key, attr=None, obj=None)
+    assert serialized == bytes(umbral_pub_key).hex()
+    assert serialized != bytes(other_umbral_pub_key).hex()
+
+    deserialized = field._deserialize(value=serialized, attr=None, data=None)
+    assert deserialized == umbral_pub_key
+    assert deserialized != other_umbral_pub_key
+
+    with pytest.raises(InvalidInputData):
+        field._deserialize(value=b"PublicKey".hex(), attr=None, data=None)
+
+
+def test_positive_integer_field():
+    field = PositiveInteger()
+
+    field._validate(value=1)
+    field._validate(value=10000)
+    field._validate(value=1234567890)
+    field._validate(value=22)
+
+    invalid_values = [0, -1, -2, -10, -1000000, -12312311]
+    for invalid_value in invalid_values:
+        with pytest.raises(InvalidInputData):
+            field._validate(value=invalid_value)
+
+
+def test_string_list_field():
+    field = StringList(String)
+
+    data = 'Cornsilk,November,Sienna,India'
+    deserialized = field._deserialize(value=data, attr=None, data=None)
+    assert deserialized == ['Cornsilk', 'November', 'Sienna', 'India']
+
+    data = ['Cornsilk', 'November', 'Sienna', 'India']
+    deserialized = field._deserialize(value=data, attr=None, data=None)
+    assert deserialized == data
+
+
+def test_base64_representation_field():
+    field = Base64BytesRepresentation()
+
+    data = b"man in the arena"
+    serialized = field._serialize(value=data, attr=None, obj=None)
+    assert serialized == b64encode(data).decode()
+
+    deserialized = field._deserialize(value=serialized, attr=None, data=None)
+    assert deserialized == data
+
+    with pytest.raises(InvalidInputData):
+        # attempt to serialize a non-serializable object
+        field._serialize(value=Exception("non-serializable"), attr=None, obj=None)
+
+    with pytest.raises(InvalidInputData):
+        # attempt to deserialize none base64 data
+        field._deserialize(value=b"raw bytes with non base64 chars ?&^%", attr=None, data=None)
+
+
+def test_json_field():
+    # test data
+    dict_data = {
+        "domain": {"name": "tdec", "version": 1, "chainId": 1, "salt": "blahblahblah"},
+        "message": {
+            "address": "0x03e75d7dd38cce2e20ffee35ec914c57780a8e29",
+            "blockNumber": 15440685,
+            "blockHash": "0x2220da8b777767df526acffd5375ebb340fc98e53c1040b25ad1a8119829e3bd",
+        },
+    }
+    list_data = [12.5, 1.2, 4.3]
+    str_data = "Everything in the universe has a rhythm, everything dances."  # -- Maya Angelou
+    num_data = 1234567890
+    bool_data = True
+    float_data = 2.35
+
+    # test serialization/deserialization of data - no expected type specified
+    test_data = [dict_data, list_data, str_data, num_data, bool_data, float_data]
+    field = JSON()
+    for d in test_data:
+        serialized = field._serialize(value=d, attr=None, obj=None)
+        assert serialized == json.dumps(d)
+
+        deserialized = field._deserialize(value=serialized, attr=None, data=None)
+        assert deserialized == d
+
+    with pytest.raises(InvalidInputData):
+        # attempt to serialize non-json serializable object
+        field._serialize(value=Exception("non-serializable"), attr=None, obj=None)
+
+    with pytest.raises(InvalidInputData):
+        # attempt to deserialize invalid data
+        field._deserialize(
+            value=b"raw bytes", attr=None, data=None
+        )
+
+    # test expected type enforcement
+    test_types = [type(d) for d in test_data]
+    for expected_type in test_types:
+        field = JSON(expected_type=expected_type)
+        for d in test_data:
+            if type(d) == expected_type:
+                # serialization/deserialization should work
+                serialized = field._serialize(value=d, attr=None, obj=None)
+                assert serialized == json.dumps(d)
+
+                deserialized = field._deserialize(value=serialized, attr=None, data=None)
+                assert deserialized == d
+            else:
+                # serialization/deserialization should fail
+                with pytest.raises(InvalidInputData):
+                    # attempt to serialize non-json serializable object
+                    field._serialize(d, attr=None, obj=None)
+
+                with pytest.raises(InvalidInputData):
+                    # attempt to deserialize invalid data
+                    field._deserialize(value=json.dumps(d), attr=None, data=None)
