@@ -1,32 +1,17 @@
-"""
- This file is part of nucypher.
-
- nucypher is free software: you can redistribute it and/or modify
- it under the terms of the GNU Affero General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
-
- nucypher is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU Affero General Public License for more details.
-
- You should have received a copy of the GNU Affero General Public License
- along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
-"""
-
-
 import click
 from marshmallow import fields as marshmallow_fields, Schema, INCLUDE
 from marshmallow import validates_schema
+from marshmallow.fields import String, Dict
+from marshmallow.fields import URL
 
-from nucypher.cli import types
-from porter import fields
-from porter.fields.exceptions import InvalidArgumentCombo, InvalidInputData
+from porter.cli.types import EIP55_CHECKSUM_ADDRESS
+from porter.fields.base import StringList, PositiveInteger, JSON
+from porter.fields.exceptions import InvalidArgumentCombo
+from porter.fields.exceptions import InvalidInputData
 from porter.fields.key import Key
-from porter.fields.retrieve import RetrievalKit, RetrievalOutcomeSchema
+from porter.fields.retrieve import RetrievalKit, CapsuleFrag
 from porter.fields.treasuremap import TreasureMap
-from porter.specifications import fields as base_fields
+from porter.fields.ursula import UrsulaChecksumAddress
 
 
 class BaseSchema(Schema):
@@ -43,7 +28,7 @@ def option_ursula():
         '--ursula',
         '-u',
         help="Ursula checksum address",
-        type=types.EIP55_CHECKSUM_ADDRESS,
+        type=EIP55_CHECKSUM_ADDRESS,
         required=True)
 
 
@@ -56,13 +41,24 @@ def option_bob_encrypting_key():
         required=True)
 
 
+class UrsulaInfoSchema(BaseSchema):
+    """Schema for the result of sampling of Ursulas."""
+    checksum_address = UrsulaChecksumAddress()
+    uri = URL()
+    encrypting_key = Key()
+
+    # maintain field declaration ordering
+    class Meta:
+        ordered = True
+
+
 #
 # Alice Endpoints
 #
 
 
 class AliceGetUrsulas(BaseSchema):
-    quantity = base_fields.PositiveInteger(
+    quantity = PositiveInteger(
         required=True,
         load_only=True,
         click=click.option(
@@ -72,35 +68,35 @@ class AliceGetUrsulas(BaseSchema):
             type=click.INT, required=True))
 
     # optional
-    exclude_ursulas = base_fields.StringList(
-        fields.UrsulaChecksumAddress(),
+    exclude_ursulas = StringList(
+        UrsulaChecksumAddress(),
         click=click.option(
             '--exclude-ursula',
             '-e',
             help="Ursula checksum address to exclude from sample",
             multiple=True,
-            type=types.EIP55_CHECKSUM_ADDRESS,
+            type=EIP55_CHECKSUM_ADDRESS,
             required=False,
             default=[]),
         required=False,
         load_only=True)
 
-    include_ursulas = base_fields.StringList(
-        fields.UrsulaChecksumAddress(),
+    include_ursulas = StringList(
+        UrsulaChecksumAddress(),
         click=click.option(
             '--include-ursula',
             '-i',
             help="Ursula checksum address to include in sample",
             multiple=True,
-            type=types.EIP55_CHECKSUM_ADDRESS,
+            type=EIP55_CHECKSUM_ADDRESS,
             required=False,
             default=[]),
         required=False,
         load_only=True)
 
     # output
-    ursulas = marshmallow_fields.List(marshmallow_fields.Nested(fields.UrsulaInfoSchema), dump_only=True)
-    
+    ursulas = marshmallow_fields.List(marshmallow_fields.Nested(UrsulaInfoSchema), dump_only=True)
+
     @validates_schema
     def check_valid_quantity_and_include_ursulas(self, data, **kwargs):
         # TODO does this make sense - perhaps having extra ursulas could be a good thing if some are down or can't
@@ -123,9 +119,20 @@ class AliceRevoke(BaseSchema):
     pass  # TODO need to understand revoke process better
 
 
+class RetrievalOutcomeSchema(BaseSchema):
+    """Schema for the result of /retrieve_cfrags endpoint."""
+    cfrags = Dict(keys=UrsulaChecksumAddress(), values=CapsuleFrag())
+    errors = Dict(keys=UrsulaChecksumAddress(), values=String())
+
+    # maintain field declaration ordering
+    class Meta:
+        ordered = True
+
+
 #
 # Bob Endpoints
 #
+
 
 class BobRetrieveCFrags(BaseSchema):
     treasure_map = TreasureMap(
@@ -137,7 +144,7 @@ class BobRetrieveCFrags(BaseSchema):
             help="Unencrypted Treasure Map for retrieval",
             type=click.STRING,
             required=True))
-    retrieval_kits = base_fields.StringList(
+    retrieval_kits = StringList(
         RetrievalKit(),
         click=click.option(
             '--retrieval-kits',
@@ -173,7 +180,7 @@ class BobRetrieveCFrags(BaseSchema):
             required=True))
 
     # optional
-    context = base_fields.JSON(
+    context = JSON(
         expected_type=dict,
         required=False,
         load_only=True,
@@ -190,3 +197,4 @@ class BobRetrieveCFrags(BaseSchema):
     retrieval_results = marshmallow_fields.List(
         marshmallow_fields.Nested(RetrievalOutcomeSchema), dump_only=True
     )
+

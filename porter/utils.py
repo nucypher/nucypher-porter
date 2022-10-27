@@ -1,20 +1,3 @@
-"""
-This file is part of nucypher.
-
-nucypher is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-nucypher is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Affero General Public License for more details.
-
-You should have received a copy of the GNU Affero General Public License
-along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
-"""
-
 import os
 import random
 import string
@@ -23,21 +6,16 @@ from typing import Dict, List, Optional, Tuple
 from nucypher_core import MessageKit, RetrievalKit
 
 from nucypher.characters.lawful import Enrico
-from porter.specifications.fields import JSON
 from nucypher.crypto.powers import DecryptingPower
 
-from porter.fields import Key
-from porter.fields.retrieve import (
-    RetrievalKit as RetrievalKitField,
-)
+from porter.fields.base import JSON
+from porter.fields.key import Key
+from porter.fields.retrieve import RetrievalKit as RetrievalKitField
 from porter.fields.treasuremap import TreasureMap
 
 
 def generate_random_label() -> bytes:
-    """
-    Generates a random bytestring for use as a test label.
-    :return: bytes
-    """
+    """Generates a random bytestring for use as a test label."""
     adjs = ('my', 'sesame-street', 'black', 'cute')
     nouns = ('lizard', 'super-secret', 'data', 'coffee')
     combinations = list('-'.join((a, n)) for a in adjs for n in nouns)

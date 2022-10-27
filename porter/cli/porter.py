@@ -16,6 +16,7 @@ from nucypher.cli.options import (
 from nucypher.cli.types import NETWORK_PORT
 from nucypher.cli.utils import setup_emitter, get_registry
 from nucypher.config.constants import TEMPORARY_DOMAIN
+
 from porter.cli.literature import (
     PORTER_BASIC_AUTH_ENABLED,
     PORTER_BASIC_AUTH_REQUIRES_HTTPS,
@@ -114,13 +115,6 @@ def run(general_config,
                         registry=registry,
                         start_learning_now=eager,
                         eth_provider_uri=eth_provider_uri)
-
-    # RPC
-    if general_config.json_ipc:
-        rpc_controller = PORTER.make_rpc_controller()
-        _transport = rpc_controller.make_control_transport()
-        rpc_controller.start()
-        return
 
     emitter.message(f"Network: {PORTER.domain.capitalize()}", color='green')
     if not federated_only:

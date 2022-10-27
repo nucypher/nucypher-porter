@@ -23,14 +23,11 @@ from base64 import b64encode
 from nucypher_core import RetrievalKit
 
 from nucypher.characters.lawful import Enrico
-from porter.specifications.fields import JSON
 from nucypher.crypto.powers import DecryptingPower
 from nucypher.policy.kits import PolicyMessageKit, RetrievalResult
-
-from porter.fields.retrieve import (
-    RetrievalOutcomeSchema,
-    RetrievalKit as RetrievalKitField,
-)
+from porter.fields.base import JSON
+from porter.fields.retrieve import RetrievalKit as RetrievalKitField
+from porter.schema import RetrievalOutcomeSchema
 from porter.utils import (
     retrieval_params_decode_from_rest,
     retrieval_request_setup,

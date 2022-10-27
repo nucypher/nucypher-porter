@@ -25,8 +25,8 @@ from nucypher_core import RetrievalKit as RetrievalKitClass, Address, MessageKit
 from nucypher_core.umbral import SecretKey
 
 from porter.fields.exceptions import InvalidInputData
-from porter.specifications.fields import StringList
-from porter.fields import UrsulaChecksumAddress
+from porter.fields.base import StringList
+from porter.fields.ursula import UrsulaChecksumAddress
 from porter.fields.retrieve import RetrievalKit
 
 

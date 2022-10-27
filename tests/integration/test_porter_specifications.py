@@ -18,26 +18,21 @@ import base64
 import random
 
 import pytest
-from nucypher_core import (
-    TreasureMap as TreasureMapClass,
-)
+from nucypher_core import TreasureMap as TreasureMapClass
 from nucypher_core.umbral import PublicKey
 from nucypher_core.umbral import SecretKey
 
-from porter.fields.base import BaseSchema
-from porter.fields.exceptions import SpecificationError, InvalidInputData, InvalidArgumentCombo
 from nucypher.crypto.powers import DecryptingPower
-from porter.fields import (
-    UrsulaInfoSchema,
-    Key
-)
-from porter.fields.retrieve import RetrievalOutcomeSchema
+from porter.fields.exceptions import SpecificationError, InvalidInputData, InvalidArgumentCombo
+from porter.fields.key import Key
 from porter.fields.treasuremap import TreasureMap
+from porter.main import Porter
 from porter.schema import (
     AliceGetUrsulas,
-    BobRetrieveCFrags,
+    BobRetrieveCFrags, UrsulaInfoSchema,
 )
-from porter.main import Porter
+from porter.schema import BaseSchema
+from porter.schema import RetrievalOutcomeSchema
 from porter.utils import retrieval_request_setup
 
 
