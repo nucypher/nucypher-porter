@@ -14,7 +14,7 @@ from setuptools.command.install import install
 # Metadata
 #
 
-PACKAGE_NAME = 'nucypher-porter'
+PACKAGE_NAME = 'porter'
 BASE_DIR = Path(__file__).parent
 PYPI_CLASSIFIERS = [
       "Development Status :: 3 - Alpha",
@@ -90,22 +90,16 @@ def read_requirements(path):
 INSTALL_REQUIRES = read_requirements('requirements.txt')
 DEV_REQUIRES = read_requirements('dev-requirements.txt')
 
-
 DEPLOY_REQUIRES = [
     'bumpversion',
     'twine',
     'wheel'
 ]
 
-PORTER_REQUIRES = [
-    'flask-htpasswd',
-    'flask-cors'
-]  # needed for basic authentication, cors
-
 EXTRAS = {
-    'dev': DEV_REQUIRES + PORTER_REQUIRES,
+    'dev': DEV_REQUIRES,
+    'deploy': DEPLOY_REQUIRES
 }
-
 
 setup(
 
@@ -115,7 +109,7 @@ setup(
     extras_require=EXTRAS,
 
     # Package Data
-    packages=find_packages(exclude=["tests", "scripts"]),
+    packages=find_packages(exclude=["tests"]),
     include_package_data=True,
     zip_safe=False,
 
@@ -137,6 +131,6 @@ setup(
     license=ABOUT['__license__'],
     long_description_content_type="text/markdown",
     long_description_markdown_filename='README.md',
-    keywords="nucypher",
+    keywords="porter",
     classifiers=PYPI_CLASSIFIERS
 )

@@ -1,0 +1,47 @@
+repos:
+
+  - repo: local
+    hooks:
+
+      - id: tests
+        name: Run Unit Tests
+        entry: scripts/run_unit_tests.sh
+        language: system
+        types: [python]
+        stages: [push]  # required additional setup: pre-commit install && pre-commit install -t pre-push
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.3.0
+    hooks:
+
+      # Git
+      - id: forbid-new-submodules
+
+      # Files
+      - id: check-byte-order-marker
+      - id: check-executables-have-shebangs
+      - id: check-added-large-files
+      - id: check-symlinks
+      - id: end-of-file-fixer
+
+      # Syntax
+      - id: check-yaml
+      - id: check-toml
+      - id: check-ast
+
+      # Code
+      - id: check-merge-conflict
+      - id: debug-statements
+      - id: detect-private-key
+
+      # Docs
+      - id: check-vcs-permalinks
+
+
+  - repo: https://github.com/akaihola/darker
+    rev: 1.4.2
+    hooks:
+    -   id: darker
+        args: [--isort]
+        additional_dependencies:
+        -   isort~=5.9
