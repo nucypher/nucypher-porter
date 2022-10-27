@@ -8,6 +8,8 @@ python_version = "3"
 
 [packages]
 nucypher = "*"
+flask-htpasswd = "*"
+flask-cors = "*"
 
 [dev-packages]
 pytest = "<7"
