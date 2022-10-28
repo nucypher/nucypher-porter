@@ -6,8 +6,8 @@ services:
     restart: always
     image: nginxproxy/nginx-proxy:alpine
     build:
-      context: ../../../../nucypher
-      dockerfile: Dockerfile
+      context: ../../..
+      dockerfile: deploy/docker/nginx/Dockerfile
     ports:
       - "443:443"
     volumes:
@@ -19,15 +19,15 @@ services:
     restart: on-failure
     image: porter:latest
     build:
-      context: ../../../../nucypher
-      dockerfile: ../Dockerfile
+      context: ../../..
+      dockerfile: deploy/docker/Dockerfile
     expose:
       # Default Porter port
       - "9155"
     volumes:
       - .:/code
       - ~/.local/share/nucypher:/nucypher
-    command: [ "nucypher", "porter", "run",
+    command: [ "nucypher-porter", "run",
                "--eth-provider", "${WEB3_PROVIDER_URI}",
                "--network", "${NUCYPHER_NETWORK}" ]
     environment:

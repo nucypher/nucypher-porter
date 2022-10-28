@@ -5,9 +5,9 @@ RUN apt-get update -y && apt upgrade -y
 RUN apt-get install patch gcc libffi-dev wget git -y
 
 WORKDIR /code
-COPY porter /code
+COPY . /code
 
 # Porter requirements
-RUN pip3 install .[porter]
+RUN pip3 install .
 
 CMD ["/bin/bash"]

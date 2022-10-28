@@ -6,15 +6,15 @@ services:
     image: porter:latest
     container_name: porter-http
     build:
-      context: ../../../nucypher
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
     ports:
       # Default Porter port
       - "80:9155"
     volumes:
       - .:/code
       - ~/.local/share/nucypher:/nucypher
-    command: ["nucypher", "porter", "run",
+    command: ["nucypher-porter", "run",
               "--eth-provider", "${WEB3_PROVIDER_URI}",
               "--network", "${NUCYPHER_NETWORK}",
               "--allow-origins", "${PORTER_CORS_ALLOW_ORIGINS}"]  # empty string if env var not defined which translates to CORS not enabled by default
@@ -30,7 +30,7 @@ services:
       - .:/code
       - ~/.local/share/nucypher:/nucypher
       - "${TLS_DIR}:/etc/porter/tls/"
-    command: [ "nucypher", "porter", "run",
+    command: [ "nucypher-porter", "run",
                "--eth-provider", "${WEB3_PROVIDER_URI}",
                "--network", "${NUCYPHER_NETWORK}",
                "--tls-key-filepath", "/etc/porter/tls/key.pem",
@@ -49,7 +49,7 @@ services:
       - ~/.local/share/nucypher:/nucypher
       - "${TLS_DIR}:/etc/porter/tls/"
       - "${HTPASSWD_FILE}:/etc/porter/auth/htpasswd"
-    command: [ "nucypher", "porter", "run",
+    command: [ "nucypher-porter", "run",
                "--eth-provider", "${WEB3_PROVIDER_URI}",
                "--network", "${NUCYPHER_NETWORK}",
                "--tls-key-filepath", "/etc/porter/tls/key.pem",
