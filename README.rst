@@ -7,8 +7,9 @@ NuCypher Porter can be described as the *“Infura for NuCypher”*. Porter is a
 nucypher-based protocol operations on behalf of applications.
 
 Its goal is to simplify and abstract the complexities surrounding the nucypher protocol to negate the need for
-applications to interact with it via a python client. Porter introduces the nucypher protocol to cross-platform
-functionality including web and mobile applications.
+applications to interact with the network directly. Porter enables applications to behave like a "light-client"
+by delegating network intensive operations like peering and node discovery to Porter. Porter facilitates cross-platform
+support for the `nucypher protocol <https://github.com/nucypher/nucypher>`_.
 
 .. image:: ./porter_diagram.png
     :target: ./porter_diagram.png
