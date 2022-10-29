@@ -7,12 +7,12 @@ name = "pypi"
 python_version = "3"
 
 [packages]
-nucypher = "*"
+nucypher = {git = "https://github.com/nucypher/nucypher.git", editable = true, ref = "development"}
 flask-htpasswd = "*"
 flask-cors = "*"
 
 [dev-packages]
-pytest = "<7"
+pytest = "*"
 pytest-cov = "*"
 pytest-mock = "*"
 # Tools
