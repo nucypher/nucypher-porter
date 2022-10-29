@@ -68,8 +68,6 @@ def pytest_collection_modifyitems(config, items):
     GlobalLoggerSettings.start_json_file_logging()
 
 
-
-
 @pytest.fixture(scope='session')
 def monkeysession():
     from _pytest.monkeypatch import MonkeyPatch
@@ -95,7 +93,7 @@ def get_random_checksum_address():
 
 
 @pytest.fixture(scope="module")
-def federated_porter(federated_ursulas):
+def federated_porter(federated_ursulas, mock_rest_middleware):
     porter = Porter(domain=TEMPORARY_DOMAIN,
                     abort_on_learning_error=True,
                     start_learning_now=True,
@@ -103,13 +101,14 @@ def federated_porter(federated_ursulas):
                     verify_node_bonding=False,
                     federated_only=True,
                     execution_timeout=2,
-                    network_middleware=MockRestMiddleware())
+                    network_middleware=mock_rest_middleware)
     yield porter
     porter.stop_learning_loop()
 
 
 @pytest.fixture(scope="module")
-def blockchain_porter(blockchain_ursulas, testerchain, test_registry):
+@pytest.mark.usefixtures("testerchain")
+def blockchain_porter(blockchain_ursulas, test_registry, mock_rest_middleware):
     porter = Porter(domain=TEMPORARY_DOMAIN,
                     abort_on_learning_error=True,
                     start_learning_now=True,
@@ -117,7 +116,7 @@ def blockchain_porter(blockchain_ursulas, testerchain, test_registry):
                     eth_provider_uri=TEST_ETH_PROVIDER_URI,
                     registry=test_registry,
                     execution_timeout=2,
-                    network_middleware=MockRestMiddleware())
+                    network_middleware=mock_rest_middleware)
     yield porter
     porter.stop_learning_loop()
 
