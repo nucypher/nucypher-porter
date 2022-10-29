@@ -3,7 +3,6 @@ import os
 import pytest
 from click.testing import CliRunner
 from eth_utils import to_checksum_address
-
 from nucypher.config.constants import TEMPORARY_DOMAIN
 from nucypher.network.nodes import Learner
 from nucypher.utilities.logging import GlobalLoggerSettings
@@ -11,16 +10,17 @@ from nucypher.utilities.logging import GlobalLoggerSettings
 from porter.emitters import WebEmitter
 from porter.main import Porter
 
-
-PYEVM_DEV_URI = "tester://pyevm"
-
-TEST_ETH_PROVIDER_URI = PYEVM_DEV_URI  # TODO: Pytest flag entry point?
 # Crash on server error by default
 WebEmitter._crash_on_error_default = True
 Learner._DEBUG_MODE = False
 
+PYEVM_DEV_URI = "tester://pyevm"
+
+TEST_ETH_PROVIDER_URI = PYEVM_DEV_URI  # TODO: Pytest flag entry point?
+
+
 pytest_plugins = [
-    'tests.fixtures',  # Includes external fixtures module from nucypher
+    'pytest-nucypher',  # Includes external fixtures module from nucypher
 ]
 
 
