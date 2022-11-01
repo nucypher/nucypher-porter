@@ -23,3 +23,6 @@ coverage = "*"
 
 [pipenv]
 allow_prereleases = true
+
+[scripts]
+nucypher-porter = "python3 nucypher/cli/main.py"
