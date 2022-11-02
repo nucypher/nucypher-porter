@@ -25,4 +25,4 @@ coverage = "*"
 allow_prereleases = true
 
 [scripts]
-nucypher-porter = "python3 nucypher/cli/main.py"
+nucypher-porter = "python3 porter/cli/main.py"
