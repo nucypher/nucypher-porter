@@ -30,6 +30,7 @@ jobs:
     - name: Run tests
       run: |
         py.test --cov=porter --cov-report=xml
+
     - name: Upload coverage
       if: matrix.python-version == '3.8'
       run: |
