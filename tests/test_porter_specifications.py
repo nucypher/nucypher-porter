@@ -2,11 +2,11 @@ import base64
 import random
 
 import pytest
+from nucypher.crypto.powers import DecryptingPower
 from nucypher_core import TreasureMap as TreasureMapClass
 from nucypher_core.umbral import PublicKey
 from nucypher_core.umbral import SecretKey
 
-from nucypher.crypto.powers import DecryptingPower
 from porter.fields.exceptions import SpecificationError, InvalidInputData, InvalidArgumentCombo
 from porter.fields.key import Key
 from porter.fields.treasuremap import TreasureMap

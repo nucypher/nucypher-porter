@@ -4,8 +4,10 @@ import pytest
 from click.testing import CliRunner
 from eth_utils import to_checksum_address
 from nucypher.config.constants import TEMPORARY_DOMAIN
+from nucypher.crypto.powers import DecryptingPower
 from nucypher.network.nodes import Learner
 from nucypher.utilities.logging import GlobalLoggerSettings
+from nucypher_core import Address, HRAC, TreasureMap
 
 from porter.emitters import WebEmitter
 from porter.main import Porter
@@ -106,28 +108,42 @@ def federated_porter(federated_ursulas, mock_rest_middleware):
     porter.stop_learning_loop()
 
 
-@pytest.fixture(scope="module")
-@pytest.mark.usefixtures("testerchain")
-def blockchain_porter(blockchain_ursulas, test_registry, mock_rest_middleware):
-    porter = Porter(domain=TEMPORARY_DOMAIN,
-                    abort_on_learning_error=True,
-                    start_learning_now=True,
-                    known_nodes=blockchain_ursulas,
-                    eth_provider_uri=TEST_ETH_PROVIDER_URI,
-                    registry=test_registry,
-                    execution_timeout=2,
-                    network_middleware=mock_rest_middleware)
-    yield porter
-    porter.stop_learning_loop()
+@pytest.fixture(scope='module')
+def random_federated_treasure_map_data(federated_alice, federated_bob, federated_ursulas):
+
+    label = b'policy label'
+    threshold = 2
+    shares = threshold + 1
+    policy_key, kfrags = federated_alice.generate_kfrags(bob=federated_bob, label=label, threshold=threshold, shares=shares)
+    hrac = HRAC(publisher_verifying_key=federated_alice.stamp.as_umbral_pubkey(),
+                bob_verifying_key=federated_bob.stamp.as_umbral_pubkey(),
+                label=label)
+
+    assigned_kfrags = {
+        Address(ursula.canonical_address): (ursula.public_keys(DecryptingPower), vkfrag)
+        for ursula, vkfrag in zip(list(federated_ursulas)[:shares], kfrags)}
+
+    random_treasure_map = TreasureMap(signer=federated_alice.stamp.as_umbral_signer(),
+                                      hrac=hrac,
+                                      policy_encrypting_key=policy_key,
+                                      assigned_kfrags=assigned_kfrags,
+                                      threshold=threshold)
+
+    bob_key = federated_bob.public_keys(DecryptingPower)
+    enc_treasure_map = random_treasure_map.encrypt(signer=federated_alice.stamp.as_umbral_signer(),
+                                                   recipient_key=bob_key)
+
+    yield bob_key, enc_treasure_map
 
 
 @pytest.fixture(scope='module')
-def blockchain_porter_web_controller(blockchain_porter):
-    web_controller = blockchain_porter.make_web_controller(crash_on_error=False)
+def federated_porter_web_controller(federated_porter):
+    web_controller = federated_porter.make_web_controller(crash_on_error=False)
     yield web_controller.test_client()
 
 
 @pytest.fixture(scope='module')
-def blockchain_porter_basic_auth_web_controller(blockchain_porter, basic_auth_file):
-    web_controller = blockchain_porter.make_web_controller(crash_on_error=False, htpasswd_filepath=basic_auth_file)
+def federated_porter_basic_auth_web_controller(federated_porter, basic_auth_file):
+    web_controller = federated_porter.make_web_controller(crash_on_error=False, htpasswd_filepath=basic_auth_file)
     yield web_controller.test_client()
+
