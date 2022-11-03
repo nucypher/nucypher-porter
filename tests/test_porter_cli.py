@@ -25,7 +25,7 @@ def federated_teacher_uri(mocker, federated_ursulas):
 
 
 def test_federated_porter_cli_run_simple(click_runner, federated_teacher_uri):
-    porter_run_command = ('porter', 'run',
+    porter_run_command = ('run',
                           '--dry-run',
                           '--federated-only',
                           '--teacher', federated_teacher_uri)
@@ -37,7 +37,7 @@ def test_federated_porter_cli_run_simple(click_runner, federated_teacher_uri):
 
     # Non-default port
     non_default_port = select_test_port()
-    porter_run_command = ('porter', 'run',
+    porter_run_command = ('run',
                           '--dry-run',
                           '--federated-only',
                           '--http-port', non_default_port,
@@ -50,7 +50,7 @@ def test_federated_porter_cli_run_simple(click_runner, federated_teacher_uri):
 
 
 def test_federated_porter_cli_run_teacher_must_be_provided(click_runner):
-    porter_run_command = ('porter', 'run',
+    porter_run_command = ('run',
                           '--dry-run',
                           '--federated-only')
 
@@ -63,7 +63,7 @@ def test_federated_porter_cli_run_tls_filepath_and_certificate(click_runner,
                                                                tempfile_path,
                                                                temp_dir_path,
                                                                federated_teacher_uri):
-    porter_run_command = ('porter', 'run',
+    porter_run_command = ('run',
                           '--dry-run',
                           '--federated-only',
                           '--teacher', federated_teacher_uri,
@@ -72,7 +72,7 @@ def test_federated_porter_cli_run_tls_filepath_and_certificate(click_runner,
     assert result.exit_code != 0  # both --tls-key-filepath and --tls-certificate-filepath must be provided for TLS
     assert PORTER_BOTH_TLS_KEY_AND_CERTIFICATION_MUST_BE_PROVIDED in result.output
 
-    porter_run_command = ('porter', 'run',
+    porter_run_command = ('run',
                           '--dry-run',
                           '--federated-only',
                           '--teacher', federated_teacher_uri,
@@ -89,7 +89,7 @@ def test_federated_porter_cli_run_tls_filepath_and_certificate(click_runner,
     non_existent_path = (Path(temp_dir_path) / 'non_existent_file')
     assert not non_existent_path.exists()
     # tls-key-filepath does not exist
-    porter_run_command = ('porter', 'run',
+    porter_run_command = ('run',
                           '--dry-run',
                           '--federated-only',
                           '--teacher', federated_teacher_uri,
@@ -101,7 +101,7 @@ def test_federated_porter_cli_run_tls_filepath_and_certificate(click_runner,
     assert f"'--tls-key-filepath': File '{non_existent_path.absolute()}' does not exist" in output
 
     # tls-certificate-filepath does not exist
-    porter_run_command = ('porter', 'run',
+    porter_run_command = ('run',
                           '--dry-run',
                           '--federated-only',
                           '--teacher', federated_teacher_uri,
@@ -119,7 +119,7 @@ def test_federated_cli_run_https(click_runner, temp_dir_path, federated_teacher_
     certificate_file_path = Path(temp_dir_path) / 'fullchain.pem'
     _write_random_data(certificate_file_path)
 
-    porter_run_command = ('porter', 'run',
+    porter_run_command = ('run',
                           '--dry-run',
                           '--federated-only',
                           '--teacher', federated_teacher_uri,
@@ -140,7 +140,7 @@ def test_federated_cli_run_https_with_cors_origin(click_runner,
 
     allow_origins = ".*\.example\.com,.*\.otherexample\.org"
 
-    porter_run_command = ('porter', 'run',
+    porter_run_command = ('run',
                           '--dry-run',
                           '--federated-only',
                           '--teacher', federated_teacher_uri,
@@ -163,7 +163,7 @@ def test_federated_cli_run_https_with_empty_string_cors_origin(click_runner,
 
     empty_string_allow_origins = ""
 
-    porter_run_command = ('porter', 'run',
+    porter_run_command = ('run',
                           '--dry-run',
                           '--federated-only',
                           '--teacher', federated_teacher_uri,
@@ -187,7 +187,7 @@ def test_federated_cli_run_https_basic_auth(click_runner,
     certificate_file_path = Path(temp_dir_path) / 'fullchain.pem'
     _write_random_data(certificate_file_path)
 
-    porter_run_command = ('porter', 'run',
+    porter_run_command = ('run',
                           '--dry-run',
                           '--federated-only',
                           '--teacher', federated_teacher_uri,
