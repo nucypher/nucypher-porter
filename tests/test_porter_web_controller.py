@@ -190,36 +190,6 @@ def test_retrieve_cfrags(federated_porter,
     assert response.status_code == 400  # invalid treasure map provided
 
 
-def test_endpoints_basic_auth(federated_porter_basic_auth_web_controller,
-                              random_federated_treasure_map_data,
-                              enacted_federated_policy,
-                              federated_bob,
-                              federated_alice):
-    # /get_ursulas
-    quantity = 4
-    get_ursulas_params = {
-        'quantity': quantity,
-    }
-    response = federated_porter_basic_auth_web_controller.get('/get_ursulas', data=json.dumps(get_ursulas_params))
-    assert response.status_code == 401  # user unauthorized
-
-    # /retrieve_cfrags
-    retrieve_cfrags_params, _ = retrieval_request_setup(enacted_federated_policy,
-                                                        federated_bob,
-                                                        federated_alice,
-                                                        encode_for_rest=True)
-    response = federated_porter_basic_auth_web_controller.post('/retrieve_cfrags',
-                                                               data=json.dumps(retrieve_cfrags_params))
-    assert response.status_code == 401  # user not authenticated
-
-    # try get_ursulas with authentication
-    credentials = b64encode(b"admin:admin").decode('utf-8')
-    response = federated_porter_basic_auth_web_controller.get('/get_ursulas',
-                                                              data=json.dumps(get_ursulas_params),
-                                                              headers={"Authorization": f"Basic {credentials}"})
-    assert response.status_code == 200  # success
-
-
 def test_web_controller_handling_worker_pool_exception(mocker):
     interface_impl = mocker.Mock()
     num_failures = 3

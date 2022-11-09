@@ -12,7 +12,8 @@ services:
       - "443:443"
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro
-      # because of the vhost name used below, the cert and key should be named "porter.local.crt" and "porter.local.key" respectively
+      # because of the vhost name used below, the cert and key should be named "porter.local.crt" and "porter.local.key" respectively;
+      # otherwise a conf file needs to be specified that providers server configuration values including ssl_certificate and ssl_certificate_key
       - "${TLS_DIR}:/etc/nginx/certs/"
 
   nginx-porter:

@@ -30,15 +30,12 @@ Run Porter Directly
 
 .. note::
 
-    If running the Porter service using Docker or Docker Compose, it will run on port 80 (HTTP) or 443 (HTTPS). If
+    If running the Porter service using Docker or Docker Compose, it will run on port 80 (HTTP). If
     running via the CLI the default port is 9155, unless specified otherwise via the ``--http-port`` option.
 
 Security
 ^^^^^^^^
 
-* **HTTPS:** To run the Porter service over HTTPS, it will require a TLS key and a TLS certificate. These can be
-  specified via the `` --tls-key-filepath`` and ``--tls-certificate-filepath`` CLI options or via the ``TLS_DIR``
-  environment variable for docker-compose.
 * **CORS:** Allowed origins for `Cross-Origin Resource Sharing (CORS) <https://en.wikipedia.org/wiki/Cross-origin_resource_sharing>`_
   is not enabled by default and can be enabled either via the ``--allow-origins`` option for the CLI,
   or the ``PORTER_CORS_ALLOW_ORIGINS`` environment variable for docker-compose.
@@ -58,12 +55,6 @@ Security
       For regular expressions, to allow all sub-domains of ``example.com``, you could use ``.*\.example\.com$`` which
       incorporates wildcards for scheme and sub-domain. To allow multiple top-level domains you could use
       ``.*\.example\.(com|org)$`` which allows any origins from both ``example.com`` and ``example.org`` domains.
-
-* **Authentication:** Porter will allow the configuration of Basic Authentication out of the box via
-  an `htpasswd <https://httpd.apache.org/docs/2.4/programs/htpasswd.html>`_ file. This file can be provided via the
-  ``--basic-auth-filepath`` CLI option or ``HTPASSWD_FILE`` environment variable for docker-compose. The use
-  of Basic Authentication necessitates HTTPS since user credentials will be passed over the network as cleartext.
-
 
 via Docker
 ^^^^^^^^^^
@@ -91,14 +82,12 @@ Run Porter within Docker without acquiring or installing the ``nucypher-porter``
           --eth-provider <YOUR WEB3 PROVIDER URI> \
           --network <NETWORK NAME>
 
-   For HTTPS service (on default port 443):
-
-   * Without Basic Authentication:
+   * With CORS enabled to allow all origins:
 
      .. code:: bash
 
          $ docker run -d --rm \
-            --name porter-https \
+            --name porter-http-cors \
             -v ~/.local/share/nucypher/:/root/.local/share/nucypher \
             -v <TLS DIRECTORY>:/etc/porter/tls \
             -p 443:9155 \
@@ -106,60 +95,13 @@ Run Porter within Docker without acquiring or installing the ``nucypher-porter``
             nucypher-porter run \
             --eth-provider <YOUR WEB3 PROVIDER URI> \
             --network <NETWORK NAME> \
-            --tls-key-filepath /etc/porter/tls/<KEY FILENAME> \
-            --tls-certificate-filepath /etc/porter/tls/<CERT FILENAME>
-
-   * Without Basic Authentication, but with CORS enabled to allow all origins:
-
-     .. code:: bash
-
-         $ docker run -d --rm \
-            --name porter-https-cors \
-            -v ~/.local/share/nucypher/:/root/.local/share/nucypher \
-            -v <TLS DIRECTORY>:/etc/porter/tls \
-            -p 443:9155 \
-            nucypher/porter:latest \
-            nucypher-porter run \
-            --eth-provider <YOUR WEB3 PROVIDER URI> \
-            --network <NETWORK NAME> \
-            --tls-key-filepath /etc/porter/tls/<KEY FILENAME> \
-            --tls-certificate-filepath /etc/porter/tls/<CERT FILENAME> \
             --allow-origins "*"
-
-   * With Basic Authentication:
-
-     .. code:: bash
-
-         $ docker run -d --rm \
-            --name porter-https-auth \
-            -v ~/.local/share/nucypher/:/root/.local/share/nucypher \
-            -v <TLS DIRECTORY>:/etc/porter/tls \
-            -v <HTPASSWD FILE>:/etc/porter/auth/htpasswd \
-            -p 443:9155 \
-            nucypher/porter:latest \
-            nucypher-porter run \
-            --eth-provider <YOUR WEB3 PROVIDER URI> \
-            --network <NETWORK NAME> \
-            --tls-key-filepath /etc/porter/tls/<KEY FILENAME> \
-            --tls-certificate-filepath /etc/porter/tls/<CERT FILENAME> \
-            --basic-auth-filepath /etc/porter/auth/htpasswd
-
-
-   The ``<TLS DIRECTORY>`` is expected to contain the TLS key file (``<KEY FILENAME>``) and the
-   certificate (``<CERT FILENAME>``) to run Porter over HTTPS.
 
    .. note::
 
        The commands above are for illustrative purposes and can be modified as necessary.
 
-#. Porter will be available on default ports 80 (HTTP) or 443 (HTTPS). The porter service running will be one of
-   the following depending on the mode chosen:
-
-   * ``porter-http``
-   * ``porter-https``
-   * ``porter-https-cors``
-   * ``porter-https-auth``
-
+#. Porter will be available on default port 80 (HTTP).
 
 #. View Porter logs
 
@@ -200,31 +142,12 @@ Docker Compose will start the Porter service within a Docker container.
 
          $ export NUCYPHER_NETWORK=<NETWORK NAME>
 
-   * *(Optional)* TLS directory containing the TLS key and certificate to run Porter over HTTPS.
-     The directory is expected to contain two files:
-
-     * ``key.pem`` - the TLS key
-     * ``cert.pem`` - the TLS certificate
-
-     Set the TLS directory environment variable
-
-     .. code:: bash
-
-         $ export TLS_DIR=<ABSOLUTE PATH TO TLS DIRECTORY>
-
    * *(Optional)* Enable CORS. For example, to only allow access from your sub-domains for ``example.com``:
 
      .. code:: bash
 
          $ export PORTER_CORS_ALLOW_ORIGINS=".*\.example\.com$"
 
-   * *(Optional)* Filepath to the htpasswd file for Basic Authentication
-
-     Set the htpasswd filepath environment variable
-
-     .. code:: bash
-
-         $ export HTPASSWD_FILE=<ABSOLUTE PATH TO HTPASSWD FILE>
 
 #. Run Porter service
 
@@ -234,27 +157,7 @@ Docker Compose will start the Porter service within a Docker container.
 
        $ docker-compose -f deploy/docker/docker-compose.yml up -d porter-http
 
-   For HTTPS service (on default port 443):
-
-   * Without Basic Authentication
-
-     .. code:: bash
-
-         $ docker-compose -f deploy/docker/docker-compose.yml up -d porter-https
-
-   * With Basic Authentication
-
-     .. code:: bash
-
-         $ docker-compose -f deploy/docker/docker-compose.yml up -d porter-https-auth
-
-
-   Porter will be available on default ports 80 (HTTP) or 443 (HTTPS). The porter service running will be one of
-   the following depending on the mode chosen:
-
-   * ``porter-http``
-   * ``porter-https``
-   * ``porter-https-auth``
+   Porter will be available on default ports 80 (HTTP).
 
 
 #. View Porter logs
@@ -315,33 +218,11 @@ For a full list of CLI options after installation ``nucypher-porter``, run:
         Provider: ...
         Running Porter Web Controller at http://127.0.0.1:9155
 
-  * Run via HTTPS
-
-    To run via HTTPS use the ``--tls-key-filepath`` and ``--tls-certificate-filepath`` options:
-
-    .. code:: console
-
-        $ nucypher-porter run --eth-provider <YOUR WEB3 PROVIDER URI> --network <NETWORK NAME> --tls-key-filepath <TLS KEY FILEPATH> --tls-certificate-filepath <CERT FILEPATH>
-
-
-        ______
-        (_____ \           _
-        _____) )__   ____| |_  ____  ____
-        |  ____/ _ \ / ___)  _)/ _  )/ ___)
-        | |   | |_| | |   | |_( (/ /| |
-        |_|    \___/|_|    \___)____)_|
-
-        the Pipe for PRE Application network operations
-
-        Network: <NETWORK NAME>
-        Provider: ...
-        Running Porter Web Controller at https://127.0.0.1:9155
-
     To enable CORS, use the ``--allow-origins`` option:
 
     .. code:: console
 
-        $ nucypher-porter run --eth-provider <YOUR WEB3 PROVIDER URI> --network <NETWORK NAME> --tls-key-filepath <TLS KEY FILEPATH> --tls-certificate-filepath <CERT FILEPATH> --allow-origins ".*\.example\.com$"
+        $ nucypher-porter run --eth-provider <YOUR WEB3 PROVIDER URI> --network <NETWORK NAME> --allow-origins ".*\.example\.com$"
 
 
         ______
@@ -356,29 +237,7 @@ For a full list of CLI options after installation ``nucypher-porter``, run:
         Network: <NETWORK NAME>
         Provider: ...
         CORS Allow Origins: ['.*\\.example\\.com$']
-        Running Porter Web Controller at https://127.0.0.1:9155
-
-    To enable Basic Authentication, add the ``--basic-auth-filepath`` option:
-
-    .. code:: console
-
-        $ nucypher-porter run --eth-provider <YOUR WEB3 PROVIDER URI> --network <NETWORK NAME> --tls-key-filepath <TLS KEY FILEPATH> --tls-certificate-filepath <CERT FILEPATH> --allow-origins ".*\.example\.com$" --basic-auth-filepath <HTPASSWD FILE>
-
-
-        ______
-        (_____ \           _
-        _____) )__   ____| |_  ____  ____
-        |  ____/ _ \ / ___)  _)/ _  )/ ___)
-        | |   | |_| | |   | |_( (/ /| |
-        |_|    \___/|_|    \___)____)_|
-
-        the Pipe for PRE Application network operations
-
-        Network: <NETWORK NAME>
-        Provider: ...
-        CORS Allow Origins: ['.*\\.example\\.com$']
-        Basic Authentication enabled
-        Running Porter Web Controller at https://127.0.0.1:9155
+        Running Porter Web Controller at http://127.0.0.1:9155
 
 
 Run Porter with Reverse Proxy
@@ -430,7 +289,7 @@ Docker Compose will be used to start the NGINX reverse proxy and the Porter serv
 
          $ export TLS_DIR=<ABSOLUTE PATH TO TLS DIRECTORY>
 
-   * *(Optional)* The CORS configuration is set in the ``nucypher/deploy/docker/nginx/porter.local_location`` file.
+   * *(Optional)* The CORS configuration is set in the ``nucypher-porter/deploy/docker/nginx/porter.local_location`` file.
 
       .. important::
 
