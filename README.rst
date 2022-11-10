@@ -295,22 +295,6 @@ Docker Compose will be used to start the NGINX reverse proxy and the Porter serv
 
           By default, CORS for the reverse proxy is configured to allow all origins
 
-     If you would like to modify the CORS allowed origin setting to be more specific, you can modify the file to
-     check for specific domains. There are some examples in the file - see `NGINX if-directive <https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#if>`_
-     for adding ore complex conditional checks.
-
-     For example, to only allow requests from all sub-domains of ``example.com``, the file should be edited to include:
-
-     .. code::
-
-        if ($http_origin ~* (.*\.example\.com$)) {
-            set $allow_origin "true";
-        }
-
-     .. note::
-
-         If you modify the file you should rebuild the docker images using docker-compose.
-
 #. *(Optional)* Build the docker images:
 
    .. code:: bash
