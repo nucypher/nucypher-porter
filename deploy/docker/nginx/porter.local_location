@@ -5,7 +5,6 @@
 # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin
 #
 if ($request_method ~* "(GET|POST)") {
-
   add_header "Access-Control-Allow-Origin" *;
 }
 
