@@ -29,11 +29,12 @@ jobs:
 
     - name: Run tests
       run: |
-        py.test --cov=porter --cov-report=xml
+        python -m pytest tests
 
-    - name: Upload coverage
+    - name: Upload test coverage to Codecov
       if: matrix.python-version == '3.8'
-      run: |
-        curl -Os https://uploader.codecov.io/latest/linux/codecov
-        chmod +x codecov
-        ./codecov
+      uses: codecov/codecov-action@v3.1.1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: true
+        verbose: true

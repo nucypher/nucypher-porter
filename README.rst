@@ -1,3 +1,7 @@
+.. image:: https://codecov.io/gh/nucypher/nucypher-porter/branch/main/graph/badge.svg?token=8N55VR1TO1
+ :target: https://codecov.io/gh/nucypher/nucypher-porter
+
+
 Porter
 ======
 
