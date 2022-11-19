@@ -7,7 +7,7 @@ name = "pypi"
 python_version = "3"
 
 [packages]
-nucypher = {git = "https://github.com/nucypher/nucypher.git", ref = "development"}
+nucypher = {git = "https://github.com/derekpierre/nucypher.git", ref = "damn-none"}
 flask-cors = "*"
 
 [dev-packages]
@@ -18,7 +18,7 @@ pytest-mock = "*"
 pre-commit = "2.12.1"
 pyflakes = "*"
 mypy = "*"
-coverage = "*"
+coverage = "<=6.5.0"
 
 [pipenv]
 allow_prereleases = true
