@@ -51,13 +51,11 @@ class WebEmitter:
                   error_message: str,
                   log_level: str = 'info',
                   response_code: int = 500):
-
         self._log_exception(e, error_message, log_level, response_code)
         if self.crash_on_error:
             raise e
-
-        response_message = str(e) or type(e).__name__
-        return self.sink(response_message, status=response_code)
+        response_message = json.dumps({'error': str(e), 'version': str(porter.__version__)})
+        return self.sink(response_message, status=response_code, content_type="application/json")
 
     def exception_with_response(self,
                                 json_error_response,
