@@ -7,7 +7,7 @@ name = "pypi"
 python_version = "3"
 
 [packages]
-nucypher = {git = "https://github.com/derekpierre/nucypher.git", ref = "damn-none"}
+nucypher = {git = "https://github.com/nucypher/nucypher.git", ref = "development"}
 flask-cors = "*"
 
 [dev-packages]

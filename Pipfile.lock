@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "c5e1c520aaa2538a558623e1c5eabe6e066427297dfecf3534d80b0d67e01316"
+            "sha256": "e6fe7762fcfbe9e37aa8767862228a1f73647321368e46ba00bcc399a78113f3"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -473,7 +473,7 @@
                 "sha256:f959c1319b7e6ed3367b0f5a54a7b9c59063bd053c74278b27999db013e568df",
                 "sha256:fa5ded9f811c36668239adb4806fca1244b06add4d64af31119c279aab1ef8a6"
             ],
-            "markers": "implementation_name == 'cpython'",
+            "markers": "python_version >= '3.5'",
             "version": "==0.12.0"
         },
         "dateparser": {
@@ -515,9 +515,6 @@
             "version": "==1.0.4"
         },
         "eth-hash": {
-            "extras": [
-                "pycryptodome"
-            ],
             "hashes": [
                 "sha256:3c884e4f788b38cc92cff05c4e43bc6b82686066f04ecfae0e11cdcbe5a283bd",
                 "sha256:8cde211519ff1a98b46e9057cb909f12ab62e263eb30a0a94e2f7e1f46ac67a0"
@@ -704,14 +701,6 @@
             ],
             "markers": "python_version >= '3.5'",
             "version": "==3.4"
-        },
-        "importlib-metadata": {
-            "hashes": [
-                "sha256:da31db32b304314d044d3c12c79bd59e307889b287ad12ff387b3500835fc2ab",
-                "sha256:ddb0e35065e8938f867ed4928d0ae5bf2a53b7773871bfe6bcc7e4fcdc7dea43"
-            ],
-            "markers": "python_version < '3.10'",
-            "version": "==5.0.0"
         },
         "incremental": {
             "hashes": [
@@ -1033,8 +1022,8 @@
             "version": "==0.8.0"
         },
         "nucypher": {
-            "git": "https://github.com/derekpierre/nucypher.git",
-            "ref": "d5e18dc56e702e2c00694056c600444cd0d6420b"
+            "git": "https://github.com/nucypher/nucypher.git",
+            "ref": "186c9ad5cdec8012a4826743759c2a01d009d312"
         },
         "nucypher-core": {
             "hashes": [
@@ -1205,6 +1194,7 @@
                 "sha256:ff287bcba9fbeb4f1cccc1f2e90a08d691480735a611ee83c80a7d74ad72b9d9",
                 "sha256:ff7ae90e36c1715a54446e7872b76102baa5c63aa980917f4aa45e8c78d1a3ec"
             ],
+            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4'",
             "version": "==3.15.0"
         },
         "pyethash": {
@@ -1440,6 +1430,14 @@
             ],
             "version": "==21.1.0"
         },
+        "setuptools": {
+            "hashes": [
+                "sha256:d0b9a8433464d5800cbe05094acf5c6d52a91bfac9b52bcfc4d41382be5d5d31",
+                "sha256:e197a19aa8ec9722928f2206f8de752def0e4c9fc6953527360d1c36d94ddb2f"
+            ],
+            "markers": "python_version >= '3.7'",
+            "version": "==65.5.1"
+        },
         "six": {
             "hashes": [
                 "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926",
@@ -1514,7 +1512,7 @@
                 "sha256:04a680bdc5b15750c39c12a448885a51134a27ec9af83667663f0b3a1bf3f342",
                 "sha256:91f11db4503385928c15598c98573e3af07e7229181bee5375bd30f1695ddcae"
             ],
-            "markers": "python_version >= '3.6'",
+            "markers": "python_version >= '2'",
             "version": "==2022.6"
         },
         "tzlocal": {
@@ -1726,14 +1724,6 @@
             "markers": "python_version >= '3.7'",
             "version": "==1.8.1"
         },
-        "zipp": {
-            "hashes": [
-                "sha256:4fcb6f278987a6605757302a6e40e896257570d11c51628968ccb2a47e80c6c1",
-                "sha256:7a7262fd930bd3e36c50b9a64897aec3fafff3dfdeec9623ae22b40e93f99bb8"
-            ],
-            "markers": "python_version >= '3.7'",
-            "version": "==3.10.0"
-        },
         "zope.interface": {
             "hashes": [
                 "sha256:008b0b65c05993bb08912f644d140530e775cf1c62a072bf9340c2249e613c32",
@@ -1795,9 +1785,6 @@
             "version": "==3.3.1"
         },
         "coverage": {
-            "extras": [
-                "toml"
-            ],
             "hashes": [
                 "sha256:027018943386e7b942fa832372ebc120155fd970837489896099f5cfa2890f79",
                 "sha256:11b990d520ea75e7ee8dcab5bc908072aaada194a794db9f6d7d5cfd19661e5a",
@@ -2060,6 +2047,14 @@
             "markers": "python_version >= '3.6'",
             "version": "==6.0"
         },
+        "setuptools": {
+            "hashes": [
+                "sha256:d0b9a8433464d5800cbe05094acf5c6d52a91bfac9b52bcfc4d41382be5d5d31",
+                "sha256:e197a19aa8ec9722928f2206f8de752def0e4c9fc6953527360d1c36d94ddb2f"
+            ],
+            "markers": "python_version >= '3.7'",
+            "version": "==65.5.1"
+        },
         "toml": {
             "hashes": [
                 "sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b",
@@ -2073,6 +2068,7 @@
                 "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc",
                 "sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f"
             ],
+            "markers": "python_version < '3.11'",
             "version": "==2.0.1"
         },
         "typing-extensions": {
