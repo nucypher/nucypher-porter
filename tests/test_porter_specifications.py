@@ -154,7 +154,7 @@ def test_bob_retrieve_cfrags(federated_porter,
                              enacted_federated_policy,
                              federated_bob,
                              federated_alice,
-                             random_context,
+                             valid_user_address_context,
                              get_random_checksum_address):
     bob_retrieve_cfrags_schema = BobRetrieveCFrags()
 
@@ -175,7 +175,7 @@ def test_bob_retrieve_cfrags(federated_porter,
         federated_bob,
         federated_alice,
         encode_for_rest=True,
-        context=random_context,
+        context=valid_user_address_context,
     )
     bob_retrieve_cfrags_schema.load(retrieval_args)
 
@@ -208,7 +208,7 @@ def test_bob_retrieve_cfrags(federated_porter,
         federated_bob,
         federated_alice,
         encode_for_rest=False,
-        context=random_context,
+        context=valid_user_address_context,
     )
     retrieval_outcomes = federated_porter.retrieve_cfrags(**non_encoded_retrieval_args)
     expected_retrieval_results_json = []
@@ -258,7 +258,7 @@ def test_bob_retrieve_cfrags(federated_porter,
         federated_bob,
         federated_alice,
         encode_for_rest=False,
-        context=random_context,
+        context=valid_user_address_context,
         num_random_messages=num_retrieval_kits,
     )
     retrieval_outcomes = federated_porter.retrieve_cfrags(**non_encoded_retrieval_args)

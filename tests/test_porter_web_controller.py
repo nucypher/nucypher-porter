@@ -82,7 +82,7 @@ def test_retrieve_cfrags(federated_porter,
                          federated_bob,
                          federated_alice,
                          random_federated_treasure_map_data,
-                         random_context):
+                         valid_user_address_context):
     # Send bad data to assert error return
     response = federated_porter_web_controller.post('/retrieve_cfrags', data=json.dumps({'bad': 'input'}))
     assert response.status_code == 400
@@ -170,7 +170,7 @@ def test_retrieve_cfrags(federated_porter,
     # Use context
     #
     context_field = JSON()
-    multiple_retrieval_kits_params['context'] = context_field._serialize(random_context, attr=None, obj=None)
+    multiple_retrieval_kits_params['context'] = context_field._serialize(valid_user_address_context, attr=None, obj=None)
     response = federated_porter_web_controller.post('/retrieve_cfrags', data=json.dumps(multiple_retrieval_kits_params))
     assert response.status_code == 200
 

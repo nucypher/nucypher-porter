@@ -1,0 +1,26 @@
+.gitignore
+
+__pycache__
+*.pyc
+/.venv
+.eggs
+/*.egg-info
+/build
+/.cache
+*.so
+/MANIFEST
+/.tox
+/.idea
+.mypy_cache
+.pytest_cache/
+*logs*
+*.ipynb*
+.ethash
+.env
+.python-version
+*.log
+
+# Coverage
+.coverage
+coverage.*
+htmlcov/*

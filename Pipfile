@@ -18,7 +18,7 @@ pytest-mock = "*"
 pre-commit = "2.12.1"
 pyflakes = "*"
 mypy = "*"
-coverage = "*"
+coverage = "<=6.5.0"
 
 [pipenv]
 allow_prereleases = true
