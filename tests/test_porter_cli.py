@@ -12,18 +12,17 @@ from porter.main import Porter
 
 
 @pytest.fixture(scope="function")
-def federated_teacher_uri(mocker, federated_ursulas):
-    teacher = list(federated_ursulas)[0]
+def teacher_uri(mocker, ursulas):
+    teacher = list(ursulas)[0]
     teacher_uri = teacher.seed_node_metadata(as_teacher_uri=True)
     mocker.patch.object(Ursula, 'from_teacher_uri', return_value=teacher)
     yield teacher_uri
 
 
-def test_federated_porter_cli_run_simple(click_runner, federated_teacher_uri):
+def test_porter_cli_run_simple(click_runner, teacher_uri):
     porter_run_command = ('run',
                           '--dry-run',
-                          '--federated-only',
-                          '--teacher', federated_teacher_uri)
+                          '--teacher', teacher_uri)
     result = click_runner.invoke(porter_cli, porter_run_command, catch_exceptions=False)
     assert result.exit_code == 0
     output = result.output
@@ -34,9 +33,8 @@ def test_federated_porter_cli_run_simple(click_runner, federated_teacher_uri):
     non_default_port = select_test_port()
     porter_run_command = ('run',
                           '--dry-run',
-                          '--federated-only',
                           '--http-port', non_default_port,
-                          '--teacher', federated_teacher_uri)
+                          '--teacher', teacher_uri)
     result = click_runner.invoke(porter_cli, porter_run_command, catch_exceptions=False)
     assert result.exit_code == 0
     output = result.output
@@ -44,24 +42,22 @@ def test_federated_porter_cli_run_simple(click_runner, federated_teacher_uri):
     assert PORTER_RUN_MESSAGE.format(http_port=non_default_port) in output
 
 
-def test_federated_porter_cli_run_teacher_must_be_provided(click_runner):
+def test_porter_cli_run_teacher_must_be_provided(click_runner):
     porter_run_command = ('run',
-                          '--dry-run',
-                          '--federated-only')
+                          '--dry-run')
 
     result = click_runner.invoke(porter_cli, porter_run_command, catch_exceptions=False)
     assert result.exit_code != 0
     assert f"--teacher is required" in result.output
 
-def test_federated_cli_run_with_cors_origin(click_runner,
-                                                  temp_dir_path,
-                                                  federated_teacher_uri):
+def test_cli_run_with_cors_origin(click_runner,
+                                  temp_dir_path,
+                                  teacher_uri):
     allow_origins = ".*\.example\.com,.*\.otherexample\.org"
 
     porter_run_command = ('run',
                           '--dry-run',
-                          '--federated-only',
-                          '--teacher', federated_teacher_uri,
+                          '--teacher', teacher_uri,
                           '--allow-origins', allow_origins)
     result = click_runner.invoke(porter_cli, porter_run_command, catch_exceptions=False)
     assert result.exit_code == 0
@@ -69,15 +65,14 @@ def test_federated_cli_run_with_cors_origin(click_runner,
     assert PORTER_CORS_ALLOWED_ORIGINS.format(allow_origins=allow_origins.split(",")) in result.output
 
 
-def test_federated_cli_run_with_empty_string_cors_origin(click_runner,
-                                                               temp_dir_path,
-                                                               federated_teacher_uri):
+def test_cli_run_with_empty_string_cors_origin(click_runner,
+                                               temp_dir_path,
+                                               teacher_uri):
     empty_string_allow_origins = ""
 
     porter_run_command = ('run',
                           '--dry-run',
-                          '--federated-only',
-                          '--teacher', federated_teacher_uri,
+                          '--teacher', teacher_uri,
                           '--allow-origins', empty_string_allow_origins)
     result = click_runner.invoke(porter_cli, porter_run_command, catch_exceptions=False)
     assert result.exit_code == 0
