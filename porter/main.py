@@ -108,7 +108,7 @@ class Porter(Learner):
                     quantity: int,
                     exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
                     include_ursulas: Optional[Sequence[ChecksumAddress]] = None) -> List[UrsulaInfo]:
-        reservoir = self._make_reservoir(quantity, exclude_ursulas, include_ursulas)
+        reservoir = self._make_reservoir(exclude_ursulas, include_ursulas)
         value_factory = PrefetchStrategy(reservoir, quantity)
 
         def get_ursula_info(ursula_address) -> Porter.UrsulaInfo:
@@ -173,7 +173,6 @@ class Porter(Learner):
         return result_outcomes
 
     def _make_reservoir(self,
-                        quantity: int,
                         exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
                         include_ursulas: Optional[Sequence[ChecksumAddress]] = None):
         return make_staking_provider_reservoir(application_agent=self.application_agent,

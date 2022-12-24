@@ -11,20 +11,15 @@ from nucypher_core import Address, HRAC, TreasureMap
 
 from porter.emitters import WebEmitter
 from porter.main import Porter
+from tests.constants import TEST_ETH_PROVIDER_URI
 
 # Crash on server error by default
 WebEmitter._crash_on_error_default = True
 Learner._DEBUG_MODE = False
 
-PYEVM_DEV_URI = "tester://pyevm"
-
-TEST_ETH_PROVIDER_URI = PYEVM_DEV_URI  # TODO: Pytest flag entry point?
-
-
 pytest_plugins = [
     'pytest-nucypher',  # Includes external fixtures module from nucypher
 ]
-
 
 def pytest_addoption(parser):
     parser.addoption("--run-nightly",
@@ -95,8 +90,10 @@ def get_random_checksum_address():
 
 
 @pytest.fixture(scope="module")
+@pytest.mark.usefixtures('testerchain', 'agency')
 def porter(ursulas, mock_rest_middleware):
     porter = Porter(domain=TEMPORARY_DOMAIN,
+                    eth_provider_uri=TEST_ETH_PROVIDER_URI,
                     abort_on_learning_error=True,
                     start_learning_now=True,
                     known_nodes=ursulas,
