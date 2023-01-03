@@ -94,7 +94,7 @@ trie==2.0.2; python_version >= '3.6' and python_version < '4'
 twisted==22.10.0; python_full_version >= '3.7.1'
 txaio==22.2.1; python_version >= '3.6'
 typing-extensions==4.4.0; python_version >= '3.7'
-tzdata==2022.6; python_version >= '3.6' and python_version >= '3.6'
+tzdata==2022.6; python_version >= '3.6'
 tzlocal==4.2; python_version >= '3.6'
 urllib3==1.26.13; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4, 3.5'
 varint==1.0.2

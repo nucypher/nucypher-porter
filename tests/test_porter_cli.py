@@ -9,8 +9,8 @@ from porter.cli.literature import (
 )
 from porter.cli.main import porter_cli
 from porter.main import Porter
-from tests.constants import TEST_ETH_PROVIDER_URI
 
+TEST_ETH_PROVIDER_URI = "tester://pyevm"
 
 @pytest.fixture(scope="function")
 def teacher_uri(mocker, ursulas):

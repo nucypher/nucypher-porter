@@ -11,7 +11,6 @@ from nucypher_core import Address, HRAC, TreasureMap
 
 from porter.emitters import WebEmitter
 from porter.main import Porter
-from tests.constants import TEST_ETH_PROVIDER_URI
 
 # Crash on server error by default
 WebEmitter._crash_on_error_default = True
@@ -93,7 +92,7 @@ def get_random_checksum_address():
 @pytest.mark.usefixtures('testerchain', 'agency')
 def porter(ursulas, mock_rest_middleware):
     porter = Porter(domain=TEMPORARY_DOMAIN,
-                    eth_provider_uri=TEST_ETH_PROVIDER_URI,
+                    eth_provider_uri="tester://pyevm",
                     abort_on_learning_error=True,
                     start_learning_now=True,
                     known_nodes=ursulas,
