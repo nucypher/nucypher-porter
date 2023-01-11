@@ -23,8 +23,7 @@ from nucypher.network.nodes import Learner
 from nucypher.network.retrieval import RetrievalClient
 from nucypher.policy.reservoir import (
     PrefetchStrategy,
-    make_decentralized_staking_provider_reservoir,
-    make_federated_staker_reservoir,
+    make_staking_provider_reservoir,
 )
 from nucypher.utilities.concurrency import WorkerPool
 from nucypher.utilities.logging import Logger
@@ -78,25 +77,18 @@ class Porter(Learner):
                  domain: str = None,
                  registry: BaseContractRegistry = None,
                  controller: bool = True,
-                 federated_only: bool = False,
                  node_class: object = Ursula,
                  eth_provider_uri: str = None,
                  execution_timeout: int = DEFAULT_EXECUTION_TIMEOUT,
                  *args, **kwargs):
-        self.federated_only = federated_only
+        if not eth_provider_uri:
+            raise ValueError('ETH Provider URI is required for decentralized Porter.')
 
-        if not self.federated_only:
-            if not eth_provider_uri:
-                raise ValueError('ETH Provider URI is required for decentralized Porter.')
+        if not BlockchainInterfaceFactory.is_interface_initialized(eth_provider_uri=eth_provider_uri):
+            BlockchainInterfaceFactory.initialize_interface(eth_provider_uri=eth_provider_uri)
 
-            if not BlockchainInterfaceFactory.is_interface_initialized(eth_provider_uri=eth_provider_uri):
-                BlockchainInterfaceFactory.initialize_interface(eth_provider_uri=eth_provider_uri)
-
-            self.registry = registry or InMemoryContractRegistry.from_latest_publication(network=domain)
-            self.application_agent = ContractAgency.get_agent(PREApplicationAgent, registry=self.registry)
-        else:
-            self.registry = NO_BLOCKCHAIN_CONNECTION.bool_value(False)
-            node_class.set_federated_mode(federated_only)
+        self.registry = registry or InMemoryContractRegistry.from_latest_publication(network=domain)
+        self.application_agent = ContractAgency.get_agent(PREApplicationAgent, registry=self.registry)
 
         super().__init__(save_metadata=True, domain=domain, node_class=node_class, *args, **kwargs)
 
@@ -116,7 +108,7 @@ class Porter(Learner):
                     quantity: int,
                     exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
                     include_ursulas: Optional[Sequence[ChecksumAddress]] = None) -> List[UrsulaInfo]:
-        reservoir = self._make_reservoir(quantity, exclude_ursulas, include_ursulas)
+        reservoir = self._make_reservoir(exclude_ursulas, include_ursulas)
         value_factory = PrefetchStrategy(reservoir, quantity)
 
         def get_ursula_info(ursula_address) -> Porter.UrsulaInfo:
@@ -181,22 +173,11 @@ class Porter(Learner):
         return result_outcomes
 
     def _make_reservoir(self,
-                        quantity: int,
                         exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
                         include_ursulas: Optional[Sequence[ChecksumAddress]] = None):
-        if self.federated_only:
-            sample_size = quantity - (len(include_ursulas) if include_ursulas else 0)
-            if not self.block_until_number_of_known_nodes_is(sample_size,
-                                                             timeout=self.execution_timeout,
-                                                             learn_on_this_thread=True):
-                raise ValueError("Unable to learn about sufficient Ursulas")
-            return make_federated_staker_reservoir(known_nodes=self.known_nodes,
-                                                   exclude_addresses=exclude_ursulas,
-                                                   include_addresses=include_ursulas)
-        else:
-            return make_decentralized_staking_provider_reservoir(application_agent=self.application_agent,
-                                                                 exclude_addresses=exclude_ursulas,
-                                                                 include_addresses=include_ursulas)
+        return make_staking_provider_reservoir(application_agent=self.application_agent,
+                                               exclude_addresses=exclude_ursulas,
+                                               include_addresses=include_ursulas)
 
     def make_cli_controller(self, crash_on_error: bool = False):
         controller = PorterCLIController(app_name=self.APP_NAME,

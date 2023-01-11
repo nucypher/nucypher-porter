@@ -11,6 +11,7 @@ nucypher = {git = "https://github.com/nucypher/nucypher.git", ref = "development
 flask-cors = "*"
 
 [dev-packages]
+nucypher = {git = "https://github.com/nucypher/nucypher.git", editable = true, ref = "development", extras = ["dev"]}  # needed for testerchain, and must be editable
 pytest = "*"
 pytest-cov = "*"
 pytest-mock = "*"
@@ -19,6 +20,8 @@ pre-commit = "2.12.1"
 pyflakes = "*"
 mypy = "*"
 coverage = "<=6.5.0"
+py-solc-x = "==0.10.1"
+
 
 [pipenv]
 allow_prereleases = true

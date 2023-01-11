@@ -150,10 +150,10 @@ def test_alice_revoke():
     pass  # TODO
 
 
-def test_bob_retrieve_cfrags(federated_porter,
-                             enacted_federated_policy,
-                             federated_bob,
-                             federated_alice,
+def test_bob_retrieve_cfrags(porter,
+                             enacted_policy,
+                             bob,
+                             alice,
                              valid_user_address_context,
                              get_random_checksum_address):
     bob_retrieve_cfrags_schema = BobRetrieveCFrags()
@@ -163,17 +163,17 @@ def test_bob_retrieve_cfrags(federated_porter,
         bob_retrieve_cfrags_schema.load({})
 
     # Setup - no context
-    retrieval_args, _ = retrieval_request_setup(enacted_federated_policy,
-                                                federated_bob,
-                                                federated_alice,
+    retrieval_args, _ = retrieval_request_setup(enacted_policy,
+                                                bob,
+                                                alice,
                                                 encode_for_rest=True)
     bob_retrieve_cfrags_schema.load(retrieval_args)
 
     # simple schema load w/ optional context
     retrieval_args, _ = retrieval_request_setup(
-        enacted_federated_policy,
-        federated_bob,
-        federated_alice,
+        enacted_policy,
+        bob,
+        alice,
         encode_for_rest=True,
         context=valid_user_address_context,
     )
@@ -181,9 +181,9 @@ def test_bob_retrieve_cfrags(federated_porter,
 
     # invalid context specified
     retrieval_args, _ = retrieval_request_setup(
-        enacted_federated_policy,
-        federated_bob,
-        federated_alice,
+        enacted_policy,
+        bob,
+        alice,
         encode_for_rest=True,
         context=[1, 2, 3],  # list instead of dict
     )
@@ -204,13 +204,13 @@ def test_bob_retrieve_cfrags(federated_porter,
     # Retrieval output for 1 retrieval kit
     #
     non_encoded_retrieval_args, _ = retrieval_request_setup(
-        enacted_federated_policy,
-        federated_bob,
-        federated_alice,
+        enacted_policy,
+        bob,
+        alice,
         encode_for_rest=False,
         context=valid_user_address_context,
     )
-    retrieval_outcomes = federated_porter.retrieve_cfrags(**non_encoded_retrieval_args)
+    retrieval_outcomes = porter.retrieve_cfrags(**non_encoded_retrieval_args)
     expected_retrieval_results_json = []
     retrieval_outcome_schema = RetrievalOutcomeSchema()
 
@@ -254,14 +254,14 @@ def test_bob_retrieve_cfrags(federated_porter,
     #
     num_retrieval_kits = 4
     non_encoded_retrieval_args, _ = retrieval_request_setup(
-        enacted_federated_policy,
-        federated_bob,
-        federated_alice,
+        enacted_policy,
+        bob,
+        alice,
         encode_for_rest=False,
         context=valid_user_address_context,
         num_random_messages=num_retrieval_kits,
     )
-    retrieval_outcomes = federated_porter.retrieve_cfrags(**non_encoded_retrieval_args)
+    retrieval_outcomes = porter.retrieve_cfrags(**non_encoded_retrieval_args)
     expected_retrieval_results_json = []
     retrieval_outcome_schema = RetrievalOutcomeSchema()
 
@@ -323,8 +323,8 @@ def make_header(brand: bytes, major: int, minor: int) -> bytes:
     return header
 
 
-def test_treasure_map_validation(enacted_federated_policy,
-                                 federated_bob):
+def test_treasure_map_validation(enacted_policy,
+                                 bob):
     class UnenncryptedTreasureMapsOnly(BaseSchema):
         tmap = TreasureMap()
 
@@ -347,15 +347,15 @@ def test_treasure_map_validation(enacted_federated_policy,
     assert "Failed to deserialize" in str(e)
 
     # a valid treasuremap
-    decrypted_treasure_map = federated_bob._decrypt_treasure_map(enacted_federated_policy.treasure_map,
-                                                                 enacted_federated_policy.publisher_verifying_key)
+    decrypted_treasure_map = bob._decrypt_treasure_map(enacted_policy.treasure_map,
+                                                                 enacted_policy.publisher_verifying_key)
     tmap_bytes = bytes(decrypted_treasure_map)
     tmap_b64 = base64.b64encode(tmap_bytes).decode()
     result = UnenncryptedTreasureMapsOnly().load({'tmap': tmap_b64})
     assert isinstance(result['tmap'], TreasureMapClass)
 
 
-def test_key_validation(federated_bob):
+def test_key_validation(bob):
 
     class BobKeyInputRequirer(BaseSchema):
         bobkey = Key()
@@ -376,5 +376,5 @@ def test_key_validation(federated_bob):
     assert "Could not convert input for bobkey to an Umbral Key" in str(e)
     assert "xpected 33 bytes, got 32" in str(e)
 
-    result = BobKeyInputRequirer().load(dict(bobkey=bytes(federated_bob.public_keys(DecryptingPower)).hex()))
+    result = BobKeyInputRequirer().load(dict(bobkey=bytes(bob.public_keys(DecryptingPower)).hex()))
     assert isinstance(result['bobkey'], PublicKey)

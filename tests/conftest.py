@@ -16,15 +16,9 @@ from porter.main import Porter
 WebEmitter._crash_on_error_default = True
 Learner._DEBUG_MODE = False
 
-PYEVM_DEV_URI = "tester://pyevm"
-
-TEST_ETH_PROVIDER_URI = PYEVM_DEV_URI  # TODO: Pytest flag entry point?
-
-
 pytest_plugins = [
     'pytest-nucypher',  # Includes external fixtures module from nucypher
 ]
-
 
 def pytest_addoption(parser):
     parser.addoption("--run-nightly",
@@ -95,13 +89,14 @@ def get_random_checksum_address():
 
 
 @pytest.fixture(scope="module")
-def federated_porter(federated_ursulas, mock_rest_middleware):
+@pytest.mark.usefixtures('testerchain', 'agency')
+def porter(ursulas, mock_rest_middleware):
     porter = Porter(domain=TEMPORARY_DOMAIN,
+                    eth_provider_uri="tester://pyevm",
                     abort_on_learning_error=True,
                     start_learning_now=True,
-                    known_nodes=federated_ursulas,
+                    known_nodes=ursulas,
                     verify_node_bonding=False,
-                    federated_only=True,
                     execution_timeout=2,
                     network_middleware=mock_rest_middleware)
     yield porter
@@ -109,34 +104,33 @@ def federated_porter(federated_ursulas, mock_rest_middleware):
 
 
 @pytest.fixture(scope='module')
-def random_federated_treasure_map_data(federated_alice, federated_bob, federated_ursulas):
-
+def random_treasure_map_data(alice, bob, ursulas):
     label = b'policy label'
     threshold = 2
     shares = threshold + 1
-    policy_key, kfrags = federated_alice.generate_kfrags(bob=federated_bob, label=label, threshold=threshold, shares=shares)
-    hrac = HRAC(publisher_verifying_key=federated_alice.stamp.as_umbral_pubkey(),
-                bob_verifying_key=federated_bob.stamp.as_umbral_pubkey(),
+    policy_key, kfrags = alice.generate_kfrags(bob=bob, label=label, threshold=threshold, shares=shares)
+    hrac = HRAC(publisher_verifying_key=alice.stamp.as_umbral_pubkey(),
+                bob_verifying_key=bob.stamp.as_umbral_pubkey(),
                 label=label)
 
     assigned_kfrags = {
         Address(ursula.canonical_address): (ursula.public_keys(DecryptingPower), vkfrag)
-        for ursula, vkfrag in zip(list(federated_ursulas)[:shares], kfrags)}
+        for ursula, vkfrag in zip(list(ursulas)[:shares], kfrags)}
 
-    random_treasure_map = TreasureMap(signer=federated_alice.stamp.as_umbral_signer(),
+    random_treasure_map = TreasureMap(signer=alice.stamp.as_umbral_signer(),
                                       hrac=hrac,
                                       policy_encrypting_key=policy_key,
                                       assigned_kfrags=assigned_kfrags,
                                       threshold=threshold)
 
-    bob_key = federated_bob.public_keys(DecryptingPower)
-    enc_treasure_map = random_treasure_map.encrypt(signer=federated_alice.stamp.as_umbral_signer(),
+    bob_key = bob.public_keys(DecryptingPower)
+    enc_treasure_map = random_treasure_map.encrypt(signer=alice.stamp.as_umbral_signer(),
                                                    recipient_key=bob_key)
 
     yield bob_key, enc_treasure_map
 
 
 @pytest.fixture(scope='module')
-def federated_porter_web_controller(federated_porter):
-    web_controller = federated_porter.make_web_controller(crash_on_error=False)
+def porter_web_controller(porter):
+    web_controller = porter.make_web_controller(crash_on_error=False)
     yield web_controller.test_client()

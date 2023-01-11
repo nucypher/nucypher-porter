@@ -2,12 +2,14 @@
 # -*- coding: utf-8 -*-
 
 import os
+import subprocess
 from pathlib import Path
 from typing import Dict
 from urllib.parse import urlparse
 
 import sys
 from setuptools import find_packages, setup
+from setuptools.command.develop import develop
 from setuptools.command.install import install
 
 #
@@ -61,6 +63,18 @@ class VerifyVersionCommand(install):
             sys.exit(info)
 
 
+class PostDevelopCommand(develop):
+    """
+    Post-installation for development mode.
+    Execute manually with python setup.py develop or automatically included with
+    `pip install -e . -r dev-requirements.txt`.
+    """
+    def run(self):
+        """development setup scripts (pre-requirements)"""
+        develop.run(self)
+        subprocess.call(f"scripts/install_solc.py")
+
+
 #
 #  Requirements
 #
@@ -77,6 +91,7 @@ def read_requirements(path):
         if line.startswith('-e git:') or line.startswith('-e git+') or \
                 line.startswith('git:') or line.startswith('git+'):
             # parse out egg=... fragment from VCS URL
+            line = line.replace('-e ', '')  # editable does not apply for setuptools; remove
             parsed = urlparse(line)
             egg_name = parsed.fragment.partition("egg=")[-1]
             without_fragment = parsed._replace(fragment="").geturl()
@@ -109,7 +124,7 @@ setup(
     extras_require=EXTRAS,
 
     # Package Data
-    packages=find_packages(exclude=["tests"]),
+    packages=find_packages(exclude=["tests", "scripts"]),
     include_package_data=True,
     zip_safe=False,
 
@@ -119,7 +134,10 @@ setup(
     ]},
 
     # setup.py commands
-    cmdclass={'verify': VerifyVersionCommand},
+    cmdclass={
+        'verify': VerifyVersionCommand,
+        'develop': PostDevelopCommand
+    },
 
     # Metadata
     name=ABOUT['__title__'],
