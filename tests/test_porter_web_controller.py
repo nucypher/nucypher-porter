@@ -142,11 +142,11 @@ def test_retrieve_cfrags(porter,
     # Try using multiple retrieval kits
     #
     multiple_retrieval_kits_params = dict(retrieve_cfrags_params)
-    enrico = Enrico(policy_encrypting_key=enacted_policy.public_key)
-    retrieval_kit_1 = RetrievalKit.from_message_kit(enrico.encrypt_message(b'The paradox of education is precisely this'))
-    retrieval_kit_2 = RetrievalKit.from_message_kit(enrico.encrypt_message(b'that as one begins to become conscious'))
-    retrieval_kit_3 = RetrievalKit.from_message_kit(enrico.encrypt_message(b'begins to examine the society in which'))
-    retrieval_kit_4 = RetrievalKit.from_message_kit(enrico.encrypt_message(b'he is (they are) being educated.'))
+    enrico = Enrico(encrypting_key=enacted_policy.public_key)
+    retrieval_kit_1 = RetrievalKit.from_message_kit(enrico.encrypt_for_pre(b'The paradox of education is precisely this'))
+    retrieval_kit_2 = RetrievalKit.from_message_kit(enrico.encrypt_for_pre(b'that as one begins to become conscious'))
+    retrieval_kit_3 = RetrievalKit.from_message_kit(enrico.encrypt_for_pre(b'begins to examine the society in which'))
+    retrieval_kit_4 = RetrievalKit.from_message_kit(enrico.encrypt_for_pre(b'he is (they are) being educated.'))
     retrieval_kit_field = RetrievalKitField()
     # use multiple retrieval kits and serialize for json
     multiple_retrieval_kits_params['retrieval_kits'] = [

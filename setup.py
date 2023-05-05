@@ -72,7 +72,6 @@ class PostDevelopCommand(develop):
     def run(self):
         """development setup scripts (pre-requirements)"""
         develop.run(self)
-        subprocess.call(f"scripts/install_solc.py")
 
 
 #

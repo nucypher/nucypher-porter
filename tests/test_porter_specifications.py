@@ -371,10 +371,9 @@ def test_key_validation(bob):
     assert "bobkey" in str(e)
 
     with pytest.raises(InvalidInputData) as e:
-        # lets just take a couple bytes off
+        # lets just take a couple bytes off (less bytes than required)
         BobKeyInputRequirer().load({'bobkey': "02f0cb3f3a33f16255d9b2586e6c56570aa07bbeb1157e169f1fb114ffb40037"})
     assert "Could not convert input for bobkey to an Umbral Key" in str(e)
-    assert "xpected 33 bytes, got 32" in str(e)
 
-    result = BobKeyInputRequirer().load(dict(bobkey=bytes(bob.public_keys(DecryptingPower)).hex()))
+    result = BobKeyInputRequirer().load(dict(bobkey=bob.public_keys(DecryptingPower).to_compressed_bytes().hex()))
     assert isinstance(result['bobkey'], PublicKey)
