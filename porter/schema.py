@@ -5,7 +5,7 @@ from marshmallow.fields import String, Dict
 from marshmallow.fields import URL
 
 from porter.cli.types import EIP55_CHECKSUM_ADDRESS
-from porter.fields.base import StringList, PositiveInteger, JSON
+from porter.fields.base import StringList, PositiveInteger, JSON, Integer, Base64BytesRepresentation
 from porter.fields.exceptions import InvalidArgumentCombo
 from porter.fields.exceptions import InvalidInputData
 from porter.fields.umbralkey import UmbralKey
@@ -192,3 +192,45 @@ class PRERetrieveCFrags(BaseSchema):
         marshmallow_fields.Nested(PRERetrievalOutcomeSchema), dump_only=True
     )
 
+#
+# CBD Endpoints
+#
+
+class CBDDecryptionOutcomeSchema(BaseSchema):
+    """Schema for the result of /retrieve_cfrags endpoint."""
+    decryption_responses = Dict(keys=UrsulaChecksumAddress(), values=Base64BytesRepresentation())
+    errors = Dict(keys=UrsulaChecksumAddress(), values=String())
+
+    # maintain field declaration ordering
+    class Meta:
+        ordered = True
+
+
+class CBDDecrypt(BaseSchema):
+    ritual_id = Integer(
+        required=True,
+        load_only=True,
+        click=click.option(
+            '--ritual-id',
+            '-r',
+            help="Ritual ID",
+            type=click.INT,
+            required=True
+        )
+    )
+    encrypted_decryption_request = Base64BytesRepresentation(
+        required=True,
+        load_only=True,
+        click=click.option(
+            '--enc-decryption-request',
+            '-e',
+            help="Encrypted decryption request",
+            type=click.STRING,
+            required=True
+        )
+    )
+
+    # output
+    retrieval_results = marshmallow_fields.List(
+        marshmallow_fields.Nested(CBDDecryptionOutcomeSchema), dump_only=True
+    )
