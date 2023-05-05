@@ -1,16 +1,22 @@
 import click
-from marshmallow import fields as marshmallow_fields, Schema, INCLUDE
+from marshmallow import INCLUDE, Schema
+from marshmallow import fields as marshmallow_fields
 from marshmallow import validates_schema
-from marshmallow.fields import String, Dict
-from marshmallow.fields import URL
+from marshmallow.fields import URL, Dict, String
 
 from porter.cli.types import EIP55_CHECKSUM_ADDRESS
-from porter.fields.base import StringList, PositiveInteger, JSON, Integer, Base64BytesRepresentation
-from porter.fields.exceptions import InvalidArgumentCombo
-from porter.fields.exceptions import InvalidInputData
-from porter.fields.umbralkey import UmbralKey
-from porter.fields.retrieve import RetrievalKit, CapsuleFrag
+from porter.fields.base import (
+    JSON,
+    Base64BytesRepresentation,
+    Integer,
+    JSONDict,
+    PositiveInteger,
+    StringList,
+)
+from porter.fields.exceptions import InvalidArgumentCombo, InvalidInputData
+from porter.fields.retrieve import CapsuleFrag, RetrievalKit
 from porter.fields.treasuremap import TreasureMap
+from porter.fields.umbralkey import UmbralKey
 from porter.fields.ursula import UrsulaChecksumAddress
 
 
@@ -120,8 +126,9 @@ class PRERevoke(BaseSchema):
 
 class PRERetrievalOutcomeSchema(BaseSchema):
     """Schema for the result of /retrieve_cfrags endpoint."""
-    cfrags = Dict(keys=UrsulaChecksumAddress(), values=CapsuleFrag())
-    errors = Dict(keys=UrsulaChecksumAddress(), values=String())
+
+    cfrags = marshmallow_fields.Dict(keys=UrsulaChecksumAddress(), values=CapsuleFrag())
+    errors = marshmallow_fields.Dict(keys=UrsulaChecksumAddress(), values=String())
 
     # maintain field declaration ordering
     class Meta:
@@ -207,27 +214,29 @@ class CBDDecryptionOutcomeSchema(BaseSchema):
 
 
 class CBDDecrypt(BaseSchema):
-    ritual_id = Integer(
+    threshold = Integer(
         required=True,
         load_only=True,
         click=click.option(
-            '--ritual-id',
-            '-r',
-            help="Ritual ID",
+            "--decryption-threshold",
+            "-d",
+            help="Threshold of decryption responses required",
             type=click.INT,
             required=True
         )
     )
-    encrypted_decryption_request = Base64BytesRepresentation(
+    decryption_requests = JSONDict(
+        keys=UrsulaChecksumAddress(),
+        values=Base64BytesRepresentation(),
         required=True,
         load_only=True,
         click=click.option(
-            '--enc-decryption-request',
-            '-e',
-            help="Encrypted decryption request",
+            "--encrypted-decryption-requests",
+            "-erec",
+            help="Encrypted decryption requests dictionary keyed by ursula address",
             type=click.STRING,
-            required=True
-        )
+            required=False,
+        ),
     )
 
     # output
