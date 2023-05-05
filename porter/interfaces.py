@@ -35,7 +35,7 @@ class PorterInterface(ControlInterface):
     #
     # Alice Endpoints
     #
-    @attach_schema(schema.AliceGetUrsulas)
+    @attach_schema(schema.PREGetUrsulas)
     def get_ursulas(self,
                     quantity: int,
                     exclude_ursulas: Optional[List[ChecksumAddress]] = None,
@@ -49,7 +49,7 @@ class PorterInterface(ControlInterface):
         response_data = {"ursulas": ursulas_info}  # list of UrsulaInfo objects
         return response_data
 
-    @attach_schema(schema.AliceRevoke)
+    @attach_schema(schema.PRERevoke)
     def revoke(self) -> dict:
         # Steps (analogous to nucypher.character.control.interfaces):
         # 1. creation of objects / setup
@@ -57,7 +57,7 @@ class PorterInterface(ControlInterface):
         # 3. create response
         pass
 
-    @attach_schema(schema.BobRetrieveCFrags)
+    @attach_schema(schema.PRERetrieveCFrags)
     def retrieve_cfrags(self,
                         treasure_map: TreasureMap,
                         retrieval_kits: List[RetrievalKit],
