@@ -73,6 +73,15 @@ class Porter(Learner):
         cfrags: Dict
         errors: Dict
 
+    class CBDDecryptionOutcome(NamedTuple):
+        """
+        Simple object that stores the results and errors of CBD decryption operations across
+        one or more Ursulas.
+        """
+
+        decryption_responses: Dict
+        errors: Dict
+
     def __init__(self,
                  domain: str = None,
                  registry: BaseContractRegistry = None,
@@ -172,12 +181,21 @@ class Porter(Learner):
             result_outcomes.append(result_outcome)
         return result_outcomes
 
-    def _make_reservoir(self,
-                        exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
-                        include_ursulas: Optional[Sequence[ChecksumAddress]] = None):
-        return make_staking_provider_reservoir(application_agent=self.application_agent,
-                                               exclude_addresses=exclude_ursulas,
-                                               include_addresses=include_ursulas)
+    def cbd_decrypt(
+        self, threshold: int, decryption_requests: Dict[ChecksumAddress, bytes]
+    ) -> List[CBDDecryptionOutcome]:
+        pass
+
+    def _make_reservoir(
+        self,
+        exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
+        include_ursulas: Optional[Sequence[ChecksumAddress]] = None,
+    ):
+        return make_staking_provider_reservoir(
+            application_agent=self.application_agent,
+            exclude_addresses=exclude_ursulas,
+            include_addresses=include_ursulas,
+        )
 
     def make_cli_controller(self, crash_on_error: bool = False):
         controller = PorterCLIController(app_name=self.APP_NAME,
@@ -239,6 +257,12 @@ class Porter(Learner):
         def retrieve_cfrags() -> Response:
             """Porter control endpoint for executing a PRE work order on behalf of Bob."""
             response = controller(method_name='retrieve_cfrags', control_request=request)
+            return response
+
+        @porter_flask_control.route("/cbd_decrypt", methods=["POST"])
+        def cbd_decrypt() -> Response:
+            """Porter control endpoint for executing a CBD decryption request."""
+            response = controller(method_name="cbd_decrypt", control_request=request)
             return response
 
         return controller
