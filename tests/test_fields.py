@@ -9,7 +9,7 @@ from nucypher_core.umbral import SecretKey
 from porter.fields.base import PositiveInteger, String, Base64BytesRepresentation, JSON
 from porter.fields.base import StringList
 from porter.fields.exceptions import InvalidInputData
-from porter.fields.key import Key
+from porter.fields.umbralkey import UmbralKey
 from porter.fields.retrieve import RetrievalKit
 from porter.fields.ursula import UrsulaChecksumAddress
 
@@ -104,8 +104,8 @@ def test_retrieval_kit_field(get_random_checksum_address):
         field._deserialize(value=b64encode(b"invalid_retrieval_kit_bytes").decode(), attr=None, data=None)
 
 
-def test_key():
-    field = Key()
+def test_umbral_key():
+    field = UmbralKey()
 
     umbral_pub_key = SecretKey.random().public_key()
     other_umbral_pub_key = SecretKey.random().public_key()

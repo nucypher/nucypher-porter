@@ -5,7 +5,7 @@ from porter.fields.base import BaseField
 from porter.fields.exceptions import InvalidInputData, InvalidNativeDataTypes
 
 
-class Key(BaseField, fields.Field):
+class UmbralKey(BaseField, fields.Field):
 
     def _serialize(self, value, attr, obj, **kwargs):
         if isinstance(value, PublicKey):

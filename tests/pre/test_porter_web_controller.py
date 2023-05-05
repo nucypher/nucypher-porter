@@ -13,7 +13,7 @@ from porter.controllers import WebController
 from porter.fields.base import JSON
 from porter.fields.retrieve import RetrievalKit as RetrievalKitField
 from porter.interfaces import PorterInterface
-from porter.schema import RetrievalOutcomeSchema
+from porter.schema import PRERetrievalOutcomeSchema
 from porter.utils import (
     retrieval_params_decode_from_rest,
     retrieval_request_setup,
@@ -120,7 +120,7 @@ def test_retrieve_cfrags(porter,
                                                            policy_encrypting_key=enacted_policy.public_key,
                                                            threshold=treasure_map.threshold)
     assert len(retrieval_results) == 1
-    field = RetrievalOutcomeSchema()
+    field = PRERetrievalOutcomeSchema()
     cfrags = field.load(retrieval_results[0])['cfrags']
     verified_cfrags = {}
     for ursula, cfrag in cfrags.items():

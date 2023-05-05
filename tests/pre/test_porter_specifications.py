@@ -8,7 +8,7 @@ from nucypher_core.umbral import PublicKey
 from nucypher_core.umbral import SecretKey
 
 from porter.fields.exceptions import SpecificationError, InvalidInputData, InvalidArgumentCombo
-from porter.fields.key import Key
+from porter.fields.umbralkey import UmbralKey
 from porter.fields.treasuremap import TreasureMap
 from porter.main import Porter
 from porter.schema import (
@@ -17,7 +17,7 @@ from porter.schema import (
     UrsulaInfoSchema
 )
 from porter.schema import BaseSchema
-from porter.schema import RetrievalOutcomeSchema
+from porter.schema import PRERetrievalOutcomeSchema
 from porter.utils import retrieval_request_setup
 
 
@@ -212,7 +212,7 @@ def test_bob_retrieve_cfrags(porter,
     )
     retrieval_outcomes = porter.retrieve_cfrags(**non_encoded_retrieval_args)
     expected_retrieval_results_json = []
-    retrieval_outcome_schema = RetrievalOutcomeSchema()
+    retrieval_outcome_schema = PRERetrievalOutcomeSchema()
 
     assert len(retrieval_outcomes) == 1
     assert len(retrieval_outcomes[0].cfrags) > 0
@@ -263,7 +263,7 @@ def test_bob_retrieve_cfrags(porter,
     )
     retrieval_outcomes = porter.retrieve_cfrags(**non_encoded_retrieval_args)
     expected_retrieval_results_json = []
-    retrieval_outcome_schema = RetrievalOutcomeSchema()
+    retrieval_outcome_schema = PRERetrievalOutcomeSchema()
 
     assert len(retrieval_outcomes) == num_retrieval_kits
     for i in range(num_retrieval_kits):
@@ -358,7 +358,7 @@ def test_treasure_map_validation(enacted_policy,
 def test_key_validation(bob):
 
     class BobKeyInputRequirer(BaseSchema):
-        bobkey = Key()
+        bobkey = UmbralKey()
 
     with pytest.raises(InvalidInputData) as e:
         BobKeyInputRequirer().load({'bobkey': "I am the key to nothing"})

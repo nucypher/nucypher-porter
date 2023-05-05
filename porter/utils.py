@@ -9,7 +9,7 @@ from nucypher.characters.lawful import Enrico
 from nucypher.crypto.powers import DecryptingPower
 
 from porter.fields.base import JSON
-from porter.fields.key import Key
+from porter.fields.umbralkey import UmbralKey
 from porter.fields.retrieve import RetrievalKit as RetrievalKitField
 from porter.fields.treasuremap import TreasureMap
 
@@ -71,9 +71,9 @@ def retrieval_request_setup(enacted_policy,
             encode_bytes(RetrievalKitField, RetrievalKit.from_message_kit(message_kit))
             for message_kit in message_kits
         ],
-        alice_verifying_key=encode_bytes(Key, alice.stamp.as_umbral_pubkey()),
-        bob_encrypting_key=encode_bytes(Key, bob.public_keys(DecryptingPower)),
-        bob_verifying_key=encode_bytes(Key, bob.stamp.as_umbral_pubkey()),
+        alice_verifying_key=encode_bytes(UmbralKey, alice.stamp.as_umbral_pubkey()),
+        bob_encrypting_key=encode_bytes(UmbralKey, bob.public_keys(DecryptingPower)),
+        bob_verifying_key=encode_bytes(UmbralKey, bob.stamp.as_umbral_pubkey()),
     )
     # context is optional
     if context:
@@ -92,9 +92,9 @@ def retrieval_params_decode_from_rest(retrieval_params: Dict) -> Dict:
             decode_bytes(RetrievalKitField, kit)
             for kit in retrieval_params["retrieval_kits"]
         ],
-        alice_verifying_key=decode_bytes(Key, retrieval_params["alice_verifying_key"]),
-        bob_encrypting_key=decode_bytes(Key, retrieval_params["bob_encrypting_key"]),
-        bob_verifying_key=decode_bytes(Key, retrieval_params["bob_verifying_key"]),
+        alice_verifying_key=decode_bytes(UmbralKey, retrieval_params["alice_verifying_key"]),
+        bob_encrypting_key=decode_bytes(UmbralKey, retrieval_params["bob_encrypting_key"]),
+        bob_verifying_key=decode_bytes(UmbralKey, retrieval_params["bob_verifying_key"]),
     )
     # context is optional
     if "context" in retrieval_params:
