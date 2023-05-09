@@ -235,7 +235,7 @@ def test_bob_retrieve_cfrags(porter,
         get_random_checksum_address(): "Error Message 2",
         get_random_checksum_address(): "Error Message 3",
     }
-    new_retrieval_outcome = Porter.RetrievalOutcome(
+    new_retrieval_outcome = Porter.PRERetrievalOutcome(
         cfrags=retrieval_outcomes[0].cfrags, errors=errors
     )
     expected_retrieval_results_json = [
@@ -289,7 +289,7 @@ def test_bob_retrieve_cfrags(porter,
                 get_random_checksum_address()
             ] = error_message_template.format(i, j)
         new_retrieval_outcomes_with_errors.append(
-            Porter.RetrievalOutcome(
+            Porter.PRERetrievalOutcome(
                 cfrags=retrieval_outcomes[i].cfrags, errors=specific_kit_errors
             )
         )

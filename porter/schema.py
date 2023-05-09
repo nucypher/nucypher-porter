@@ -225,7 +225,7 @@ class CBDDecrypt(BaseSchema):
             required=True
         )
     )
-    decryption_requests = JSONDict(
+    encrypted_decryption_requests = JSONDict(
         keys=UrsulaChecksumAddress(),
         values=Base64BytesRepresentation(),
         required=True,

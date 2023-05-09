@@ -1,16 +1,10 @@
 from pathlib import Path
 from typing import Dict, List, NamedTuple, Optional, Sequence
 
-from constant_sorrow.constants import (
-    NO_BLOCKCHAIN_CONNECTION,
-    NO_CONTROL_PROTOCOL
-)
+from constant_sorrow.constants import NO_BLOCKCHAIN_CONNECTION, NO_CONTROL_PROTOCOL
 from eth_typing import ChecksumAddress
 from eth_utils import to_checksum_address
 from flask import Response, request
-from nucypher_core import RetrievalKit, TreasureMap
-from nucypher_core.umbral import PublicKey
-
 from nucypher.blockchain.eth.agents import ContractAgency, PREApplicationAgent
 from nucypher.blockchain.eth.interfaces import BlockchainInterfaceFactory
 from nucypher.blockchain.eth.registry import (
@@ -20,15 +14,14 @@ from nucypher.blockchain.eth.registry import (
 from nucypher.characters.lawful import Ursula
 from nucypher.crypto.powers import DecryptingPower
 from nucypher.network.nodes import Learner
-from nucypher.network.retrieval import RetrievalClient
-from nucypher.policy.reservoir import (
-    PrefetchStrategy,
-    make_staking_provider_reservoir,
-)
+from nucypher.network.retrieval import PRERetrievalClient
+from nucypher.policy.reservoir import PrefetchStrategy, make_staking_provider_reservoir
 from nucypher.utilities.concurrency import WorkerPool
 from nucypher.utilities.logging import Logger
-from porter.controllers import PorterCLIController
-from porter.controllers import WebController
+from nucypher_core import RetrievalKit, TreasureMap
+from nucypher_core.umbral import PublicKey
+
+from porter.controllers import PorterCLIController, WebController
 from porter.interfaces import PorterInterface
 
 BANNER = r"""
@@ -64,7 +57,7 @@ class Porter(Learner):
         uri: str
         encrypting_key: PublicKey
 
-    class RetrievalOutcome(NamedTuple):
+    class PRERetrievalOutcome(NamedTuple):
         """
         Simple object that stores the results and errors of re-encryption operations across
         one or more Ursulas.
@@ -156,14 +149,16 @@ class Porter(Learner):
         ursulas_info = successes.values()
         return list(ursulas_info)
 
-    def retrieve_cfrags(self,
-                        treasure_map: TreasureMap,
-                        retrieval_kits: Sequence[RetrievalKit],
-                        alice_verifying_key: PublicKey,
-                        bob_encrypting_key: PublicKey,
-                        bob_verifying_key: PublicKey,
-                        context: Optional[Dict] = None) -> List[RetrievalOutcome]:
-        client = RetrievalClient(self)
+    def retrieve_cfrags(
+        self,
+        treasure_map: TreasureMap,
+        retrieval_kits: Sequence[RetrievalKit],
+        alice_verifying_key: PublicKey,
+        bob_encrypting_key: PublicKey,
+        bob_verifying_key: PublicKey,
+        context: Optional[Dict] = None,
+    ) -> List[PRERetrievalOutcome]:
+        client = PRERetrievalClient(self)
         context = context or dict()  # must not be None
         results, errors = client.retrieve_cfrags(
             treasure_map,
@@ -175,14 +170,16 @@ class Porter(Learner):
         )
         result_outcomes = []
         for result, error in zip(results, errors):
-            result_outcome = Porter.RetrievalOutcome(
+            result_outcome = Porter.PRERetrievalOutcome(
                 cfrags=result.cfrags, errors=error.errors
             )
             result_outcomes.append(result_outcome)
         return result_outcomes
 
     def cbd_decrypt(
-        self, threshold: int, decryption_requests: Dict[ChecksumAddress, bytes]
+        self,
+        threshold: int,
+        encrypted_decryption_requests: Dict[ChecksumAddress, bytes],
     ) -> List[CBDDecryptionOutcome]:
         pass
 
