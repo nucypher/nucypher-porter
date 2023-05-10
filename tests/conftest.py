@@ -5,7 +5,7 @@ import pytest
 from click.testing import CliRunner
 from eth_typing import ChecksumAddress
 from eth_utils import to_checksum_address
-from ferveo_py import Ciphertext, DkgPublicKey, DkgPublicParameters, Validator
+from ferveo_py import DkgPublicKey, DkgPublicParameters, Validator
 from nucypher.blockchain.economics import Economics, EconomicsFactory
 from nucypher.blockchain.eth.actors import Operator
 from nucypher.blockchain.eth.agents import (
@@ -24,12 +24,12 @@ from nucypher.network.nodes import Learner, Teacher
 from nucypher.policy.conditions.types import LingoList
 from nucypher.utilities.logging import GlobalLoggerSettings
 from nucypher_core import HRAC, Address, TreasureMap
-
-from porter.emitters import WebEmitter
-from porter.main import Porter
 from tests.constants import MOCK_ETH_PROVIDER_URI
 from tests.mock.coordinator import MockCoordinatorAgent
 from tests.mock.interfaces import MockBlockchain, mock_registry_source_manager
+
+from porter.emitters import WebEmitter
+from porter.main import Porter
 
 # Crash on server error by default
 WebEmitter._crash_on_error_default = True

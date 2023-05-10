@@ -38,11 +38,11 @@ def test_cbd_decryption(porter, dkg_setup, dkg_encrypted_data):
     # no errors
     assert len(cbd_outcome.errors) == 0
 
-    ursula_addresses = [ursula.checksum_address for ursula in cohort]
+    cohort_addresses = [ursula.checksum_address for ursula in cohort]
 
     decryption_shares = []
     for ursula_address, response_bytes in cbd_outcome.decryption_responses.items():
-        assert ursula_address in ursula_addresses
+        assert ursula_address in cohort_addresses
         assert len(response_bytes) > 0
         decryption_response = ThresholdDecryptionResponse.from_bytes(response_bytes)
         decryption_share = DecryptionShareSimple.from_bytes(
