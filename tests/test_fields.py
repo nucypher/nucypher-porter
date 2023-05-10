@@ -58,8 +58,6 @@ def test_ursula_checksum_address_field(get_random_checksum_address):
         field._deserialize(value="0xdeadbeef", attr=None, data=None)
 
 
-
-
 def test_ursula_checksum_address_string_list_field(get_random_checksum_address):
     ursula_1 = get_random_checksum_address()
     ursula_2 = get_random_checksum_address()
@@ -259,6 +257,7 @@ def test_cbd_json_dict_field(get_random_checksum_address):
             encrypted_decryption_request
         ).decode()
 
+    # mimic usage for CBD
     field = JSONDict(keys=UrsulaChecksumAddress(), values=Base64BytesRepresentation())
     serialized = field._serialize(value=original_data, attr=None, obj=None)
     assert serialized == json.dumps(expected_serialized_result)

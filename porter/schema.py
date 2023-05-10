@@ -203,6 +203,7 @@ class PRERetrieveCFrags(BaseSchema):
 # CBD Endpoints
 #
 
+
 class CBDDecryptionOutcomeSchema(BaseSchema):
     """Schema for the result of /retrieve_cfrags endpoint."""
     decryption_responses = Dict(keys=UrsulaChecksumAddress(), values=Base64BytesRepresentation())
@@ -232,7 +233,7 @@ class CBDDecrypt(BaseSchema):
         load_only=True,
         click=click.option(
             "--encrypted-decryption-requests",
-            "-erec",
+            "-e",
             help="Encrypted decryption requests dictionary keyed by ursula address",
             type=click.STRING,
             required=False,

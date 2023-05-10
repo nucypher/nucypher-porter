@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Dict, List, NamedTuple, Optional, Sequence
 
-from constant_sorrow.constants import NO_BLOCKCHAIN_CONNECTION, NO_CONTROL_PROTOCOL
+from constant_sorrow.constants import NO_CONTROL_PROTOCOL
 from eth_typing import ChecksumAddress
 from eth_utils import to_checksum_address
 from flask import Response, request
@@ -13,6 +13,7 @@ from nucypher.blockchain.eth.registry import (
 )
 from nucypher.characters.lawful import Ursula
 from nucypher.crypto.powers import DecryptingPower
+from nucypher.network.decryption import ThresholdDecryptionClient
 from nucypher.network.nodes import Learner
 from nucypher.network.retrieval import PRERetrievalClient
 from nucypher.policy.reservoir import PrefetchStrategy, make_staking_provider_reservoir
@@ -72,8 +73,8 @@ class Porter(Learner):
         one or more Ursulas.
         """
 
-        decryption_responses: Dict
-        errors: Dict
+        decryption_responses: Dict[ChecksumAddress, bytes]
+        errors: Dict[ChecksumAddress, str]
 
     def __init__(self,
                  domain: str = None,
@@ -180,8 +181,17 @@ class Porter(Learner):
         self,
         threshold: int,
         encrypted_decryption_requests: Dict[ChecksumAddress, bytes],
-    ) -> List[CBDDecryptionOutcome]:
-        pass
+    ) -> CBDDecryptionOutcome:
+        decryption_client = ThresholdDecryptionClient(self)
+        successes, failures = decryption_client.gather_encrypted_decryption_shares(
+            encrypted_requests=encrypted_decryption_requests, threshold=threshold
+        )
+
+        cbd_outcome = Porter.CBDDecryptionOutcome(
+            decryption_responses=successes, errors=failures
+        )
+        return cbd_outcome
+
 
     def _make_reservoir(
         self,
