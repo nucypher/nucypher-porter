@@ -4,20 +4,23 @@ import random
 import pytest
 from nucypher.crypto.powers import DecryptingPower
 from nucypher_core import TreasureMap as TreasureMapClass
-from nucypher_core.umbral import PublicKey
-from nucypher_core.umbral import SecretKey
+from nucypher_core.umbral import PublicKey, SecretKey
 
-from porter.fields.exceptions import SpecificationError, InvalidInputData, InvalidArgumentCombo
-from porter.fields.umbralkey import UmbralKey
+from porter.fields.exceptions import (
+    InvalidArgumentCombo,
+    InvalidInputData,
+    SpecificationError,
+)
 from porter.fields.treasuremap import TreasureMap
+from porter.fields.umbralkey import UmbralKey
 from porter.main import Porter
 from porter.schema import (
+    BaseSchema,
     PREGetUrsulas,
+    PRERetrievalOutcomeSchema,
     PRERetrieveCFrags,
-    UrsulaInfoSchema
+    UrsulaInfoSchema,
 )
-from porter.schema import BaseSchema
-from porter.schema import PRERetrievalOutcomeSchema
 from porter.utils import retrieval_request_setup
 
 
@@ -32,14 +35,14 @@ def test_alice_get_ursulas_schema(get_random_checksum_address):
 
     quantity = 10
     required_data = {
-        'quantity': quantity,
+        "quantity": quantity,
     }
 
     # required args
     PREGetUrsulas().load(required_data)
 
     # missing required args
-    updated_data = {k: v for k, v in required_data.items() if k != 'quantity'}
+    updated_data = {k: v for k, v in required_data.items() if k != "quantity"}
     with pytest.raises(InvalidInputData):
         PREGetUrsulas().load(updated_data)
 
@@ -50,7 +53,7 @@ def test_alice_get_ursulas_schema(get_random_checksum_address):
     exclude_ursulas = []
     for i in range(2):
         exclude_ursulas.append(get_random_checksum_address())
-    updated_data['exclude_ursulas'] = exclude_ursulas
+    updated_data["exclude_ursulas"] = exclude_ursulas
     PREGetUrsulas().load(updated_data)
 
     # only include
@@ -58,44 +61,44 @@ def test_alice_get_ursulas_schema(get_random_checksum_address):
     include_ursulas = []
     for i in range(3):
         include_ursulas.append(get_random_checksum_address())
-    updated_data['include_ursulas'] = include_ursulas
+    updated_data["include_ursulas"] = include_ursulas
     PREGetUrsulas().load(updated_data)
 
     # both exclude and include
     updated_data = dict(required_data)
-    updated_data['exclude_ursulas'] = exclude_ursulas
-    updated_data['include_ursulas'] = include_ursulas
+    updated_data["exclude_ursulas"] = exclude_ursulas
+    updated_data["include_ursulas"] = include_ursulas
     PREGetUrsulas().load(updated_data)
 
     # list input formatted as ',' separated strings
     updated_data = dict(required_data)
-    updated_data['exclude_ursulas'] = ','.join(exclude_ursulas)
-    updated_data['include_ursulas'] = ','.join(include_ursulas)
+    updated_data["exclude_ursulas"] = ",".join(exclude_ursulas)
+    updated_data["include_ursulas"] = ",".join(include_ursulas)
     data = PREGetUrsulas().load(updated_data)
-    assert data['exclude_ursulas'] == exclude_ursulas
-    assert data['include_ursulas'] == include_ursulas
+    assert data["exclude_ursulas"] == exclude_ursulas
+    assert data["include_ursulas"] == include_ursulas
 
     # single value as string cast to list
     updated_data = dict(required_data)
-    updated_data['exclude_ursulas'] = exclude_ursulas[0]
-    updated_data['include_ursulas'] = include_ursulas[0]
+    updated_data["exclude_ursulas"] = exclude_ursulas[0]
+    updated_data["include_ursulas"] = include_ursulas[0]
     data = PREGetUrsulas().load(updated_data)
-    assert data['exclude_ursulas'] == [exclude_ursulas[0]]
-    assert data['include_ursulas'] == [include_ursulas[0]]
+    assert data["exclude_ursulas"] == [exclude_ursulas[0]]
+    assert data["include_ursulas"] == [include_ursulas[0]]
 
     # invalid include entry
     updated_data = dict(required_data)
-    updated_data['exclude_ursulas'] = exclude_ursulas
-    updated_data['include_ursulas'] = list(include_ursulas)  # make copy to modify
-    updated_data['include_ursulas'].append("0xdeadbeef")
+    updated_data["exclude_ursulas"] = exclude_ursulas
+    updated_data["include_ursulas"] = list(include_ursulas)  # make copy to modify
+    updated_data["include_ursulas"].append("0xdeadbeef")
     with pytest.raises(InvalidInputData):
         PREGetUrsulas().load(updated_data)
 
     # invalid exclude entry
     updated_data = dict(required_data)
-    updated_data['exclude_ursulas'] = list(exclude_ursulas)  # make copy to modify
-    updated_data['exclude_ursulas'].append("0xdeadbeef")
-    updated_data['include_ursulas'] = include_ursulas
+    updated_data["exclude_ursulas"] = list(exclude_ursulas)  # make copy to modify
+    updated_data["exclude_ursulas"].append("0xdeadbeef")
+    updated_data["include_ursulas"] = include_ursulas
     with pytest.raises(InvalidInputData):
         PREGetUrsulas().load(updated_data)
 
@@ -104,25 +107,29 @@ def test_alice_get_ursulas_schema(get_random_checksum_address):
     too_many_ursulas_to_include = []
     while len(too_many_ursulas_to_include) <= quantity:
         too_many_ursulas_to_include.append(get_random_checksum_address())
-    updated_data['include_ursulas'] = too_many_ursulas_to_include
+    updated_data["include_ursulas"] = too_many_ursulas_to_include
     with pytest.raises(InvalidArgumentCombo):
         # number of ursulas to include exceeds quantity to sample
         PREGetUrsulas().load(updated_data)
 
     # include and exclude addresses are not mutually exclusive - include has common entry
     updated_data = dict(required_data)
-    updated_data['exclude_ursulas'] = exclude_ursulas
-    updated_data['include_ursulas'] = list(include_ursulas)  # make copy to modify
-    updated_data['include_ursulas'].append(exclude_ursulas[0])  # one address that overlaps
+    updated_data["exclude_ursulas"] = exclude_ursulas
+    updated_data["include_ursulas"] = list(include_ursulas)  # make copy to modify
+    updated_data["include_ursulas"].append(
+        exclude_ursulas[0]
+    )  # one address that overlaps
     with pytest.raises(InvalidArgumentCombo):
         # 1 address in both include and exclude lists
         PREGetUrsulas().load(updated_data)
 
     # include and exclude addresses are not mutually exclusive - exclude has common entry
     updated_data = dict(required_data)
-    updated_data['exclude_ursulas'] = list(exclude_ursulas)  # make copy to modify
-    updated_data['exclude_ursulas'].append(include_ursulas[0])  # on address that overlaps
-    updated_data['include_ursulas'] = include_ursulas
+    updated_data["exclude_ursulas"] = list(exclude_ursulas)  # make copy to modify
+    updated_data["exclude_ursulas"].append(
+        include_ursulas[0]
+    )  # on address that overlaps
+    updated_data["include_ursulas"] = include_ursulas
     with pytest.raises(InvalidArgumentCombo):
         # 1 address in both include and exclude lists
         PREGetUrsulas().load(updated_data)
@@ -134,15 +141,17 @@ def test_alice_get_ursulas_schema(get_random_checksum_address):
     expected_ursulas_info = []
     port = 11500
     for i in range(3):
-        ursula_info = Porter.UrsulaInfo(get_random_checksum_address(),
-                                        f"https://127.0.0.1:{port+i}",
-                                        SecretKey.random().public_key())
+        ursula_info = Porter.UrsulaInfo(
+            get_random_checksum_address(),
+            f"https://127.0.0.1:{port+i}",
+            SecretKey.random().public_key(),
+        )
         ursulas_info.append(ursula_info)
 
         # use schema to determine expected output (encrypting key gets changed to hex)
         expected_ursulas_info.append(UrsulaInfoSchema().dump(ursula_info))
 
-    output = PREGetUrsulas().dump(obj={'ursulas': ursulas_info})
+    output = PREGetUrsulas().dump(obj={"ursulas": ursulas_info})
     assert output == {"ursulas": expected_ursulas_info}
 
 
@@ -150,12 +159,14 @@ def test_alice_revoke():
     pass  # TODO
 
 
-def test_bob_retrieve_cfrags(porter,
-                             enacted_policy,
-                             bob,
-                             alice,
-                             valid_user_address_context,
-                             get_random_checksum_address):
+def test_bob_retrieve_cfrags(
+    porter,
+    enacted_policy,
+    bob,
+    alice,
+    valid_user_address_context,
+    get_random_checksum_address,
+):
     bob_retrieve_cfrags_schema = PRERetrieveCFrags()
 
     # no args
@@ -163,10 +174,9 @@ def test_bob_retrieve_cfrags(porter,
         bob_retrieve_cfrags_schema.load({})
 
     # Setup - no context
-    retrieval_args, _ = retrieval_request_setup(enacted_policy,
-                                                bob,
-                                                alice,
-                                                encode_for_rest=True)
+    retrieval_args, _ = retrieval_request_setup(
+        enacted_policy, bob, alice, encode_for_rest=True
+    )
     bob_retrieve_cfrags_schema.load(retrieval_args)
 
     # simple schema load w/ optional context
@@ -317,63 +327,70 @@ def test_bob_retrieve_cfrags(porter,
 def make_header(brand: bytes, major: int, minor: int) -> bytes:
     # Hardcoding this since it's too much trouble to expose it all the way from Rust
     assert len(brand) == 4
-    major_bytes = major.to_bytes(2, 'big')
-    minor_bytes = minor.to_bytes(2, 'big')
+    major_bytes = major.to_bytes(2, "big")
+    minor_bytes = minor.to_bytes(2, "big")
     header = brand + major_bytes + minor_bytes
     return header
 
 
-def test_treasure_map_validation(enacted_policy,
-                                 bob):
+def test_treasure_map_validation(enacted_policy, bob):
     class UnenncryptedTreasureMapsOnly(BaseSchema):
         tmap = TreasureMap()
 
     # this will raise a base64 error
     with pytest.raises(SpecificationError) as e:
-        UnenncryptedTreasureMapsOnly().load({'tmap': "your face looks like a treasure map"})
+        UnenncryptedTreasureMapsOnly().load(
+            {"tmap": "your face looks like a treasure map"}
+        )
 
     # assert that field name is in the error message
     assert "Could not parse tmap" in str(e)
     assert "Invalid base64-encoded string" in str(e)
 
     # valid base64 but invalid treasuremap
-    bad_map = make_header(b'TMap', 1, 0) + b"your face looks like a treasure map"
+    bad_map = make_header(b"TMap", 1, 0) + b"your face looks like a treasure map"
     bad_map_b64 = base64.b64encode(bad_map).decode()
 
     with pytest.raises(InvalidInputData) as e:
-        UnenncryptedTreasureMapsOnly().load({'tmap': bad_map_b64})
+        UnenncryptedTreasureMapsOnly().load({"tmap": bad_map_b64})
 
     assert "Could not convert input for tmap to a TreasureMap" in str(e)
     assert "Failed to deserialize" in str(e)
 
     # a valid treasuremap
-    decrypted_treasure_map = bob._decrypt_treasure_map(enacted_policy.treasure_map,
-                                                                 enacted_policy.publisher_verifying_key)
+    decrypted_treasure_map = bob._decrypt_treasure_map(
+        enacted_policy.treasure_map, enacted_policy.publisher_verifying_key
+    )
     tmap_bytes = bytes(decrypted_treasure_map)
     tmap_b64 = base64.b64encode(tmap_bytes).decode()
-    result = UnenncryptedTreasureMapsOnly().load({'tmap': tmap_b64})
-    assert isinstance(result['tmap'], TreasureMapClass)
+    result = UnenncryptedTreasureMapsOnly().load({"tmap": tmap_b64})
+    assert isinstance(result["tmap"], TreasureMapClass)
 
 
 def test_key_validation(bob):
-
     class BobKeyInputRequirer(BaseSchema):
         bobkey = UmbralKey()
 
     with pytest.raises(InvalidInputData) as e:
-        BobKeyInputRequirer().load({'bobkey': "I am the key to nothing"})
+        BobKeyInputRequirer().load({"bobkey": "I am the key to nothing"})
     assert "non-hexadecimal number found in fromhex()" in str(e)
     assert "bobkey" in str(e)
 
     with pytest.raises(InvalidInputData) as e:
-        BobKeyInputRequirer().load({'bobkey': "I am the key to nothing"})
+        BobKeyInputRequirer().load({"bobkey": "I am the key to nothing"})
     assert "non-hexadecimal number found in fromhex()" in str(e)
     assert "bobkey" in str(e)
 
     with pytest.raises(InvalidInputData) as e:
         # lets just take a couple bytes off (less bytes than required)
-        BobKeyInputRequirer().load({'bobkey': "02f0cb3f3a33f16255d9b2586e6c56570aa07bbeb1157e169f1fb114ffb40037"})
+        BobKeyInputRequirer().load(
+            {
+                "bobkey": "02f0cb3f3a33f16255d9b2586e6c56570aa07bbeb1157e169f1fb114ffb40037"
+            }
+        )
     assert "Could not convert input for bobkey to an Umbral Key" in str(e)
 
-    result = BobKeyInputRequirer().load(dict(bobkey=bob.public_keys(DecryptingPower).to_compressed_bytes().hex()))
-    assert isinstance(result['bobkey'], PublicKey)
+    result = BobKeyInputRequirer().load(
+        dict(bobkey=bob.public_keys(DecryptingPower).to_compressed_bytes().hex())
+    )
+    assert isinstance(result["bobkey"], PublicKey)

@@ -241,6 +241,16 @@ class CBDDecrypt(BaseSchema):
     )
 
     # output
-    retrieval_results = marshmallow_fields.List(
-        marshmallow_fields.Nested(CBDDecryptionOutcomeSchema), dump_only=True
+    decryption_results = marshmallow_fields.Nested(
+        CBDDecryptionOutcomeSchema, dump_only=True
     )
+
+    @validates_schema
+    def check_valid_threshold_and_requests(self, data, **kwargs):
+        # TODO is this check a good thing? What about re-requests after failures?
+        threshold = data.get("threshold")
+        encrypted_decryption_requests = data.get("encrypted_decryption_requests")
+        if len(encrypted_decryption_requests) < threshold:
+            raise InvalidArgumentCombo(
+                f"Number of provided requests must be >= the expected threshold"
+            )
