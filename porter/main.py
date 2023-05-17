@@ -19,7 +19,12 @@ from nucypher.network.retrieval import PRERetrievalClient
 from nucypher.policy.reservoir import PrefetchStrategy, make_staking_provider_reservoir
 from nucypher.utilities.concurrency import WorkerPool
 from nucypher.utilities.logging import Logger
-from nucypher_core import RetrievalKit, TreasureMap
+from nucypher_core import (
+    EncryptedThresholdDecryptionRequest,
+    EncryptedThresholdDecryptionResponse,
+    RetrievalKit,
+    TreasureMap,
+)
 from nucypher_core.umbral import PublicKey
 
 from porter.controllers import PorterCLIController, WebController
@@ -73,7 +78,9 @@ class Porter(Learner):
         one or more Ursulas.
         """
 
-        decryption_responses: Dict[ChecksumAddress, bytes]
+        encrypted_decryption_responses: Dict[
+            ChecksumAddress, EncryptedThresholdDecryptionResponse
+        ]
         errors: Dict[ChecksumAddress, str]
 
     def __init__(self,
@@ -180,7 +187,9 @@ class Porter(Learner):
     def cbd_decrypt(
         self,
         threshold: int,
-        encrypted_decryption_requests: Dict[ChecksumAddress, bytes],
+        encrypted_decryption_requests: Dict[
+            ChecksumAddress, EncryptedThresholdDecryptionRequest
+        ],
     ) -> CBDDecryptionOutcome:
         decryption_client = ThresholdDecryptionClient(self)
         successes, failures = decryption_client.gather_encrypted_decryption_shares(
@@ -188,7 +197,7 @@ class Porter(Learner):
         )
 
         cbd_outcome = Porter.CBDDecryptionOutcome(
-            decryption_responses=successes, errors=failures
+            encrypted_decryption_responses=successes, errors=failures
         )
         return cbd_outcome
 

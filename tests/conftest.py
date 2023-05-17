@@ -19,17 +19,21 @@ from nucypher.blockchain.eth.registry import InMemoryContractRegistry
 from nucypher.characters.lawful import Enrico, Ursula
 from nucypher.config.constants import TEMPORARY_DOMAIN
 from nucypher.crypto.ferveo import dkg
-from nucypher.crypto.powers import DecryptingPower, RitualisticPower
+from nucypher.crypto.powers import (
+    DecryptingPower,
+    RitualisticPower,
+    ThresholdRequestDecryptingPower,
+)
 from nucypher.network.nodes import Learner, Teacher
 from nucypher.policy.conditions.types import LingoList
 from nucypher.utilities.logging import GlobalLoggerSettings
 from nucypher_core import HRAC, Address, TreasureMap
-from tests.constants import MOCK_ETH_PROVIDER_URI
-from tests.mock.coordinator import MockCoordinatorAgent
-from tests.mock.interfaces import MockBlockchain, mock_registry_source_manager
 
 from porter.emitters import WebEmitter
 from porter.main import Porter
+from tests.constants import MOCK_ETH_PROVIDER_URI
+from tests.mock.coordinator import MockCoordinatorAgent
+from tests.mock.interfaces import MockBlockchain, mock_registry_source_manager
 
 # Crash on server error by default
 WebEmitter._crash_on_error_default = True
@@ -299,6 +303,9 @@ def dkg_setup(
                 provider=ursula.checksum_address,
                 aggregated=True,
                 transcript=bytes(transcripts[i]),
+                requestEncryptingKey=ursula.threshold_request_power.get_pubkey_from_ritual_id(
+                    ritual_id
+                ),
             )
             for i, ursula in enumerate(cohort)
         ],
