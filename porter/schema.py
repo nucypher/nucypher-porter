@@ -14,8 +14,8 @@ from porter.fields.base import (
     StringList,
 )
 from porter.fields.cbd import (
-    EncryptedThresholdDecryptionRequest,
-    EncryptedThresholdDecryptionResponse,
+    EncryptedThresholdDecryptionRequestField,
+    EncryptedThresholdDecryptionResponseField,
 )
 from porter.fields.exceptions import InvalidArgumentCombo, InvalidInputData
 from porter.fields.retrieve import CapsuleFrag, RetrievalKit
@@ -212,7 +212,7 @@ class CBDDecryptionOutcomeSchema(BaseSchema):
     """Schema for the result of /retrieve_cfrags endpoint."""
 
     encrypted_decryption_responses = Dict(
-        keys=UrsulaChecksumAddress(), values=EncryptedThresholdDecryptionResponse()
+        keys=UrsulaChecksumAddress(), values=EncryptedThresholdDecryptionResponseField()
     )
     errors = Dict(keys=UrsulaChecksumAddress(), values=String())
 
@@ -235,7 +235,7 @@ class CBDDecrypt(BaseSchema):
     )
     encrypted_decryption_requests = JSONDict(
         keys=UrsulaChecksumAddress(),
-        values=EncryptedThresholdDecryptionRequest(),
+        values=EncryptedThresholdDecryptionRequestField(),
         required=True,
         load_only=True,
         click=click.option(

@@ -9,10 +9,18 @@ from porter.fields.base import Base64BytesRepresentation
 from porter.fields.exceptions import InvalidInputData
 
 
-class EncryptedThresholdDecryptionRequest(Base64BytesRepresentation):
+class EncryptedThresholdDecryptionRequestField(Base64BytesRepresentation):
     """
     Parameter representation of encrypted threshold decryption request.
     """
+
+    def _serialize(self, value, attr, obj, **kwargs):
+        if not isinstance(value, EncryptedThresholdDecryptionRequestClass):
+            raise InvalidInputData(
+                f"Provided object is not an {EncryptedThresholdDecryptionRequestClass.__name__}"
+            )
+
+        return super()._serialize(value, attr, obj, **kwargs)
 
     def _deserialize(self, value, attr, data, **kwargs):
         try:
@@ -24,11 +32,23 @@ class EncryptedThresholdDecryptionRequest(Base64BytesRepresentation):
             )
         except Exception as e:
             raise InvalidInputData(
-                f"Could not convert input for {self.name} to an EncryptedThresholdDecryptionRequest: {e}"
+                f"Could not convert input for {self.name} to an {EncryptedThresholdDecryptionRequestClass.__name__}: {e}"
             ) from e
 
 
-class EncryptedThresholdDecryptionResponse(Base64BytesRepresentation):
+class EncryptedThresholdDecryptionResponseField(Base64BytesRepresentation):
+    """
+    Parameter representation of encrypted threshold decryption response.
+    """
+
+    def _serialize(self, value, attr, obj, **kwargs):
+        if not isinstance(value, EncryptedThresholdDecryptionResponseClass):
+            raise InvalidInputData(
+                f"Provided object is not an {EncryptedThresholdDecryptionResponseClass.__name__}"
+            )
+
+        return super()._serialize(value, attr, obj, **kwargs)
+
     def _deserialize(self, value, attr, data, **kwargs):
         try:
             encrypted_decryption_response_bytes = super()._deserialize(
@@ -39,5 +59,5 @@ class EncryptedThresholdDecryptionResponse(Base64BytesRepresentation):
             )
         except Exception as e:
             raise InvalidInputData(
-                f"Could not convert input for {self.name} to an EncryptedThresholdDecryptionResponse: {e}"
+                f"Could not convert input for {self.name} to an {EncryptedThresholdDecryptionResponseClass.__name__}: {e}"
             ) from e

@@ -1,16 +1,14 @@
 import json
-from base64 import b64encode
 
 import pytest
 from eth_utils import to_checksum_address
 from nucypher.crypto.ferveo.dkg import FerveoVariant
-from nucypher.crypto.powers import ThresholdRequestDecryptingPower
 from nucypher_core import Conditions, ThresholdDecryptionRequest
 from nucypher_core.umbral import SecretKey
 
 from porter.fields.cbd import (
-    EncryptedThresholdDecryptionRequest,
-    EncryptedThresholdDecryptionResponse,
+    EncryptedThresholdDecryptionRequestField,
+    EncryptedThresholdDecryptionResponseField,
 )
 from porter.fields.exceptions import InvalidArgumentCombo, InvalidInputData
 from porter.main import Porter
@@ -34,7 +32,7 @@ def test_cbd_decrypt(
 
     response_sk = SecretKey.random()
 
-    encrypted_request_field = EncryptedThresholdDecryptionRequest()
+    encrypted_request_field = EncryptedThresholdDecryptionRequestField()
     encrypted_decryption_requests = {}
     for ursula in cohort:
         request_encrypting_key = (
@@ -142,7 +140,7 @@ def test_cbd_decrypt(
         output["decryption_results"]["encrypted_decryption_responses"]
         == outcome_json["encrypted_decryption_responses"]
     )
-    encrypted_response_field = EncryptedThresholdDecryptionResponse()
+    encrypted_response_field = EncryptedThresholdDecryptionResponseField()
     for (
         ursula_checksum_address,
         encrypted_decryption_response,

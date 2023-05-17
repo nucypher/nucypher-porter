@@ -1,6 +1,5 @@
 import json
-import os
-from base64 import b64decode, b64encode
+from base64 import b64decode
 
 from eth_utils import to_checksum_address
 from ferveo_py import (
@@ -14,11 +13,10 @@ from nucypher_core import (
     Conditions,
     EncryptedThresholdDecryptionResponse,
     ThresholdDecryptionRequest,
-    ThresholdDecryptionResponse,
 )
 from nucypher_core.umbral import SecretKey
 
-from porter.fields.cbd import EncryptedThresholdDecryptionRequest
+from porter.fields.cbd import EncryptedThresholdDecryptionRequestField
 
 
 def test_cbd_decrypt(
@@ -46,7 +44,7 @@ def test_cbd_decrypt(
 
     response_sk = SecretKey.random()
 
-    encrypted_request_field = EncryptedThresholdDecryptionRequest()
+    encrypted_request_field = EncryptedThresholdDecryptionRequestField()
     encrypted_decryption_requests = {}
     for ursula in cohort:
         request_encrypting_key = (
@@ -158,4 +156,4 @@ def test_cbd_decrypt(
     assert decryption_results
     assert len(decryption_results["encrypted_decryption_responses"]) == (threshold - 1)
     errors = decryption_results["errors"]
-    assert len(errors) == (len(cohort) - threshold + 1)
+    assert len(errors) == (len(cohort) - (threshold - 1))

@@ -69,3 +69,26 @@ def test_cbd_decryption(porter, dkg_setup, dkg_encrypted_data):
         params,  # dkg params
     )
     assert bytes(cleartext) == expected_plaintext
+
+    #
+    # errors - invalid encrypting key used for request
+    #
+    random_public_key = SecretKey.random().public_key()
+    encrypted_decryption_requests = {}
+    for ursula in cohort:
+        encrypted_decryption_requests[
+            ursula.checksum_address
+        ] = decryption_request.encrypt(
+            request_encrypting_key=random_public_key,
+            response_encrypting_key=response_sk.public_key(),
+        )
+
+    cbd_outcome = porter.cbd_decrypt(
+        threshold=threshold, encrypted_decryption_requests=encrypted_decryption_requests
+    )
+
+    # sufficient successes
+    assert len(cbd_outcome.encrypted_decryption_responses) == 0
+
+    # no errors
+    assert len(cbd_outcome.errors) == len(cohort)  # all ursulas fail
