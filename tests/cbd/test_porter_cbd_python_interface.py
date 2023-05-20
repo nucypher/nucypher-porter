@@ -16,7 +16,7 @@ def test_cbd_decryption(porter, dkg_setup, dkg_encrypted_data):
     ciphertext, expected_plaintext, conditions = dkg_encrypted_data
 
     decryption_request = ThresholdDecryptionRequest(
-        id=ritual_id,
+        ritual_id=ritual_id,
         variant=int(FerveoVariant.SIMPLE.value),
         ciphertext=ciphertext,
         conditions=Conditions(json.dumps(conditions)),

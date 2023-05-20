@@ -36,7 +36,7 @@ def test_cbd_decrypt(
     ciphertext, expected_plaintext, conditions = dkg_encrypted_data
 
     decryption_request = ThresholdDecryptionRequest(
-        id=ritual_id,
+        ritual_id=ritual_id,
         variant=int(FerveoVariant.SIMPLE.value),
         ciphertext=bytes(ciphertext),
         conditions=Conditions(json.dumps(conditions)),
@@ -126,7 +126,7 @@ def test_cbd_decrypt(
         else:
             # invalid data
             request = ThresholdDecryptionRequest(
-                id=999,  # rando invalid ritual id
+                ritual_id=999,  # rando invalid ritual id
                 variant=int(FerveoVariant.SIMPLE.value),
                 ciphertext=bytes(ciphertext),
                 conditions=Conditions(json.dumps(conditions)),

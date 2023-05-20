@@ -24,7 +24,7 @@ def test_cbd_decrypt(
     cbd_decrypt_schema = CBDDecrypt()
 
     decryption_request = ThresholdDecryptionRequest(
-        id=ritual_id,
+        ritual_id=ritual_id,
         variant=int(FerveoVariant.SIMPLE.value),
         ciphertext=bytes(ciphertext),
         conditions=Conditions(json.dumps(conditions)),

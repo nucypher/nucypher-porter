@@ -306,7 +306,7 @@ def test_encrypted_threshold_decryption_request(dkg_setup, dkg_encrypted_data):
     ciphertext, expected_plaintext, conditions = dkg_encrypted_data
 
     decryption_request = ThresholdDecryptionRequest(
-        id=ritual_id,
+        ritual_id=ritual_id,
         variant=int(FerveoVariant.SIMPLE.value),
         ciphertext=bytes(ciphertext),
         conditions=Conditions(json.dumps(conditions)),
@@ -330,7 +330,7 @@ def test_encrypted_threshold_decryption_request(dkg_setup, dkg_encrypted_data):
     assert isinstance(
         deserialized_encrypted_request, EncryptedThresholdDecryptionRequest
     )
-    assert deserialized_encrypted_request.id == ritual_id
+    assert deserialized_encrypted_request.ritual_id == ritual_id
     assert bytes(deserialized_encrypted_request) == bytes(encrypted_request)
 
     deserialized_request = deserialized_encrypted_request.decrypt(
