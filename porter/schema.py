@@ -1,16 +1,22 @@
 import click
-from marshmallow import fields as marshmallow_fields, Schema, INCLUDE
+from marshmallow import INCLUDE, Schema
+from marshmallow import fields as marshmallow_fields
 from marshmallow import validates_schema
-from marshmallow.fields import String, Dict
-from marshmallow.fields import URL
+from marshmallow.fields import URL, Dict, String
 
 from porter.cli.types import EIP55_CHECKSUM_ADDRESS
-from porter.fields.base import StringList, PositiveInteger, JSON
-from porter.fields.exceptions import InvalidArgumentCombo
-from porter.fields.exceptions import InvalidInputData
-from porter.fields.key import Key
-from porter.fields.retrieve import RetrievalKit, CapsuleFrag
+from porter.fields.base import (
+    JSON,
+    Base64BytesRepresentation,
+    Integer,
+    JSONDict,
+    PositiveInteger,
+    StringList,
+)
+from porter.fields.exceptions import InvalidArgumentCombo, InvalidInputData
+from porter.fields.retrieve import CapsuleFrag, RetrievalKit
 from porter.fields.treasuremap import TreasureMap
+from porter.fields.umbralkey import UmbralKey
 from porter.fields.ursula import UrsulaChecksumAddress
 
 
@@ -45,7 +51,7 @@ class UrsulaInfoSchema(BaseSchema):
     """Schema for the result of sampling of Ursulas."""
     checksum_address = UrsulaChecksumAddress()
     uri = URL()
-    encrypting_key = Key()
+    encrypting_key = UmbralKey()
 
     # maintain field declaration ordering
     class Meta:
@@ -53,9 +59,8 @@ class UrsulaInfoSchema(BaseSchema):
 
 
 #
-# Alice Endpoints
+# PRE Endpoints
 #
-
 
 class PREGetUrsulas(BaseSchema):
     quantity = PositiveInteger(
@@ -119,19 +124,15 @@ class PRERevoke(BaseSchema):
     pass  # TODO need to understand revoke process better
 
 
-class RetrievalOutcomeSchema(BaseSchema):
+class PRERetrievalOutcomeSchema(BaseSchema):
     """Schema for the result of /retrieve_cfrags endpoint."""
-    cfrags = Dict(keys=UrsulaChecksumAddress(), values=CapsuleFrag())
-    errors = Dict(keys=UrsulaChecksumAddress(), values=String())
+
+    cfrags = marshmallow_fields.Dict(keys=UrsulaChecksumAddress(), values=CapsuleFrag())
+    errors = marshmallow_fields.Dict(keys=UrsulaChecksumAddress(), values=String())
 
     # maintain field declaration ordering
     class Meta:
         ordered = True
-
-
-#
-# Bob Endpoints
-#
 
 
 class PRERetrieveCFrags(BaseSchema):
@@ -156,7 +157,7 @@ class PRERetrieveCFrags(BaseSchema):
             default=[]),
         required=True,
         load_only=True)
-    alice_verifying_key = Key(
+    alice_verifying_key = UmbralKey(
         required=True,
         load_only=True,
         click=click.option(
@@ -165,11 +166,11 @@ class PRERetrieveCFrags(BaseSchema):
             help="Alice's verifying key as a hexadecimal string",
             type=click.STRING,
             required=True))
-    bob_encrypting_key = Key(
+    bob_encrypting_key = UmbralKey(
         required=True,
         load_only=True,
         click=option_bob_encrypting_key())
-    bob_verifying_key = Key(
+    bob_verifying_key = UmbralKey(
         required=True,
         load_only=True,
         click=click.option(
@@ -195,6 +196,61 @@ class PRERetrieveCFrags(BaseSchema):
 
     # output
     retrieval_results = marshmallow_fields.List(
-        marshmallow_fields.Nested(RetrievalOutcomeSchema), dump_only=True
+        marshmallow_fields.Nested(PRERetrievalOutcomeSchema), dump_only=True
     )
 
+#
+# CBD Endpoints
+#
+
+
+class CBDDecryptionOutcomeSchema(BaseSchema):
+    """Schema for the result of /retrieve_cfrags endpoint."""
+    decryption_responses = Dict(keys=UrsulaChecksumAddress(), values=Base64BytesRepresentation())
+    errors = Dict(keys=UrsulaChecksumAddress(), values=String())
+
+    # maintain field declaration ordering
+    class Meta:
+        ordered = True
+
+
+class CBDDecrypt(BaseSchema):
+    threshold = Integer(
+        required=True,
+        load_only=True,
+        click=click.option(
+            "--decryption-threshold",
+            "-d",
+            help="Threshold of decryption responses required",
+            type=click.INT,
+            required=True
+        )
+    )
+    encrypted_decryption_requests = JSONDict(
+        keys=UrsulaChecksumAddress(),
+        values=Base64BytesRepresentation(),
+        required=True,
+        load_only=True,
+        click=click.option(
+            "--encrypted-decryption-requests",
+            "-e",
+            help="Encrypted decryption requests dictionary keyed by ursula address",
+            type=click.STRING,
+            required=False,
+        ),
+    )
+
+    # output
+    decryption_results = marshmallow_fields.Nested(
+        CBDDecryptionOutcomeSchema, dump_only=True
+    )
+
+    @validates_schema
+    def check_valid_threshold_and_requests(self, data, **kwargs):
+        # TODO is this check a good thing? What about re-requests after failures?
+        threshold = data.get("threshold")
+        encrypted_decryption_requests = data.get("encrypted_decryption_requests")
+        if len(encrypted_decryption_requests) < threshold:
+            raise InvalidArgumentCombo(
+                f"Number of provided requests must be >= the expected threshold"
+            )

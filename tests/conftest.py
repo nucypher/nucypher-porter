@@ -1,23 +1,31 @@
 import os
-from typing import Optional, Iterable
+from typing import Iterable, List, Optional, Tuple
 
 import pytest
 from click.testing import CliRunner
 from eth_typing import ChecksumAddress
 from eth_utils import to_checksum_address
-from nucypher.blockchain.economics import EconomicsFactory, Economics
+from ferveo_py import DkgPublicKey, DkgPublicParameters, Validator
+from nucypher.blockchain.economics import Economics, EconomicsFactory
 from nucypher.blockchain.eth.actors import Operator
-from nucypher.blockchain.eth.agents import ContractAgency, PREApplicationAgent, \
-    StakingProvidersReservoir
+from nucypher.blockchain.eth.agents import (
+    ContractAgency,
+    CoordinatorAgent,
+    PREApplicationAgent,
+    StakingProvidersReservoir,
+)
 from nucypher.blockchain.eth.interfaces import BlockchainInterfaceFactory
 from nucypher.blockchain.eth.registry import InMemoryContractRegistry
-from nucypher.characters.lawful import Ursula
+from nucypher.characters.lawful import Enrico, Ursula
 from nucypher.config.constants import TEMPORARY_DOMAIN
-from nucypher.crypto.powers import DecryptingPower
+from nucypher.crypto.ferveo import dkg
+from nucypher.crypto.powers import DecryptingPower, RitualisticPower
 from nucypher.network.nodes import Learner, Teacher
+from nucypher.policy.conditions.types import LingoList
 from nucypher.utilities.logging import GlobalLoggerSettings
-from nucypher_core import Address, HRAC, TreasureMap
+from nucypher_core import HRAC, Address, TreasureMap
 from tests.constants import MOCK_ETH_PROVIDER_URI
+from tests.mock.coordinator import MockCoordinatorAgent
 from tests.mock.interfaces import MockBlockchain, mock_registry_source_manager
 
 from porter.emitters import WebEmitter
@@ -30,6 +38,7 @@ Learner._DEBUG_MODE = False
 pytest_plugins = [
     'pytest-nucypher',  # Includes external fixtures module from nucypher
 ]
+
 
 def pytest_addhooks(pluginmanager):
     pluginmanager.set_blocked('ape_test')
@@ -107,6 +116,7 @@ def staking_providers(testerchain, test_registry, monkeymodule):
     Operator.get_staking_provider_address = faked
     return testerchain.stake_providers_accounts
 
+
 @pytest.fixture(scope='module')
 def application_economics():
     economics = Economics()
@@ -133,6 +143,14 @@ def mock_contract_agency(module_mocker, application_economics):
     # Restore the monkey patching
     ContractAgency.get_agent = get_agent
     ContractAgency.get_agent_by_contract_name = get_agent_by_name
+
+
+@pytest.fixture(scope="module")
+def coordinator_agent(mock_contract_agency) -> MockCoordinatorAgent:
+    coordinator_agent: CoordinatorAgent = mock_contract_agency.get_agent(
+        CoordinatorAgent, registry=None
+    )
+    return coordinator_agent
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -212,3 +230,101 @@ def random_treasure_map_data(alice, bob, ursulas):
 def porter_web_controller(porter):
     web_controller = porter.make_web_controller(crash_on_error=False)
     yield web_controller.test_client()
+
+
+@pytest.fixture(scope="module")
+def dkg_setup(
+    get_random_checksum_address, ursulas, coordinator_agent
+) -> Tuple[int, DkgPublicKey, List[Ursula], DkgPublicParameters, int]:
+    ritual_id = 0
+    num_shares = 8
+    threshold = 5
+    cohort = ursulas[:num_shares]
+
+    # configure validator cohort
+    validators = []
+    for ursula in cohort:
+        validators.append(
+            Validator(
+                address=ursula.checksum_address,
+                public_key=ursula.public_keys(RitualisticPower),
+            )
+        )
+
+    validators.sort(key=lambda x: x.address)  # must be sorted
+    cohort.sort(key=lambda x: x.checksum_address)  # sort to match
+
+    # Go through ritual and set up Ursulas
+    transcripts = []
+    for i, validator in enumerate(validators):
+        transcript = dkg.generate_transcript(
+            ritual_id=ritual_id,
+            me=validator,
+            shares=num_shares,
+            threshold=threshold,
+            nodes=validators,
+        )
+        transcripts.append(transcript)
+
+        cohort[i].dkg_storage.store_transcript(
+            ritual_id=ritual_id, transcript=transcript
+        )
+
+    aggregated_transcript, public_key, params = dkg.aggregate_transcripts(
+        ritual_id=ritual_id,
+        me=validators[0],
+        shares=num_shares,
+        threshold=threshold,
+        transcripts=list(zip(validators, transcripts)),
+    )
+
+    for ursula in cohort:
+        ursula.dkg_storage.store_aggregated_transcript(
+            ritual_id=ritual_id, aggregated_transcript=aggregated_transcript
+        )
+        ursula.dkg_storage.store_dkg_params(ritual_id=ritual_id, public_params=params)
+        ursula.dkg_storage.store_public_key(ritual_id=ritual_id, public_key=public_key)
+
+    ritual = CoordinatorAgent.Ritual(
+        initiator=get_random_checksum_address(),
+        dkg_size=num_shares,
+        init_timestamp=123456,
+        total_transcripts=num_shares,
+        total_aggregations=num_shares,
+        public_key=CoordinatorAgent.Ritual.G1Point.from_dkg_public_key(public_key),
+        aggregation_mismatch=False,
+        aggregated_transcript=bytes(aggregated_transcript),
+        participants=[
+            CoordinatorAgent.Ritual.Participant(
+                provider=ursula.checksum_address,
+                aggregated=True,
+                transcript=bytes(transcripts[i]),
+            )
+            for i, ursula in enumerate(cohort)
+        ],
+    )
+
+    # Configure CoordinatorAgent
+    coordinator_agent.get_ritual.return_value = ritual
+    coordinator_agent.get_ritual_status.return_value = (
+        CoordinatorAgent.Ritual.Status.FINALIZED
+    )
+
+    return ritual_id, public_key, cohort, params, threshold
+
+
+PLAINTEXT = "peace at dawn"
+CONDITIONS = [
+    {"returnValueTest": {"value": "0", "comparator": ">"}, "method": "timelock"}
+]
+
+
+@pytest.fixture(scope="module")
+def dkg_encrypted_data(dkg_setup) -> Tuple[bytes, bytes, LingoList]:
+    _, public_key, _, _, _ = dkg_setup
+    enrico = Enrico(encrypting_key=public_key)
+    ciphertext = enrico.encrypt_for_dkg(
+        plaintext=PLAINTEXT.encode(), conditions=CONDITIONS
+    )
+
+    return bytes(ciphertext), PLAINTEXT.encode(), CONDITIONS
