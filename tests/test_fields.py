@@ -111,8 +111,8 @@ def test_key():
     other_umbral_pub_key = SecretKey.random().public_key()
 
     serialized = field._serialize(value=umbral_pub_key, attr=None, obj=None)
-    assert serialized == bytes(umbral_pub_key).hex()
-    assert serialized != bytes(other_umbral_pub_key).hex()
+    assert serialized == umbral_pub_key.to_compressed_bytes().hex()
+    assert serialized != other_umbral_pub_key.to_compressed_bytes().hex()
 
     deserialized = field._deserialize(value=serialized, attr=None, data=None)
     assert deserialized == umbral_pub_key

@@ -13,14 +13,14 @@ from porter.main import Porter
 TEST_ETH_PROVIDER_URI = "tester://pyevm"
 
 @pytest.fixture(scope="function")
-def teacher_uri(mocker, ursulas):
+def teacher_uri(mocker, ursulas, test_registry_source_manager):
     teacher = list(ursulas)[0]
     teacher_uri = teacher.seed_node_metadata(as_teacher_uri=True)
     mocker.patch.object(Ursula, 'from_teacher_uri', return_value=teacher)
     yield teacher_uri
 
 
-def test_porter_cli_run_simple(click_runner, teacher_uri):
+def test_porter_cli_run_simple(click_runner, teacher_uri, test_registry_source_manager):
     porter_run_command = ('run',
                           '--dry-run',
                           '--network', TEMPORARY_DOMAIN,
@@ -47,7 +47,7 @@ def test_porter_cli_run_simple(click_runner, teacher_uri):
     assert PORTER_RUN_MESSAGE.format(http_port=non_default_port) in output
 
 
-def test_porter_cli_run_eth_provider_must_be_provided(click_runner, teacher_uri):
+def test_porter_cli_run_eth_provider_must_be_provided(click_runner, teacher_uri, test_registry_source_manager):
     porter_run_command = ('run',
                           '--dry-run',
                           '--network', TEMPORARY_DOMAIN,
@@ -58,7 +58,8 @@ def test_porter_cli_run_eth_provider_must_be_provided(click_runner, teacher_uri)
 
 
 def test_cli_run_with_cors_origin(click_runner,
-                                  teacher_uri):
+                                  teacher_uri,
+                                  test_registry_source_manager):
     allow_origins = ".*\.example\.com,.*\.otherexample\.org"
 
     porter_run_command = ('run',
@@ -74,7 +75,8 @@ def test_cli_run_with_cors_origin(click_runner,
 
 
 def test_cli_run_with_empty_string_cors_origin(click_runner,
-                                               teacher_uri):
+                                               teacher_uri,
+                                               test_registry_source_manager):
     empty_string_allow_origins = ""
 
     porter_run_command = ('run',

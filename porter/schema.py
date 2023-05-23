@@ -57,7 +57,7 @@ class UrsulaInfoSchema(BaseSchema):
 #
 
 
-class AliceGetUrsulas(BaseSchema):
+class PREGetUrsulas(BaseSchema):
     quantity = PositiveInteger(
         required=True,
         load_only=True,
@@ -115,7 +115,7 @@ class AliceGetUrsulas(BaseSchema):
                                        f"common entries {common_ursulas}")
 
 
-class AliceRevoke(BaseSchema):
+class PRERevoke(BaseSchema):
     pass  # TODO need to understand revoke process better
 
 
@@ -134,7 +134,7 @@ class RetrievalOutcomeSchema(BaseSchema):
 #
 
 
-class BobRetrieveCFrags(BaseSchema):
+class PRERetrieveCFrags(BaseSchema):
     treasure_map = TreasureMap(
         required=True,
         load_only=True,

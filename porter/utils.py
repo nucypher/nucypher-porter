@@ -51,17 +51,17 @@ def retrieval_request_setup(enacted_policy,
     bob.start_learning_loop()
 
     # We can pass any number of capsules as args; here we pass just one.
-    enrico = Enrico(policy_encrypting_key=enacted_policy.public_key)
+    enrico = Enrico(encrypting_key=enacted_policy.public_key)
     message_kits = []
     if specific_messages:
         for message in specific_messages:
-            message_kits.append(enrico.encrypt_message(message))
+            message_kits.append(enrico.encrypt_for_pre(message))
     else:
         for i in range(num_random_messages):
             random_message = "".join(
                 random.choice(string.ascii_lowercase) for j in range(20)
             ).encode()  # random message
-            message_kits.append(enrico.encrypt_message(random_message))
+            message_kits.append(enrico.encrypt_for_pre(random_message))
 
     encode_bytes = (lambda field, obj: field()._serialize(value=obj, attr=None, obj=None)) if encode_for_rest else (lambda field, obj: obj)
 

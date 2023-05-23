@@ -12,8 +12,8 @@ from porter.fields.key import Key
 from porter.fields.treasuremap import TreasureMap
 from porter.main import Porter
 from porter.schema import (
-    AliceGetUrsulas,
-    BobRetrieveCFrags,
+    PREGetUrsulas,
+    PRERetrieveCFrags,
     UrsulaInfoSchema
 )
 from porter.schema import BaseSchema
@@ -28,7 +28,7 @@ def test_alice_get_ursulas_schema(get_random_checksum_address):
 
     # no args
     with pytest.raises(InvalidInputData):
-        AliceGetUrsulas().load({})
+        PREGetUrsulas().load({})
 
     quantity = 10
     required_data = {
@@ -36,12 +36,12 @@ def test_alice_get_ursulas_schema(get_random_checksum_address):
     }
 
     # required args
-    AliceGetUrsulas().load(required_data)
+    PREGetUrsulas().load(required_data)
 
     # missing required args
     updated_data = {k: v for k, v in required_data.items() if k != 'quantity'}
     with pytest.raises(InvalidInputData):
-        AliceGetUrsulas().load(updated_data)
+        PREGetUrsulas().load(updated_data)
 
     # optional components
 
@@ -51,7 +51,7 @@ def test_alice_get_ursulas_schema(get_random_checksum_address):
     for i in range(2):
         exclude_ursulas.append(get_random_checksum_address())
     updated_data['exclude_ursulas'] = exclude_ursulas
-    AliceGetUrsulas().load(updated_data)
+    PREGetUrsulas().load(updated_data)
 
     # only include
     updated_data = dict(required_data)
@@ -59,19 +59,19 @@ def test_alice_get_ursulas_schema(get_random_checksum_address):
     for i in range(3):
         include_ursulas.append(get_random_checksum_address())
     updated_data['include_ursulas'] = include_ursulas
-    AliceGetUrsulas().load(updated_data)
+    PREGetUrsulas().load(updated_data)
 
     # both exclude and include
     updated_data = dict(required_data)
     updated_data['exclude_ursulas'] = exclude_ursulas
     updated_data['include_ursulas'] = include_ursulas
-    AliceGetUrsulas().load(updated_data)
+    PREGetUrsulas().load(updated_data)
 
     # list input formatted as ',' separated strings
     updated_data = dict(required_data)
     updated_data['exclude_ursulas'] = ','.join(exclude_ursulas)
     updated_data['include_ursulas'] = ','.join(include_ursulas)
-    data = AliceGetUrsulas().load(updated_data)
+    data = PREGetUrsulas().load(updated_data)
     assert data['exclude_ursulas'] == exclude_ursulas
     assert data['include_ursulas'] == include_ursulas
 
@@ -79,7 +79,7 @@ def test_alice_get_ursulas_schema(get_random_checksum_address):
     updated_data = dict(required_data)
     updated_data['exclude_ursulas'] = exclude_ursulas[0]
     updated_data['include_ursulas'] = include_ursulas[0]
-    data = AliceGetUrsulas().load(updated_data)
+    data = PREGetUrsulas().load(updated_data)
     assert data['exclude_ursulas'] == [exclude_ursulas[0]]
     assert data['include_ursulas'] == [include_ursulas[0]]
 
@@ -89,7 +89,7 @@ def test_alice_get_ursulas_schema(get_random_checksum_address):
     updated_data['include_ursulas'] = list(include_ursulas)  # make copy to modify
     updated_data['include_ursulas'].append("0xdeadbeef")
     with pytest.raises(InvalidInputData):
-        AliceGetUrsulas().load(updated_data)
+        PREGetUrsulas().load(updated_data)
 
     # invalid exclude entry
     updated_data = dict(required_data)
@@ -97,7 +97,7 @@ def test_alice_get_ursulas_schema(get_random_checksum_address):
     updated_data['exclude_ursulas'].append("0xdeadbeef")
     updated_data['include_ursulas'] = include_ursulas
     with pytest.raises(InvalidInputData):
-        AliceGetUrsulas().load(updated_data)
+        PREGetUrsulas().load(updated_data)
 
     # too many ursulas to include
     updated_data = dict(required_data)
@@ -107,7 +107,7 @@ def test_alice_get_ursulas_schema(get_random_checksum_address):
     updated_data['include_ursulas'] = too_many_ursulas_to_include
     with pytest.raises(InvalidArgumentCombo):
         # number of ursulas to include exceeds quantity to sample
-        AliceGetUrsulas().load(updated_data)
+        PREGetUrsulas().load(updated_data)
 
     # include and exclude addresses are not mutually exclusive - include has common entry
     updated_data = dict(required_data)
@@ -116,7 +116,7 @@ def test_alice_get_ursulas_schema(get_random_checksum_address):
     updated_data['include_ursulas'].append(exclude_ursulas[0])  # one address that overlaps
     with pytest.raises(InvalidArgumentCombo):
         # 1 address in both include and exclude lists
-        AliceGetUrsulas().load(updated_data)
+        PREGetUrsulas().load(updated_data)
 
     # include and exclude addresses are not mutually exclusive - exclude has common entry
     updated_data = dict(required_data)
@@ -125,7 +125,7 @@ def test_alice_get_ursulas_schema(get_random_checksum_address):
     updated_data['include_ursulas'] = include_ursulas
     with pytest.raises(InvalidArgumentCombo):
         # 1 address in both include and exclude lists
-        AliceGetUrsulas().load(updated_data)
+        PREGetUrsulas().load(updated_data)
 
     #
     # Output i.e. dump
@@ -142,7 +142,7 @@ def test_alice_get_ursulas_schema(get_random_checksum_address):
         # use schema to determine expected output (encrypting key gets changed to hex)
         expected_ursulas_info.append(UrsulaInfoSchema().dump(ursula_info))
 
-    output = AliceGetUrsulas().dump(obj={'ursulas': ursulas_info})
+    output = PREGetUrsulas().dump(obj={'ursulas': ursulas_info})
     assert output == {"ursulas": expected_ursulas_info}
 
 
@@ -156,7 +156,7 @@ def test_bob_retrieve_cfrags(porter,
                              alice,
                              valid_user_address_context,
                              get_random_checksum_address):
-    bob_retrieve_cfrags_schema = BobRetrieveCFrags()
+    bob_retrieve_cfrags_schema = PRERetrieveCFrags()
 
     # no args
     with pytest.raises(InvalidInputData):
@@ -371,10 +371,9 @@ def test_key_validation(bob):
     assert "bobkey" in str(e)
 
     with pytest.raises(InvalidInputData) as e:
-        # lets just take a couple bytes off
+        # lets just take a couple bytes off (less bytes than required)
         BobKeyInputRequirer().load({'bobkey': "02f0cb3f3a33f16255d9b2586e6c56570aa07bbeb1157e169f1fb114ffb40037"})
     assert "Could not convert input for bobkey to an Umbral Key" in str(e)
-    assert "xpected 33 bytes, got 32" in str(e)
 
-    result = BobKeyInputRequirer().load(dict(bobkey=bytes(bob.public_keys(DecryptingPower)).hex()))
+    result = BobKeyInputRequirer().load(dict(bobkey=bob.public_keys(DecryptingPower).to_compressed_bytes().hex()))
     assert isinstance(result['bobkey'], PublicKey)
