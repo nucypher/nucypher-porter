@@ -4,8 +4,16 @@ from base64 import b64encode
 
 import pytest
 from eth_utils import to_canonical_address
-from nucypher_core import Address, MessageKit
+from nucypher.crypto.ferveo.dkg import FerveoVariant
+from nucypher_core import (
+    Address,
+    Conditions,
+    EncryptedThresholdDecryptionRequest,
+    EncryptedThresholdDecryptionResponse,
+    MessageKit,
+)
 from nucypher_core import RetrievalKit as RetrievalKitClass
+from nucypher_core import ThresholdDecryptionRequest, ThresholdDecryptionResponse
 from nucypher_core.umbral import SecretKey
 
 from porter.fields.base import (
@@ -15,6 +23,10 @@ from porter.fields.base import (
     PositiveInteger,
     String,
     StringList,
+)
+from porter.fields.cbd import (
+    EncryptedThresholdDecryptionRequestField,
+    EncryptedThresholdDecryptionResponseField,
 )
 from porter.fields.exceptions import InvalidInputData
 from porter.fields.retrieve import RetrievalKit
@@ -287,3 +299,87 @@ def test_cbd_json_dict_field(get_random_checksum_address):
     with pytest.raises(InvalidInputData):
         # attempt to serialize invalid key; must be checksum address
         field._serialize(value={"a": os.urandom(32)}, attr=None, obj=None)
+
+
+def test_encrypted_threshold_decryption_request(dkg_setup, dkg_encrypted_data):
+    ritual_id, _, _, _, _ = dkg_setup
+    ciphertext, expected_plaintext, conditions = dkg_encrypted_data
+
+    decryption_request = ThresholdDecryptionRequest(
+        ritual_id=ritual_id,
+        variant=int(FerveoVariant.SIMPLE.value),
+        ciphertext=bytes(ciphertext),
+        conditions=Conditions(json.dumps(conditions)),
+    )
+
+    field = EncryptedThresholdDecryptionRequestField()
+
+    random_request_encrypting_sk = SecretKey.random()
+    random_response_encrypting_sk = SecretKey.random()
+    encrypted_request = decryption_request.encrypt(
+        request_encrypting_key=random_request_encrypting_sk.public_key(),
+        response_encrypting_key=random_response_encrypting_sk.public_key(),
+    )
+
+    serialized_data = field._serialize(value=encrypted_request, attr=None, obj=None)
+    assert serialized_data == b64encode(bytes(encrypted_request)).decode()
+
+    deserialized_encrypted_request = field._deserialize(
+        value=serialized_data, attr=None, data=None
+    )
+    assert isinstance(
+        deserialized_encrypted_request, EncryptedThresholdDecryptionRequest
+    )
+    assert deserialized_encrypted_request.ritual_id == ritual_id
+    assert bytes(deserialized_encrypted_request) == bytes(encrypted_request)
+
+    deserialized_request = deserialized_encrypted_request.decrypt(
+        sk=random_request_encrypting_sk
+    )
+    assert bytes(deserialized_request.decryption_request) == bytes(decryption_request)
+    assert (
+        deserialized_request.response_encrypting_key
+        == random_response_encrypting_sk.public_key()
+    )
+
+    with pytest.raises(InvalidInputData):
+        field._serialize(
+            value="EncryptedThresholdDecryptionRequestString", attr=None, obj=None
+        )
+
+    with pytest.raises(InvalidInputData):
+        field._deserialize(value=os.urandom(32), attr=None, data=None)
+
+
+def test_encrypted_threshold_decryption_response():
+    decryption_share = os.urandom(32)
+    decryption_response = ThresholdDecryptionResponse(decryption_share=decryption_share)
+
+    field = EncryptedThresholdDecryptionResponseField()
+
+    random_response_encrypting_sk = SecretKey.random()
+    encrypted_response = decryption_response.encrypt(
+        random_response_encrypting_sk.public_key()
+    )
+
+    serialized_data = field._serialize(value=encrypted_response, attr=None, obj=None)
+    assert serialized_data == b64encode(bytes(encrypted_response)).decode()
+
+    deserialized_encrypted_response = field._deserialize(
+        value=serialized_data, attr=None, data=None
+    )
+    assert isinstance(
+        deserialized_encrypted_response, EncryptedThresholdDecryptionResponse
+    )
+    assert bytes(deserialized_encrypted_response) == bytes(encrypted_response)
+
+    deserialized_response = deserialized_encrypted_response.decrypt(
+        sk=random_response_encrypting_sk
+    )
+    assert bytes(deserialized_response) == bytes(decryption_response)
+
+    with pytest.raises(InvalidInputData):
+        field._serialize(value=[1, 2, 3, 4, 5], attr=None, obj=None)
+
+    with pytest.raises(InvalidInputData):
+        field._deserialize(value=os.urandom(32), attr=None, data=None)
