@@ -8,7 +8,7 @@ python_version = "3"
 
 [packages]
 nucypher = {git = "https://github.com/nucypher/nucypher.git", ref = "development"}
-nucypher-core = ">=0.8.0"  # should be the same as nucypher
+nucypher-core = {git = "https://github.com/nucypher/nucypher.git", ref = "main"}  # should be the same as nucypher
 flask-cors = "*"
 
 [dev-packages]

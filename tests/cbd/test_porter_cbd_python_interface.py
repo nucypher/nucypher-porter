@@ -1,14 +1,13 @@
 import json
 
-from ferveo_py import (
+from nucypher.crypto.ferveo.dkg import FerveoVariant
+from nucypher_core import Conditions, SessionStaticSecret, ThresholdDecryptionRequest
+from nucypher_core.ferveo import (
     Ciphertext,
     DecryptionShareSimple,
     combine_decryption_shares_simple,
     decrypt_with_shared_secret,
 )
-from nucypher.crypto.ferveo.dkg import FerveoVariant
-from nucypher_core import Conditions, ThresholdDecryptionRequest
-from nucypher_core.umbral import SecretKey
 
 
 def test_cbd_decryption(porter, dkg_setup, dkg_encrypted_data):
@@ -22,19 +21,24 @@ def test_cbd_decryption(porter, dkg_setup, dkg_encrypted_data):
         conditions=Conditions(json.dumps(conditions)),
     )
 
-    response_sk = SecretKey.random()
+    requester_secret_key = SessionStaticSecret.random()
 
     encrypted_decryption_requests = {}
+    shared_secrets = {}
     for ursula in cohort:
-        request_encrypting_key = (
+        ursula_decryption_request_static_key = (
             ursula.threshold_request_power.get_pubkey_from_ritual_id(ritual_id)
+        )
+        shared_secret = requester_secret_key.derive_shared_secret(
+            ursula_decryption_request_static_key
         )
         encrypted_decryption_requests[
             ursula.checksum_address
         ] = decryption_request.encrypt(
-            request_encrypting_key=request_encrypting_key,
-            response_encrypting_key=response_sk.public_key(),
+            shared_secret=shared_secret,
+            requester_public_key=requester_secret_key.public_key(),
         )
+        shared_secrets[ursula.checksum_address] = shared_secret
 
     cbd_outcome = porter.cbd_decrypt(
         threshold=threshold, encrypted_decryption_requests=encrypted_decryption_requests
@@ -54,18 +58,21 @@ def test_cbd_decryption(porter, dkg_setup, dkg_encrypted_data):
         encrypted_decryption_response,
     ) in cbd_outcome.encrypted_decryption_responses.items():
         assert ursula_address in cohort_addresses
-        decryption_response = encrypted_decryption_response.decrypt(sk=response_sk)
+        shared_secret = shared_secrets[ursula_address]
+        decryption_response = encrypted_decryption_response.decrypt(
+            shared_secret=shared_secret
+        )
         decryption_share = DecryptionShareSimple.from_bytes(
             decryption_response.decryption_share
         )
         decryption_shares.append(decryption_share)
 
-    shared_secret = combine_decryption_shares_simple(decryption_shares)
+    combined_shares = combine_decryption_shares_simple(decryption_shares)
     conditions = json.dumps(conditions).encode()  # aad
     cleartext = decrypt_with_shared_secret(
-        Ciphertext.from_bytes(ciphertext),
+        ciphertext,
         conditions,  # aad
-        shared_secret,
+        combined_shares,
         params,  # dkg params
     )
     assert bytes(cleartext) == expected_plaintext
@@ -73,14 +80,15 @@ def test_cbd_decryption(porter, dkg_setup, dkg_encrypted_data):
     #
     # errors - invalid encrypting key used for request
     #
-    random_public_key = SecretKey.random().public_key()
+    random_public_key = SessionStaticSecret.random().public_key()
+    shared_secret = requester_secret_key.derive_shared_secret(random_public_key)
     encrypted_decryption_requests = {}
     for ursula in cohort:
         encrypted_decryption_requests[
             ursula.checksum_address
         ] = decryption_request.encrypt(
-            request_encrypting_key=random_public_key,
-            response_encrypting_key=response_sk.public_key(),
+            shared_secret=shared_secret,
+            requester_public_key=requester_secret_key.public_key(),
         )
 
     cbd_outcome = porter.cbd_decrypt(

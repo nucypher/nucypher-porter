@@ -3,8 +3,7 @@ import json
 import pytest
 from eth_utils import to_checksum_address
 from nucypher.crypto.ferveo.dkg import FerveoVariant
-from nucypher_core import Conditions, ThresholdDecryptionRequest
-from nucypher_core.umbral import SecretKey
+from nucypher_core import Conditions, SessionStaticSecret, ThresholdDecryptionRequest
 
 from porter.fields.cbd import (
     EncryptedThresholdDecryptionRequestField,
@@ -26,21 +25,24 @@ def test_cbd_decrypt(
     decryption_request = ThresholdDecryptionRequest(
         ritual_id=ritual_id,
         variant=int(FerveoVariant.SIMPLE.value),
-        ciphertext=bytes(ciphertext),
+        ciphertext=ciphertext,
         conditions=Conditions(json.dumps(conditions)),
     )
 
-    response_sk = SecretKey.random()
+    requester_secret_key = SessionStaticSecret.random()
 
     encrypted_request_field = EncryptedThresholdDecryptionRequestField()
     encrypted_decryption_requests = {}
     for ursula in cohort:
-        request_encrypting_key = (
+        ursula_decryption_request_static_key = (
             ursula.threshold_request_power.get_pubkey_from_ritual_id(ritual_id)
         )
+        shared_secret = requester_secret_key.derive_shared_secret(
+            ursula_decryption_request_static_key
+        )
         encrypted_decryption_request = decryption_request.encrypt(
-            request_encrypting_key=request_encrypting_key,
-            response_encrypting_key=response_sk.public_key(),
+            shared_secret=shared_secret,
+            requester_public_key=requester_secret_key.public_key(),
         )
         encrypted_decryption_requests[
             ursula.checksum_address
@@ -112,12 +114,15 @@ def test_cbd_decrypt(
     # actual outcomes
     encrypted_decryption_requests = {}
     for ursula in cohort:
-        request_encrypting_key = (
+        ursula_decryption_request_static_key = (
             ursula.threshold_request_power.get_pubkey_from_ritual_id(ritual_id)
         )
+        shared_secret = requester_secret_key.derive_shared_secret(
+            ursula_decryption_request_static_key
+        )
         encrypted_decryption_request = decryption_request.encrypt(
-            request_encrypting_key=request_encrypting_key,
-            response_encrypting_key=response_sk.public_key(),
+            shared_secret=shared_secret,
+            requester_public_key=requester_secret_key.public_key(),
         )
         encrypted_decryption_requests[
             ursula.checksum_address
