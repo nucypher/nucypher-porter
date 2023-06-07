@@ -5,7 +5,6 @@ import pytest
 from click.testing import CliRunner
 from eth_typing import ChecksumAddress
 from eth_utils import to_checksum_address
-from ferveo_py import DkgPublicKey, DkgPublicParameters, Validator
 from nucypher.blockchain.economics import Economics, EconomicsFactory
 from nucypher.blockchain.eth.actors import Operator
 from nucypher.blockchain.eth.agents import (
@@ -19,15 +18,17 @@ from nucypher.blockchain.eth.registry import InMemoryContractRegistry
 from nucypher.characters.lawful import Enrico, Ursula
 from nucypher.config.constants import TEMPORARY_DOMAIN
 from nucypher.crypto.ferveo import dkg
-from nucypher.crypto.powers import (
-    DecryptingPower,
-    RitualisticPower,
-    ThresholdRequestDecryptingPower,
-)
+from nucypher.crypto.powers import DecryptingPower, RitualisticPower
 from nucypher.network.nodes import Learner, Teacher
 from nucypher.policy.conditions.types import LingoList
 from nucypher.utilities.logging import GlobalLoggerSettings
 from nucypher_core import HRAC, Address, TreasureMap
+from nucypher_core.ferveo import (
+    Ciphertext,
+    DkgPublicKey,
+    DkgPublicParameters,
+    Validator,
+)
 
 from porter.emitters import WebEmitter
 from porter.main import Porter
@@ -303,7 +304,7 @@ def dkg_setup(
                 provider=ursula.checksum_address,
                 aggregated=True,
                 transcript=bytes(transcripts[i]),
-                requestEncryptingKey=ursula.threshold_request_power.get_pubkey_from_ritual_id(
+                decryption_request_static_key=ursula.threshold_request_power.get_pubkey_from_ritual_id(
                     ritual_id
                 ),
             )
@@ -327,11 +328,11 @@ CONDITIONS = [
 
 
 @pytest.fixture(scope="module")
-def dkg_encrypted_data(dkg_setup) -> Tuple[bytes, bytes, LingoList]:
+def dkg_encrypted_data(dkg_setup) -> Tuple[Ciphertext, bytes, LingoList]:
     _, public_key, _, _, _ = dkg_setup
     enrico = Enrico(encrypting_key=public_key)
     ciphertext = enrico.encrypt_for_dkg(
         plaintext=PLAINTEXT.encode(), conditions=CONDITIONS
     )
 
-    return bytes(ciphertext), PLAINTEXT.encode(), CONDITIONS
+    return ciphertext, PLAINTEXT.encode(), CONDITIONS

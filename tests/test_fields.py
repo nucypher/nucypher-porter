@@ -13,7 +13,11 @@ from nucypher_core import (
     MessageKit,
 )
 from nucypher_core import RetrievalKit as RetrievalKitClass
-from nucypher_core import ThresholdDecryptionRequest, ThresholdDecryptionResponse
+from nucypher_core import (
+    SessionStaticSecret,
+    ThresholdDecryptionRequest,
+    ThresholdDecryptionResponse,
+)
 from nucypher_core.umbral import SecretKey
 
 from porter.fields.base import (
@@ -308,17 +312,19 @@ def test_encrypted_threshold_decryption_request(dkg_setup, dkg_encrypted_data):
     decryption_request = ThresholdDecryptionRequest(
         ritual_id=ritual_id,
         variant=int(FerveoVariant.SIMPLE.value),
-        ciphertext=bytes(ciphertext),
+        ciphertext=ciphertext,
         conditions=Conditions(json.dumps(conditions)),
     )
 
     field = EncryptedThresholdDecryptionRequestField()
 
-    random_request_encrypting_sk = SecretKey.random()
-    random_response_encrypting_sk = SecretKey.random()
+    ursula_public_key = SessionStaticSecret.random().public_key()
+    requester_secret_key = SessionStaticSecret.random()
+
+    shared_secret = requester_secret_key.derive_shared_secret(ursula_public_key)
     encrypted_request = decryption_request.encrypt(
-        request_encrypting_key=random_request_encrypting_sk.public_key(),
-        response_encrypting_key=random_response_encrypting_sk.public_key(),
+        shared_secret=shared_secret,
+        requester_public_key=requester_secret_key.public_key(),
     )
 
     serialized_data = field._serialize(value=encrypted_request, attr=None, obj=None)
@@ -331,16 +337,16 @@ def test_encrypted_threshold_decryption_request(dkg_setup, dkg_encrypted_data):
         deserialized_encrypted_request, EncryptedThresholdDecryptionRequest
     )
     assert deserialized_encrypted_request.ritual_id == ritual_id
+    assert (
+        deserialized_encrypted_request.requester_public_key
+        == requester_secret_key.public_key()
+    )
     assert bytes(deserialized_encrypted_request) == bytes(encrypted_request)
 
     deserialized_request = deserialized_encrypted_request.decrypt(
-        sk=random_request_encrypting_sk
+        shared_secret=shared_secret
     )
-    assert bytes(deserialized_request.decryption_request) == bytes(decryption_request)
-    assert (
-        deserialized_request.response_encrypting_key
-        == random_response_encrypting_sk.public_key()
-    )
+    assert bytes(deserialized_request) == bytes(decryption_request)
 
     with pytest.raises(InvalidInputData):
         field._serialize(
@@ -352,15 +358,19 @@ def test_encrypted_threshold_decryption_request(dkg_setup, dkg_encrypted_data):
 
 
 def test_encrypted_threshold_decryption_response():
+    ritual_id = 123
     decryption_share = os.urandom(32)
-    decryption_response = ThresholdDecryptionResponse(decryption_share=decryption_share)
+    decryption_response = ThresholdDecryptionResponse(
+        ritual_id=ritual_id, decryption_share=decryption_share
+    )
 
     field = EncryptedThresholdDecryptionResponseField()
 
-    random_response_encrypting_sk = SecretKey.random()
-    encrypted_response = decryption_response.encrypt(
-        random_response_encrypting_sk.public_key()
-    )
+    requester_public_key = SessionStaticSecret.random().public_key()
+    ursula_secret_key = SessionStaticSecret.random()
+    shared_secret = ursula_secret_key.derive_shared_secret(requester_public_key)
+
+    encrypted_response = decryption_response.encrypt(shared_secret=shared_secret)
 
     serialized_data = field._serialize(value=encrypted_response, attr=None, obj=None)
     assert serialized_data == b64encode(bytes(encrypted_response)).decode()
@@ -372,9 +382,10 @@ def test_encrypted_threshold_decryption_response():
         deserialized_encrypted_response, EncryptedThresholdDecryptionResponse
     )
     assert bytes(deserialized_encrypted_response) == bytes(encrypted_response)
+    assert deserialized_encrypted_response.ritual_id == ritual_id
 
     deserialized_response = deserialized_encrypted_response.decrypt(
-        sk=random_response_encrypting_sk
+        shared_secret=shared_secret
     )
     assert bytes(deserialized_response) == bytes(decryption_response)
 
