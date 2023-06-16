@@ -1,6 +1,7 @@
 import os
 from typing import Iterable, List, Optional, Tuple
 
+import nucypher
 import pytest
 from click.testing import CliRunner
 from eth_typing import ChecksumAddress
@@ -20,7 +21,8 @@ from nucypher.config.constants import TEMPORARY_DOMAIN
 from nucypher.crypto.ferveo import dkg
 from nucypher.crypto.powers import DecryptingPower, RitualisticPower
 from nucypher.network.nodes import Learner, Teacher
-from nucypher.policy.conditions.types import LingoList
+from nucypher.policy.conditions.lingo import ConditionLingo
+from nucypher.policy.conditions.types import Lingo
 from nucypher.utilities.logging import GlobalLoggerSettings
 from nucypher_core import HRAC, Address, TreasureMap
 from nucypher_core.ferveo import (
@@ -32,7 +34,7 @@ from nucypher_core.ferveo import (
 
 from porter.emitters import WebEmitter
 from porter.main import Porter
-from tests.constants import MOCK_ETH_PROVIDER_URI
+from tests.constants import MOCK_ETH_PROVIDER_URI, TESTERCHAIN_CHAIN_ID
 from tests.mock.coordinator import MockCoordinatorAgent
 from tests.mock.interfaces import MockBlockchain, mock_registry_source_manager
 
@@ -104,6 +106,16 @@ def testerchain(mock_testerchain, module_mocker) -> MockBlockchain:
         BlockchainInterfaceFactory, "get_interface", always_use_mock
     )
     return mock_testerchain
+
+
+@pytest.fixture(autouse=True, scope="session")
+def mock_condition_blockchains(session_mocker):
+    """adds testerchain's chain ID to permitted conditional chains"""
+    session_mocker.patch.object(
+        nucypher.policy.conditions.evm,
+        "_CONDITION_CHAINS",
+        tuple([TESTERCHAIN_CHAIN_ID]),
+    )
 
 
 @pytest.fixture(scope='module')
@@ -322,13 +334,18 @@ def dkg_setup(
 
 
 PLAINTEXT = "peace at dawn"
-CONDITIONS = [
-    {"returnValueTest": {"value": "0", "comparator": ">"}, "method": "timelock"}
-]
+CONDITIONS = {
+    "version": ConditionLingo.VERSION,
+    "condition": {
+        "returnValueTest": {"value": "0", "comparator": ">"},
+        "method": "blocktime",
+        "chain": TESTERCHAIN_CHAIN_ID,
+    },
+}
 
 
 @pytest.fixture(scope="module")
-def dkg_encrypted_data(dkg_setup) -> Tuple[Ciphertext, bytes, LingoList]:
+def dkg_encrypted_data(dkg_setup) -> Tuple[Ciphertext, bytes, Lingo]:
     _, public_key, _, _, _ = dkg_setup
     enrico = Enrico(encrypting_key=public_key)
     ciphertext = enrico.encrypt_for_dkg(
