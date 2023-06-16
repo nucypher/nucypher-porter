@@ -70,7 +70,8 @@ def run(general_config,
     if teacher_uri:
         teacher = Ursula.from_teacher_uri(teacher_uri=teacher_uri,
                                           min_stake=min_stake,
-                                          registry=registry)
+                                          registry=registry,
+                                          provider_uri=eth_provider_uri)
 
     PORTER = Porter(domain=network,
                     known_nodes={teacher} if teacher else None,

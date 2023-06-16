@@ -99,7 +99,7 @@ class Porter(Learner):
 
         self.eth_provider_uri = eth_provider_uri
         self.registry = registry or InMemoryContractRegistry.from_latest_publication(network=domain)
-        self.application_agent = ContractAgency.get_agent(PREApplicationAgent, registry=self.registry)
+        self.application_agent = ContractAgency.get_agent(PREApplicationAgent, registry=self.registry, provider_uri=self.eth_provider_uri)
 
         super().__init__(save_metadata=True, domain=domain, node_class=node_class, *args, **kwargs)
 
