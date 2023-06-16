@@ -7,12 +7,12 @@ name = "pypi"
 python_version = "3"
 
 [packages]
-nucypher = {git = "https://github.com/nucypher/nucypher.git", ref = "development"}
+nucypher = {git = "https://github.com/nucypher/nucypher.git", ref = "dkg-dev-6"}
 nucypher-core = ">=0.9.0"  # must be the same as nucypher
 flask-cors = "*"
 
 [dev-packages]
-nucypher = {git = "https://github.com/nucypher/nucypher.git", editable = true, ref = "development", extras = ["dev"]}  # needed for testerchain, and must be editable
+nucypher = {git = "https://github.com/nucypher/nucypher.git", editable = true, ref = "dkg-dev-6", extras = ["dev"]}  # needed for testerchain, and must be editable
 pytest = "<7"  # match with nucypher/nucypher
 pytest-cov = "*"
 pytest-mock = "*"

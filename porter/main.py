@@ -97,6 +97,7 @@ class Porter(Learner):
         if not BlockchainInterfaceFactory.is_interface_initialized(eth_provider_uri=eth_provider_uri):
             BlockchainInterfaceFactory.initialize_interface(eth_provider_uri=eth_provider_uri)
 
+        self.eth_provider_uri = eth_provider_uri
         self.registry = registry or InMemoryContractRegistry.from_latest_publication(network=domain)
         self.application_agent = ContractAgency.get_agent(PREApplicationAgent, registry=self.registry)
 
