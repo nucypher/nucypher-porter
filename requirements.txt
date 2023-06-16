@@ -6,7 +6,7 @@ async-timeout==4.0.2 ; python_version >= '3.6'
 attrs==23.1.0 ; python_version >= '3.7'
 autobahn==23.1.2 ; python_version >= '3.7'
 automat==22.10.0
-backports.zoneinfo==0.2.1 ; python_version >= '3.6'
+backports.zoneinfo==0.2.1 ; python_version >= '3.6' and python_version < '3.9'
 bitarray==2.7.4
 bytestring-splitter==2.4.1
 cached-property==1.5.2
