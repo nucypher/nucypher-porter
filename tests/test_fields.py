@@ -290,7 +290,7 @@ def test_cbd_dict_field(get_random_checksum_address):
 
     with pytest.raises(InvalidInputData):
         # attempt to deserialize invalid value; must be base64 string
-        json_to_deserialize = {get_random_checksum_address(): "+_--1"}
+        json_to_deserialize = {get_random_checksum_address(): "✨ not a valid base64 ✨"}
         field._deserialize(value=json_to_deserialize, attr=None, data=None)
 
 
