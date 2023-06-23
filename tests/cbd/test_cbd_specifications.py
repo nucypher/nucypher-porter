@@ -17,7 +17,7 @@ from porter.schema import CBDDecrypt, CBDDecryptionOutcomeSchema
 def test_cbd_decrypt(
     porter, dkg_setup, dkg_encrypted_data, get_random_checksum_address
 ):
-    ritual_id, public_key, cohort, _, threshold = dkg_setup
+    ritual_id, public_key, cohort, threshold = dkg_setup
     ciphertext, expected_plaintext, conditions = dkg_encrypted_data
 
     cbd_decrypt_schema = CBDDecrypt()
