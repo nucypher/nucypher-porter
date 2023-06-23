@@ -2,17 +2,9 @@ import click
 from marshmallow import INCLUDE, Schema
 from marshmallow import fields as marshmallow_fields
 from marshmallow import validates_schema
-from marshmallow.fields import URL, Dict, String
 
 from porter.cli.types import EIP55_CHECKSUM_ADDRESS
-from porter.fields.base import (
-    JSON,
-    Base64BytesRepresentation,
-    Integer,
-    JSONDict,
-    PositiveInteger,
-    StringList,
-)
+from porter.fields.base import JSON, Integer, PositiveInteger, StringList
 from porter.fields.cbd import (
     EncryptedThresholdDecryptionRequestField,
     EncryptedThresholdDecryptionResponseField,
@@ -54,7 +46,7 @@ def option_bob_encrypting_key():
 class UrsulaInfoSchema(BaseSchema):
     """Schema for the result of sampling of Ursulas."""
     checksum_address = UrsulaChecksumAddress()
-    uri = URL()
+    uri = marshmallow_fields.URL()
     encrypting_key = UmbralKey()
 
     # maintain field declaration ordering
@@ -132,7 +124,9 @@ class PRERetrievalOutcomeSchema(BaseSchema):
     """Schema for the result of /retrieve_cfrags endpoint."""
 
     cfrags = marshmallow_fields.Dict(keys=UrsulaChecksumAddress(), values=CapsuleFrag())
-    errors = marshmallow_fields.Dict(keys=UrsulaChecksumAddress(), values=String())
+    errors = marshmallow_fields.Dict(
+        keys=UrsulaChecksumAddress(), values=marshmallow_fields.String()
+    )
 
     # maintain field declaration ordering
     class Meta:
@@ -211,10 +205,12 @@ class PRERetrieveCFrags(BaseSchema):
 class CBDDecryptionOutcomeSchema(BaseSchema):
     """Schema for the result of /retrieve_cfrags endpoint."""
 
-    encrypted_decryption_responses = Dict(
+    encrypted_decryption_responses = marshmallow_fields.Dict(
         keys=UrsulaChecksumAddress(), values=EncryptedThresholdDecryptionResponseField()
     )
-    errors = Dict(keys=UrsulaChecksumAddress(), values=String())
+    errors = marshmallow_fields.Dict(
+        keys=UrsulaChecksumAddress(), values=marshmallow_fields.String()
+    )
 
     # maintain field declaration ordering
     class Meta:
@@ -233,7 +229,7 @@ class CBDDecrypt(BaseSchema):
             required=True
         )
     )
-    encrypted_decryption_requests = JSONDict(
+    encrypted_decryption_requests = marshmallow_fields.Dict(
         keys=UrsulaChecksumAddress(),
         values=EncryptedThresholdDecryptionRequestField(),
         required=True,

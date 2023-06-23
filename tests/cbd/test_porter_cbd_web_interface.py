@@ -10,7 +10,6 @@ from nucypher_core import (
     ThresholdDecryptionRequest,
 )
 from nucypher_core.ferveo import (
-    Ciphertext,
     DecryptionShareSimple,
     combine_decryption_shares_simple,
     decrypt_with_shared_secret,
@@ -67,7 +66,7 @@ def test_cbd_decrypt(
 
     request_data = {
         "threshold": threshold,
-        "encrypted_decryption_requests": json.dumps(encrypted_decryption_requests),
+        "encrypted_decryption_requests": encrypted_decryption_requests,
     }
 
     #
@@ -157,7 +156,7 @@ def test_cbd_decrypt(
 
     request_data = {
         "threshold": threshold,
-        "encrypted_decryption_requests": json.dumps(encrypted_decryption_requests),
+        "encrypted_decryption_requests": encrypted_decryption_requests,
     }
     response = porter_web_controller.post(
         "/cbd_decrypt", data=json.dumps(request_data)

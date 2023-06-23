@@ -4,6 +4,7 @@ from base64 import b64encode
 
 import pytest
 from eth_utils import to_canonical_address
+from marshmallow import fields as marshmallow_fields
 from nucypher.crypto.ferveo.dkg import FerveoVariant
 from nucypher_core import (
     Address,
@@ -23,7 +24,6 @@ from nucypher_core.umbral import SecretKey
 from porter.fields.base import (
     JSON,
     Base64BytesRepresentation,
-    JSONDict,
     PositiveInteger,
     String,
     StringList,
@@ -260,12 +260,12 @@ def test_json_field():
                     field._deserialize(value=json.dumps(d), attr=None, data=None)
 
 
-def test_cbd_json_dict_field(get_random_checksum_address):
+def test_cbd_dict_field(get_random_checksum_address):
     # test data
     original_data = {}
     expected_serialized_result = {}
     num_decryption_requests = 5
-    for i in range(0, 5):
+    for i in range(0, num_decryption_requests):
         ursula_checksum_address = get_random_checksum_address()
         encrypted_decryption_request = os.urandom(32)
         original_data[ursula_checksum_address] = encrypted_decryption_request
@@ -274,35 +274,24 @@ def test_cbd_json_dict_field(get_random_checksum_address):
         ).decode()
 
     # mimic usage for CBD
-    field = JSONDict(keys=UrsulaChecksumAddress(), values=Base64BytesRepresentation())
+    field = marshmallow_fields.Dict(
+        keys=UrsulaChecksumAddress(), values=Base64BytesRepresentation()
+    )
     serialized = field._serialize(value=original_data, attr=None, obj=None)
-    assert serialized == json.dumps(expected_serialized_result)
+    assert serialized == expected_serialized_result
 
     deserialized = field._deserialize(value=serialized, attr=None, data=None)
     assert deserialized == original_data
 
     with pytest.raises(InvalidInputData):
         # attempt to deserialize invalid key; must be checksum address
-        json_to_deserialize = json.dumps({"a": b64encode(os.urandom(32)).decode()})
+        json_to_deserialize = {"a": b64encode(os.urandom(32)).decode()}
         field._deserialize(value=json_to_deserialize, attr=None, data=None)
 
     with pytest.raises(InvalidInputData):
         # attempt to deserialize invalid value; must be base64 string
-        json_to_deserialize = json.dumps({get_random_checksum_address(): 1})
+        json_to_deserialize = {get_random_checksum_address(): "+_--1"}
         field._deserialize(value=json_to_deserialize, attr=None, data=None)
-
-    with pytest.raises(InvalidInputData):
-        # attempt to deserialize non-dict object
-        json_to_deserialize = json.dumps({get_random_checksum_address(): 1})
-        field._deserialize("the hills are alive...", attr=None, data=None)
-
-    with pytest.raises(InvalidInputData):
-        # non-dict object
-        field._serialize(value=[1, 2, 3], attr=None, obj=None)
-
-    with pytest.raises(InvalidInputData):
-        # attempt to serialize invalid key; must be checksum address
-        field._serialize(value={"a": os.urandom(32)}, attr=None, obj=None)
 
 
 def test_encrypted_threshold_decryption_request(dkg_setup, dkg_encrypted_data):
