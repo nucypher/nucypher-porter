@@ -28,7 +28,6 @@ from nucypher_core import HRAC, Address, TreasureMap
 from nucypher_core.ferveo import (
     Ciphertext,
     DkgPublicKey,
-    DkgPublicParameters,
     Validator,
 )
 
@@ -252,7 +251,7 @@ def porter_web_controller(porter):
 @pytest.fixture(scope="module")
 def dkg_setup(
     get_random_checksum_address, ursulas, coordinator_agent
-) -> Tuple[int, DkgPublicKey, List[Ursula], DkgPublicParameters, int]:
+) -> Tuple[int, DkgPublicKey, List[Ursula], int]:
     ritual_id = 0
     num_shares = 8
     threshold = 5
@@ -287,7 +286,7 @@ def dkg_setup(
             ritual_id=ritual_id, transcript=transcript
         )
 
-    aggregated_transcript, public_key, params = dkg.aggregate_transcripts(
+    aggregated_transcript, public_key = dkg.aggregate_transcripts(
         ritual_id=ritual_id,
         me=validators[0],
         shares=num_shares,
@@ -299,7 +298,6 @@ def dkg_setup(
         ursula.dkg_storage.store_aggregated_transcript(
             ritual_id=ritual_id, aggregated_transcript=aggregated_transcript
         )
-        ursula.dkg_storage.store_dkg_params(ritual_id=ritual_id, public_params=params)
         ursula.dkg_storage.store_public_key(ritual_id=ritual_id, public_key=public_key)
 
     ritual = CoordinatorAgent.Ritual(
@@ -330,7 +328,7 @@ def dkg_setup(
         CoordinatorAgent.Ritual.Status.FINALIZED
     )
 
-    return ritual_id, public_key, cohort, params, threshold
+    return ritual_id, public_key, cohort, threshold
 
 
 PLAINTEXT = "peace at dawn"
@@ -346,7 +344,7 @@ CONDITIONS = {
 
 @pytest.fixture(scope="module")
 def dkg_encrypted_data(dkg_setup) -> Tuple[Ciphertext, bytes, Lingo]:
-    _, public_key, _, _, _ = dkg_setup
+    _, public_key, _, _ = dkg_setup
     enrico = Enrico(encrypting_key=public_key)
     ciphertext = enrico.encrypt_for_dkg(
         plaintext=PLAINTEXT.encode(), conditions=CONDITIONS

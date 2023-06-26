@@ -17,7 +17,7 @@ from porter.schema import CBDDecrypt, CBDDecryptionOutcomeSchema
 def test_cbd_decrypt(
     porter, dkg_setup, dkg_encrypted_data, get_random_checksum_address
 ):
-    ritual_id, public_key, cohort, _, threshold = dkg_setup
+    ritual_id, public_key, cohort, threshold = dkg_setup
     ciphertext, expected_plaintext, conditions = dkg_encrypted_data
 
     cbd_decrypt_schema = CBDDecrypt()
@@ -61,7 +61,7 @@ def test_cbd_decrypt(
 
     with pytest.raises(InvalidInputData):
         request_data = {
-            "encrypted_decryption_requests": json.dumps(encrypted_decryption_requests)
+            "encrypted_decryption_requests": encrypted_decryption_requests,
         }
         cbd_decrypt_schema.load(request_data)
 
@@ -69,14 +69,14 @@ def test_cbd_decrypt(
     with pytest.raises(InvalidInputData):
         request_data = {
             "dkg_threshold": threshold,
-            "encrypted_decryption_requests": json.dumps(encrypted_decryption_requests),
+            "encrypted_decryption_requests": encrypted_decryption_requests,
         }
         cbd_decrypt_schema.load(request_data)
 
     with pytest.raises(InvalidInputData):
         request_data = {
             "threshold": threshold,
-            "encrypted_dec_requests": json.dumps(encrypted_decryption_requests),
+            "encrypted_dec_requests": encrypted_decryption_requests,
         }
         cbd_decrypt_schema.load(request_data)
 
@@ -84,14 +84,7 @@ def test_cbd_decrypt(
     with pytest.raises(InvalidInputData):
         request_data = {
             "threshold": "threshold? we don't need no stinking threshold",
-            "encrypted_decryption_requests": json.dumps(encrypted_decryption_requests),
-        }
-        cbd_decrypt_schema.load(request_data)
-
-    with pytest.raises(InvalidInputData):
-        request_data = {
-            "threshold": threshold,
-            "encrypted_decryption_requests": encrypted_decryption_requests,  # not json string
+            "encrypted_decryption_requests": encrypted_decryption_requests,
         }
         cbd_decrypt_schema.load(request_data)
 
@@ -100,14 +93,14 @@ def test_cbd_decrypt(
         request_data = {
             "threshold": len(encrypted_decryption_requests)
             + 1,  # threshold larger than number of requests
-            "encrypted_decryption_requests": json.dumps(encrypted_decryption_requests),
+            "encrypted_decryption_requests": encrypted_decryption_requests,
         }
         cbd_decrypt_schema.load(request_data)
 
     # simple schema successful load
     request_data = {
         "threshold": threshold,
-        "encrypted_decryption_requests": json.dumps(encrypted_decryption_requests),
+        "encrypted_decryption_requests": encrypted_decryption_requests,
     }
     cbd_decrypt_schema.load(request_data)
 
