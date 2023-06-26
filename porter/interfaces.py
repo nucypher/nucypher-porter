@@ -82,7 +82,7 @@ class PorterInterface(ControlInterface):
     def cbd_decrypt(
         self,
         threshold: int,
-        encrypted_decryption_requests: Dict[ChecksumAddress, bytes],
+        encrypted_decryption_requests: str,
     ):
         cbd_outcome = self.implementer.cbd_decrypt(
             threshold=threshold,
