@@ -5,7 +5,6 @@ from base64 import b64encode
 import pytest
 from eth_utils import to_canonical_address
 from marshmallow import fields as marshmallow_fields
-from nucypher.crypto.ferveo.dkg import FerveoVariant
 from nucypher_core import (
     Address,
     Conditions,
@@ -19,6 +18,7 @@ from nucypher_core import (
     ThresholdDecryptionRequest,
     ThresholdDecryptionResponse,
 )
+from nucypher_core.ferveo import FerveoVariant
 from nucypher_core.umbral import SecretKey
 
 from porter.fields.base import (
@@ -300,7 +300,7 @@ def test_encrypted_threshold_decryption_request(dkg_setup, dkg_encrypted_data):
 
     decryption_request = ThresholdDecryptionRequest(
         ritual_id=ritual_id,
-        variant=int(FerveoVariant.SIMPLE.value),
+        variant=FerveoVariant.Simple,
         ciphertext=ciphertext,
         conditions=Conditions(json.dumps(conditions)),
     )

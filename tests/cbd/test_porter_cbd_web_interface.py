@@ -2,7 +2,6 @@ import json
 from base64 import b64decode
 
 from eth_utils import to_checksum_address
-from nucypher.crypto.ferveo.dkg import FerveoVariant
 from nucypher_core import (
     Conditions,
     EncryptedThresholdDecryptionResponse,
@@ -13,6 +12,7 @@ from nucypher_core.ferveo import (
     DecryptionShareSimple,
     combine_decryption_shares_simple,
     decrypt_with_shared_secret,
+    FerveoVariant,
 )
 
 from porter.fields.cbd import EncryptedThresholdDecryptionRequestField
@@ -36,7 +36,7 @@ def test_cbd_decrypt(
 
     decryption_request = ThresholdDecryptionRequest(
         ritual_id=ritual_id,
-        variant=int(FerveoVariant.SIMPLE.value),
+        variant=FerveoVariant.Simple,
         ciphertext=ciphertext,
         conditions=Conditions(json.dumps(conditions)),
     )
@@ -133,7 +133,7 @@ def test_cbd_decrypt(
             # invalid data
             request = ThresholdDecryptionRequest(
                 ritual_id=999,  # rando invalid ritual id
-                variant=int(FerveoVariant.SIMPLE.value),
+                variant=FerveoVariant.Simple,
                 ciphertext=ciphertext,
                 conditions=Conditions(json.dumps(conditions)),
             )
