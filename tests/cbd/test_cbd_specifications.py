@@ -2,8 +2,8 @@ import json
 
 import pytest
 from eth_utils import to_checksum_address
-from nucypher.crypto.ferveo.dkg import FerveoVariant
 from nucypher_core import Conditions, SessionStaticSecret, ThresholdDecryptionRequest
+from nucypher_core.ferveo import FerveoVariant
 
 from porter.fields.cbd import (
     EncryptedThresholdDecryptionRequestField,
@@ -24,7 +24,7 @@ def test_cbd_decrypt(
 
     decryption_request = ThresholdDecryptionRequest(
         ritual_id=ritual_id,
-        variant=int(FerveoVariant.SIMPLE.value),
+        variant=FerveoVariant.Simple,
         ciphertext=ciphertext,
         conditions=Conditions(json.dumps(conditions)),
     )

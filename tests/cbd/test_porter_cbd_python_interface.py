@@ -1,12 +1,11 @@
 import json
 
-from nucypher.crypto.ferveo.dkg import FerveoVariant
 from nucypher_core import Conditions, SessionStaticSecret, ThresholdDecryptionRequest
 from nucypher_core.ferveo import (
-    Ciphertext,
     DecryptionShareSimple,
     combine_decryption_shares_simple,
     decrypt_with_shared_secret,
+    FerveoVariant,
 )
 
 
@@ -16,7 +15,7 @@ def test_cbd_decryption(porter, dkg_setup, dkg_encrypted_data):
 
     decryption_request = ThresholdDecryptionRequest(
         ritual_id=ritual_id,
-        variant=int(FerveoVariant.SIMPLE.value),
+        variant=FerveoVariant.Simple,
         ciphertext=ciphertext,
         conditions=Conditions(json.dumps(conditions)),
     )
