@@ -39,7 +39,7 @@ BANNER = r"""
 | |   | |_| | |   | |_( (/ /| |
 |_|    \___/|_|    \___)____)_|
 
-the Pipe for PRE Application network operations
+the Pipe for TACo Application network operations
 """
 
 
