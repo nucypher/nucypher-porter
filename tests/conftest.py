@@ -335,6 +335,7 @@ PLAINTEXT = "peace at dawn"
 CONDITIONS = {
     "version": ConditionLingo.VERSION,
     "condition": {
+        "conditionType": "time",
         "returnValueTest": {"value": "0", "comparator": ">"},
         "method": "blocktime",
         "chain": TESTERCHAIN_CHAIN_ID,
