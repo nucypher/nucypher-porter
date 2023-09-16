@@ -11,7 +11,7 @@ from nucypher.blockchain.eth.actors import Operator
 from nucypher.blockchain.eth.agents import (
     ContractAgency,
     CoordinatorAgent,
-    PREApplicationAgent,
+    TACoApplicationAgent,
     StakingProvidersReservoir,
 )
 from nucypher.blockchain.eth.interfaces import BlockchainInterfaceFactory
@@ -181,7 +181,7 @@ def mock_sample_reservoir(testerchain, mock_contract_agency):
         }
         return StakingProvidersReservoir(addresses)
 
-    mock_agent = mock_contract_agency.get_agent(PREApplicationAgent)
+    mock_agent = mock_contract_agency.get_agent(TACoApplicationAgent)
     mock_agent.get_staking_provider_reservoir = mock_reservoir
 
 

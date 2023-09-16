@@ -5,7 +5,7 @@ from constant_sorrow.constants import NO_CONTROL_PROTOCOL
 from eth_typing import ChecksumAddress
 from eth_utils import to_checksum_address
 from flask import Response, request
-from nucypher.blockchain.eth.agents import ContractAgency, PREApplicationAgent
+from nucypher.blockchain.eth.agents import ContractAgency, TACoApplicationAgent
 from nucypher.blockchain.eth.interfaces import BlockchainInterfaceFactory
 from nucypher.blockchain.eth.registry import (
     BaseContractRegistry,
@@ -99,7 +99,7 @@ class Porter(Learner):
 
         self.eth_provider_uri = eth_provider_uri
         self.registry = registry or InMemoryContractRegistry.from_latest_publication(network=domain)
-        self.application_agent = ContractAgency.get_agent(PREApplicationAgent, registry=self.registry, provider_uri=self.eth_provider_uri)
+        self.application_agent = ContractAgency.get_agent(TACoApplicationAgent, registry=self.registry, provider_uri=self.eth_provider_uri)
 
         super().__init__(save_metadata=True, domain=domain, node_class=node_class, *args, **kwargs)
 
