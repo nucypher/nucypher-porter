@@ -1,8 +1,6 @@
-import json
-
 import pytest
 from eth_utils import to_checksum_address
-from nucypher_core import Conditions, SessionStaticSecret, ThresholdDecryptionRequest
+from nucypher_core import SessionStaticSecret, ThresholdDecryptionRequest
 from nucypher_core.ferveo import FerveoVariant
 
 from porter.fields.cbd import (
@@ -18,15 +16,16 @@ def test_cbd_decrypt(
     porter, dkg_setup, dkg_encrypted_data, get_random_checksum_address
 ):
     ritual_id, public_key, cohort, threshold = dkg_setup
-    ciphertext, expected_plaintext, conditions = dkg_encrypted_data
+    threshold_message_kit, expected_plaintext = dkg_encrypted_data
 
     cbd_decrypt_schema = CBDDecrypt()
 
     decryption_request = ThresholdDecryptionRequest(
         ritual_id=ritual_id,
         variant=FerveoVariant.Simple,
-        ciphertext=ciphertext,
-        conditions=Conditions(json.dumps(conditions)),
+        ciphertext_header=threshold_message_kit.ciphertext_header,
+        acp=threshold_message_kit.acp,
+        context=None,
     )
 
     requester_secret_key = SessionStaticSecret.random()
@@ -124,11 +123,11 @@ def test_cbd_decrypt(
     cbd_outcome = porter.cbd_decrypt(
         threshold=threshold, encrypted_decryption_requests=encrypted_decryption_requests
     )
-    cbd_outcome_schema = CBDDecryptionOutcomeSchema()
 
+    assert len(cbd_outcome.errors) == 0, f"{cbd_outcome.errors}"
     assert len(cbd_outcome.encrypted_decryption_responses) >= threshold
-    assert len(cbd_outcome.errors) == 0
 
+    cbd_outcome_schema = CBDDecryptionOutcomeSchema()
     outcome_json = cbd_outcome_schema.dump(cbd_outcome)
     output = cbd_decrypt_schema.dump(obj={"decryption_results": cbd_outcome})
     assert (

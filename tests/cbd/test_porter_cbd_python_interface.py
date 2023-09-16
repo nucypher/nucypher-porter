@@ -1,23 +1,20 @@
-import json
-
-from nucypher_core import Conditions, SessionStaticSecret, ThresholdDecryptionRequest
+from nucypher_core import SessionStaticSecret, ThresholdDecryptionRequest
 from nucypher_core.ferveo import (
     DecryptionShareSimple,
-    combine_decryption_shares_simple,
-    decrypt_with_shared_secret,
     FerveoVariant,
+    combine_decryption_shares_simple,
 )
 
 
 def test_cbd_decryption(porter, dkg_setup, dkg_encrypted_data):
     ritual_id, public_key, cohort, threshold = dkg_setup
-    ciphertext, expected_plaintext, conditions = dkg_encrypted_data
+    threshold_message_kit, expected_plaintext = dkg_encrypted_data
 
     decryption_request = ThresholdDecryptionRequest(
         ritual_id=ritual_id,
         variant=FerveoVariant.Simple,
-        ciphertext=ciphertext,
-        conditions=Conditions(json.dumps(conditions)),
+        ciphertext_header=threshold_message_kit.ciphertext_header,
+        acp=threshold_message_kit.acp,
     )
 
     requester_secret_key = SessionStaticSecret.random()
@@ -67,12 +64,7 @@ def test_cbd_decryption(porter, dkg_setup, dkg_encrypted_data):
         decryption_shares.append(decryption_share)
 
     combined_shares = combine_decryption_shares_simple(decryption_shares)
-    conditions = json.dumps(conditions).encode()  # aad
-    cleartext = decrypt_with_shared_secret(
-        ciphertext,
-        conditions,  # aad
-        combined_shares,
-    )
+    cleartext = threshold_message_kit.decrypt_with_shared_secret(combined_shares)
     assert bytes(cleartext) == expected_plaintext
 
     #

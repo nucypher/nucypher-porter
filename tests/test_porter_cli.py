@@ -1,16 +1,13 @@
 import pytest
 from nucypher.characters.lawful import Ursula
 from nucypher.config.constants import TEMPORARY_DOMAIN
-from tests.utils.ursula import select_test_port
 
-from porter.cli.literature import (
-    PORTER_RUN_MESSAGE,
-    PORTER_CORS_ALLOWED_ORIGINS
-)
+from porter.cli.literature import PORTER_CORS_ALLOWED_ORIGINS, PORTER_RUN_MESSAGE
 from porter.cli.main import porter_cli
 from porter.main import Porter
+from tests.constants import TEST_ETH_PROVIDER_URI
+from tests.utils.ursula import select_test_port
 
-TEST_ETH_PROVIDER_URI = "tester://pyevm"
 
 @pytest.fixture(scope="function")
 def teacher_uri(mocker, ursulas, test_registry_source_manager):

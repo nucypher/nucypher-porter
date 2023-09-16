@@ -7,7 +7,6 @@ from eth_utils import to_canonical_address
 from marshmallow import fields as marshmallow_fields
 from nucypher_core import (
     Address,
-    Conditions,
     EncryptedThresholdDecryptionRequest,
     EncryptedThresholdDecryptionResponse,
     MessageKit,
@@ -296,13 +295,13 @@ def test_cbd_dict_field(get_random_checksum_address):
 
 def test_encrypted_threshold_decryption_request(dkg_setup, dkg_encrypted_data):
     ritual_id, _, _, _ = dkg_setup
-    ciphertext, expected_plaintext, conditions = dkg_encrypted_data
+    threshold_message_kit, expected_plaintext = dkg_encrypted_data
 
     decryption_request = ThresholdDecryptionRequest(
         ritual_id=ritual_id,
         variant=FerveoVariant.Simple,
-        ciphertext=ciphertext,
-        conditions=Conditions(json.dumps(conditions)),
+        ciphertext_header=threshold_message_kit.ciphertext_header,
+        acp=threshold_message_kit.acp,
     )
 
     field = EncryptedThresholdDecryptionRequestField()
