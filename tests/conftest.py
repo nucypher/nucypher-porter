@@ -351,6 +351,7 @@ def dkg_setup(
     coordinator_agent.get_ritual_status.return_value = (
         CoordinatorAgent.Ritual.Status.FINALIZED
     )
+    coordinator_agent.is_encryption_authorized.return_value = True
 
     return ritual_id, public_key, cohort, threshold
 
