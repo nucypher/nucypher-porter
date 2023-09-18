@@ -1,0 +1,17 @@
+name: 🧹 Darker
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+      - uses: akaihola/darker@1.7.2
+        with:
+          version: "1.7.2"  # defaults to same version, but can be modified

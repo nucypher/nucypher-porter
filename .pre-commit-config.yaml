@@ -39,9 +39,9 @@ repos:
 
 
   - repo: https://github.com/akaihola/darker
-    rev: 1.6.1
+    rev: 1.7.2
     hooks:
     -   id: darker
         args: [--isort]
         additional_dependencies:
-        -   isort~=5.9
+          - isort~=5.9
