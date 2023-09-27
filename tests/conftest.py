@@ -1,40 +1,36 @@
 import os
 from typing import Iterable, List, Optional, Tuple
+from unittest.mock import MagicMock
 
-import nucypher
 import pytest
 from click.testing import CliRunner
 from eth_typing import ChecksumAddress
 from eth_utils import to_checksum_address
-from nucypher.blockchain.economics import Economics, EconomicsFactory
 from nucypher.blockchain.eth.actors import Operator
 from nucypher.blockchain.eth.agents import (
     ContractAgency,
     CoordinatorAgent,
-    PREApplicationAgent,
     StakingProvidersReservoir,
+    TACoApplicationAgent,
 )
 from nucypher.blockchain.eth.interfaces import BlockchainInterfaceFactory
+from nucypher.blockchain.eth.networks import NetworksInventory
 from nucypher.blockchain.eth.registry import InMemoryContractRegistry
+from nucypher.blockchain.eth.signers.software import Web3Signer
 from nucypher.characters.lawful import Enrico, Ursula
 from nucypher.config.constants import TEMPORARY_DOMAIN
 from nucypher.crypto.ferveo import dkg
 from nucypher.crypto.powers import DecryptingPower, RitualisticPower
 from nucypher.network.nodes import Learner, Teacher
 from nucypher.policy.conditions.lingo import ConditionLingo
-from nucypher.policy.conditions.types import Lingo
 from nucypher.utilities.logging import GlobalLoggerSettings
-from nucypher_core import HRAC, Address, TreasureMap
-from nucypher_core.ferveo import (
-    Ciphertext,
-    DkgPublicKey,
-    Validator,
-)
+from nucypher_core import HRAC, Address, ThresholdMessageKit, TreasureMap
+from nucypher_core.ferveo import DkgPublicKey, Validator
 
 from porter.emitters import WebEmitter
 from porter.main import Porter
 from tests.constants import MOCK_ETH_PROVIDER_URI, TESTERCHAIN_CHAIN_ID
-from tests.mock.coordinator import MockCoordinatorAgent
+from tests.mock.agents import MockContractAgent
 from tests.mock.interfaces import MockBlockchain, mock_registry_source_manager
 
 # Crash on server error by default
@@ -107,19 +103,27 @@ def testerchain(mock_testerchain, module_mocker) -> MockBlockchain:
     return mock_testerchain
 
 
-@pytest.fixture(autouse=True, scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def mock_condition_blockchains(session_mocker):
     """adds testerchain's chain ID to permitted conditional chains"""
+    session_mocker.patch.dict(
+        "nucypher.policy.conditions.evm._CONDITION_CHAINS",
+        {TESTERCHAIN_CHAIN_ID: "eth-tester/pyevm"},
+    )
+
     session_mocker.patch.object(
-        nucypher.policy.conditions.evm,
-        "_CONDITION_CHAINS",
-        tuple([TESTERCHAIN_CHAIN_ID]),
+        NetworksInventory, "get_polygon_chain_id", return_value=TESTERCHAIN_CHAIN_ID
+    )
+
+    session_mocker.patch.object(
+        NetworksInventory, "get_ethereum_chain_id", return_value=TESTERCHAIN_CHAIN_ID
     )
 
 
 @pytest.fixture(scope='module')
 def test_registry():
-    return InMemoryContractRegistry()
+    registry = InMemoryContractRegistry()
+    return registry
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -133,18 +137,8 @@ def staking_providers(testerchain, test_registry, monkeymodule):
     return testerchain.stake_providers_accounts
 
 
-@pytest.fixture(scope='module')
-def application_economics():
-    economics = Economics()
-    return economics
-
-
 @pytest.fixture(scope='module', autouse=True)
-def mock_contract_agency(module_mocker, application_economics):
-
-    # Patch
-    module_mocker.patch.object(EconomicsFactory, 'get_economics', return_value=application_economics)
-
+def mock_contract_agency():
     from tests.mock.agents import MockContractAgency
 
     # Monkeypatch # TODO: Use better tooling for this monkeypatch?
@@ -162,11 +156,18 @@ def mock_contract_agency(module_mocker, application_economics):
 
 
 @pytest.fixture(scope="module")
-def coordinator_agent(mock_contract_agency) -> MockCoordinatorAgent:
-    coordinator_agent: CoordinatorAgent = mock_contract_agency.get_agent(
-        CoordinatorAgent, registry=None
+def coordinator_agent(mock_contract_agency) -> MockContractAgent:
+    coordinator_agent = mock_contract_agency.get_agent(
+        CoordinatorAgent, registry=None, provider_uri=None  # parameters don't matter
     )
     return coordinator_agent
+
+
+@pytest.fixture(scope="module", autouse=True)
+def mock_condition_provider_configuration(module_mocker, testerchain):
+    module_mocker.patch.object(
+        Operator, "_make_condition_provider", return_value=testerchain.provider
+    )
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -181,7 +182,7 @@ def mock_sample_reservoir(testerchain, mock_contract_agency):
         }
         return StakingProvidersReservoir(addresses)
 
-    mock_agent = mock_contract_agency.get_agent(PREApplicationAgent)
+    mock_agent = mock_contract_agency.get_agent(TACoApplicationAgent)
     mock_agent.get_staking_provider_reservoir = mock_reservoir
 
 
@@ -195,8 +196,16 @@ def mock_substantiate_stamp(module_mocker, monkeymodule):
 
 @pytest.fixture(scope='module')
 def test_registry_source_manager(test_registry):
-    with mock_registry_source_manager(test_registry=test_registry):
-        yield
+    with mock_registry_source_manager(test_registry=test_registry) as real_inventory:
+        yield real_inventory
+
+
+@pytest.fixture(scope="module")
+def mock_signer(get_random_checksum_address):
+    signer = MagicMock(spec=Web3Signer)
+    signer.sign_message.return_value = os.urandom(32)
+    signer.accounts = [get_random_checksum_address()]
+    return signer
 
 
 @pytest.fixture(scope="module")
@@ -302,8 +311,12 @@ def dkg_setup(
 
     ritual = CoordinatorAgent.Ritual(
         initiator=get_random_checksum_address(),
+        authority=get_random_checksum_address(),
+        access_controller=get_random_checksum_address(),
         dkg_size=num_shares,
         init_timestamp=123456,
+        end_timestamp=1234567,
+        threshold=threshold,
         total_transcripts=num_shares,
         total_aggregations=num_shares,
         public_key=CoordinatorAgent.Ritual.G1Point.from_dkg_public_key(public_key),
@@ -327,6 +340,7 @@ def dkg_setup(
     coordinator_agent.get_ritual_status.return_value = (
         CoordinatorAgent.Ritual.Status.FINALIZED
     )
+    coordinator_agent.is_encryption_authorized.return_value = True
 
     return ritual_id, public_key, cohort, threshold
 
@@ -335,6 +349,7 @@ PLAINTEXT = "peace at dawn"
 CONDITIONS = {
     "version": ConditionLingo.VERSION,
     "condition": {
+        "conditionType": "time",
         "returnValueTest": {"value": "0", "comparator": ">"},
         "method": "blocktime",
         "chain": TESTERCHAIN_CHAIN_ID,
@@ -342,12 +357,13 @@ CONDITIONS = {
 }
 
 
+@pytest.mark.usefixtures("mock_rpc_condition")
 @pytest.fixture(scope="module")
-def dkg_encrypted_data(dkg_setup) -> Tuple[Ciphertext, bytes, Lingo]:
+def dkg_encrypted_data(dkg_setup, mock_signer) -> Tuple[ThresholdMessageKit, bytes]:
     _, public_key, _, _ = dkg_setup
-    enrico = Enrico(encrypting_key=public_key)
-    ciphertext = enrico.encrypt_for_dkg(
+    enrico = Enrico(encrypting_key=public_key, signer=mock_signer)
+    threshold_message_kit = enrico.encrypt_for_dkg(
         plaintext=PLAINTEXT.encode(), conditions=CONDITIONS
     )
 
-    return ciphertext, PLAINTEXT.encode(), CONDITIONS
+    return threshold_message_kit, PLAINTEXT.encode()

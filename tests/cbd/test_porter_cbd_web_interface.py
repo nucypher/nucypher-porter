@@ -3,7 +3,6 @@ from base64 import b64decode
 
 from eth_utils import to_checksum_address
 from nucypher_core import (
-    Conditions,
     EncryptedThresholdDecryptionResponse,
     SessionStaticSecret,
     ThresholdDecryptionRequest,
@@ -11,7 +10,6 @@ from nucypher_core import (
 from nucypher_core.ferveo import (
     DecryptionShareSimple,
     combine_decryption_shares_simple,
-    decrypt_with_shared_secret,
     FerveoVariant,
 )
 
@@ -32,13 +30,13 @@ def test_cbd_decrypt(
 
     # Setup
     ritual_id, public_key, cohort, threshold = dkg_setup
-    ciphertext, expected_plaintext, conditions = dkg_encrypted_data
+    threshold_message_kit, expected_plaintext = dkg_encrypted_data
 
     decryption_request = ThresholdDecryptionRequest(
         ritual_id=ritual_id,
         variant=FerveoVariant.Simple,
-        ciphertext=ciphertext,
-        conditions=Conditions(json.dumps(conditions)),
+        ciphertext_header=threshold_message_kit.ciphertext_header,
+        acp=threshold_message_kit.acp,
     )
 
     requester_secret_key = SessionStaticSecret.random()
@@ -82,12 +80,13 @@ def test_cbd_decrypt(
     decryption_results = response_data["result"]["decryption_results"]
     assert decryption_results
 
+    errors = decryption_results["errors"]
+    assert len(errors) == 0, f"{errors}"  # no errors
+
     assert len(decryption_results["encrypted_decryption_responses"]) >= threshold
 
     cohort_addresses = [to_checksum_address(ursula.checksum_address) for ursula in cohort]
 
-    errors = decryption_results["errors"]
-    assert len(errors) == 0  # no errors
 
     encrypted_decryption_responses = decryption_results[
         "encrypted_decryption_responses"
@@ -112,12 +111,7 @@ def test_cbd_decrypt(
         decryption_shares.append(decryption_share)
 
     combined_shares = combine_decryption_shares_simple(decryption_shares)
-    json_conditions = json.dumps(conditions).encode()  # aad
-    cleartext = decrypt_with_shared_secret(
-        ciphertext,
-        json_conditions,  # aad
-        combined_shares,
-    )
+    cleartext = threshold_message_kit.decrypt_with_shared_secret(combined_shares)
     assert bytes(cleartext) == expected_plaintext
 
     #
@@ -134,8 +128,8 @@ def test_cbd_decrypt(
             request = ThresholdDecryptionRequest(
                 ritual_id=999,  # rando invalid ritual id
                 variant=FerveoVariant.Simple,
-                ciphertext=ciphertext,
-                conditions=Conditions(json.dumps(conditions)),
+                ciphertext_header=threshold_message_kit.ciphertext_header,
+                acp=threshold_message_kit.acp,
             )
 
         ursula_decryption_request_static_key = cohort[

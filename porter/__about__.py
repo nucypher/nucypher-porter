@@ -12,7 +12,7 @@ __title__ = "porter"
 
 __url__ = "https://github.com/nucypher/nucypher-porter"
 
-__summary__ = 'Pipe for PRE on Threshold Network'
+__summary__ = "Pipe for TACo on Threshold Network"
 
 __version__ = "1.0.0"
 
