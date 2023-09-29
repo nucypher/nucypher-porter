@@ -8,6 +8,6 @@ WORKDIR /code
 COPY . /code
 
 # Porter requirements
-RUN pip3 install .[dev]
+RUN pip3 install .
 
 CMD ["/bin/bash"]
