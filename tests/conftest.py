@@ -13,9 +13,9 @@ from nucypher.blockchain.eth.agents import (
     StakingProvidersReservoir,
     TACoApplicationAgent,
 )
+from nucypher.blockchain.eth.domains import DomainInfo, TACoDomain
 from nucypher.blockchain.eth.interfaces import BlockchainInterfaceFactory
-from nucypher.blockchain.eth.networks import NetworksInventory
-from nucypher.blockchain.eth.registry import InMemoryContractRegistry
+from nucypher.blockchain.eth.registry import ContractRegistry
 from nucypher.blockchain.eth.signers.software import Web3Signer
 from nucypher.characters.lawful import Enrico, Ursula
 from nucypher.config.constants import TEMPORARY_DOMAIN
@@ -29,9 +29,14 @@ from nucypher_core.ferveo import DkgPublicKey, Validator
 
 from porter.emitters import WebEmitter
 from porter.main import Porter
-from tests.constants import MOCK_ETH_PROVIDER_URI, TESTERCHAIN_CHAIN_ID
+from tests.constants import (
+    MOCK_ETH_PROVIDER_URI,
+    TESTERCHAIN_CHAIN_ID,
+    TESTERCHAIN_CHAIN_INFO,
+)
 from tests.mock.agents import MockContractAgent
-from tests.mock.interfaces import MockBlockchain, mock_registry_source_manager
+from tests.mock.interfaces import MockBlockchain
+from tests.utils.registry import MockRegistrySource, mock_registry_sources
 
 # Crash on server error by default
 WebEmitter._crash_on_error_default = True
@@ -103,27 +108,29 @@ def testerchain(mock_testerchain, module_mocker) -> MockBlockchain:
     return mock_testerchain
 
 
-@pytest.fixture(scope="session", autouse=True)
-def mock_condition_blockchains(session_mocker):
+@pytest.fixture(scope="module", autouse=True)
+def mock_condition_blockchains(module_mocker):
     """adds testerchain's chain ID to permitted conditional chains"""
-    session_mocker.patch.dict(
+    module_mocker.patch.dict(
         "nucypher.policy.conditions.evm._CONDITION_CHAINS",
         {TESTERCHAIN_CHAIN_ID: "eth-tester/pyevm"},
     )
 
-    session_mocker.patch.object(
-        NetworksInventory, "get_polygon_chain_id", return_value=TESTERCHAIN_CHAIN_ID
+    test_domain_info = DomainInfo(
+        TEMPORARY_DOMAIN, TESTERCHAIN_CHAIN_INFO, TESTERCHAIN_CHAIN_INFO
     )
 
-    session_mocker.patch.object(
-        NetworksInventory, "get_ethereum_chain_id", return_value=TESTERCHAIN_CHAIN_ID
+    module_mocker.patch.object(
+        TACoDomain, "get_domain_info", return_value=test_domain_info
     )
 
 
 @pytest.fixture(scope='module')
-def test_registry():
-    registry = InMemoryContractRegistry()
-    return registry
+def test_registry(module_mocker):
+    with mock_registry_sources(mocker=module_mocker):
+        mock_source = MockRegistrySource(domain=TEMPORARY_DOMAIN)
+        registry = ContractRegistry(source=mock_source)
+        yield registry
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -194,12 +201,6 @@ def mock_substantiate_stamp(module_mocker, monkeymodule):
     module_mocker.patch.object(Teacher, "validate_operator")
 
 
-@pytest.fixture(scope='module')
-def test_registry_source_manager(test_registry):
-    with mock_registry_source_manager(test_registry=test_registry) as real_inventory:
-        yield real_inventory
-
-
 @pytest.fixture(scope="module")
 def mock_signer(get_random_checksum_address):
     signer = MagicMock(spec=Web3Signer)
@@ -211,15 +212,17 @@ def mock_signer(get_random_checksum_address):
 @pytest.fixture(scope="module")
 @pytest.mark.usefixtures('testerchain', 'agency')
 def porter(ursulas, mock_rest_middleware, test_registry):
-    porter = Porter(domain=TEMPORARY_DOMAIN,
-                    eth_provider_uri=MOCK_ETH_PROVIDER_URI,
-                    registry=test_registry,
-                    abort_on_learning_error=True,
-                    start_learning_now=True,
-                    known_nodes=ursulas,
-                    verify_node_bonding=False,
-                    execution_timeout=2,
-                    network_middleware=mock_rest_middleware)
+    porter = Porter(
+        domain=TEMPORARY_DOMAIN,
+        eth_endpoint=MOCK_ETH_PROVIDER_URI,
+        registry=test_registry,
+        abort_on_learning_error=True,
+        start_learning_now=True,
+        known_nodes=ursulas,
+        verify_node_bonding=False,
+        execution_timeout=2,
+        network_middleware=mock_rest_middleware,
+    )
     yield porter
     porter.stop_learning_loop()
 

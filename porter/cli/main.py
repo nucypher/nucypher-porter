@@ -1,24 +1,20 @@
 import click
-from nucypher.blockchain.eth.networks import NetworksInventory
+from nucypher.blockchain.eth.domains import TACoDomain
 from nucypher.characters.lawful import Ursula
 from nucypher.cli.config import group_general_config
 from nucypher.cli.options import (
-    option_network,
-    option_eth_provider_uri,
-    option_teacher_uri,
+    option_domain,
+    option_eth_endpoint,
+    option_min_stake,
     option_registry_filepath,
-    option_min_stake
+    option_teacher_uri,
 )
 from nucypher.cli.types import NETWORK_PORT
-from nucypher.cli.utils import setup_emitter, get_registry
-from nucypher.config.constants import TEMPORARY_DOMAIN
+from nucypher.cli.utils import get_registry, setup_emitter
 
-from porter.cli.help import echo_version, echo_config_root_path, echo_logging_root_path
-from porter.cli.literature import (
-    PORTER_CORS_ALLOWED_ORIGINS,
-    PORTER_RUN_MESSAGE
-)
-from porter.main import Porter, BANNER
+from porter.cli.help import echo_config_root_path, echo_logging_root_path, echo_version
+from porter.cli.literature import PORTER_CORS_ALLOWED_ORIGINS, PORTER_RUN_MESSAGE
+from porter.main import BANNER, Porter
 
 
 @click.group()
@@ -34,53 +30,86 @@ def porter_cli():
 
 @porter_cli.command()
 @group_general_config
-@option_network(default=NetworksInventory.DEFAULT, validate=True, required=False)
-@option_eth_provider_uri(required=False)
+@option_domain(default=TACoDomain.DEFAULT_DOMAIN_NAME, validate=True, required=False)
+@option_eth_endpoint(required=False)
 @option_teacher_uri
 @option_registry_filepath
 @option_min_stake
-@click.option('--http-port', help="Porter HTTP/HTTPS port for JSON endpoint", type=NETWORK_PORT, default=Porter.DEFAULT_PORT)
-@click.option('--allow-origins', help="The CORS origin(s) comma-delimited list of strings/regexes for origins to allow - no origins allowed by default", type=click.STRING)
-@click.option('--dry-run', '-x', help="Execute normally without actually starting Porter", is_flag=True)
-@click.option('--eager', help="Start learning and scraping the network before starting up other services", is_flag=True, default=True)
-def run(general_config,
-        network,
-        eth_provider_uri,
-        teacher_uri,
-        registry_filepath,
-        min_stake,
-        http_port,
-        allow_origins,
-        dry_run,
-        eager):
+@click.option(
+    "--http-port",
+    help="Porter HTTP/HTTPS port for JSON endpoint",
+    type=NETWORK_PORT,
+    default=Porter.DEFAULT_PORT,
+)
+@click.option(
+    "--allow-origins",
+    help="The CORS origin(s) comma-delimited list of strings/regexes for origins to allow - no origins allowed by default",
+    type=click.STRING,
+)
+@click.option(
+    "--dry-run",
+    "-x",
+    help="Execute normally without actually starting Porter",
+    is_flag=True,
+)
+@click.option(
+    "--eager",
+    help="Start learning and scraping the domain before starting up other services",
+    is_flag=True,
+    default=True,
+)
+def run(
+    general_config,
+    domain,
+    eth_endpoint,
+    teacher_uri,
+    registry_filepath,
+    min_stake,
+    http_port,
+    allow_origins,
+    dry_run,
+    eager,
+):
     """Start Porter's Web controller."""
     emitter = setup_emitter(general_config, banner=BANNER)
 
     # HTTP/HTTPS
-    if not eth_provider_uri:
-        raise click.BadOptionUsage(option_name='--eth-provider',
-                                   message=click.style("--eth-provider is required for decentralized porter.", fg="red"))
-    if not network:
-        # should never happen - network defaults to 'mainnet' if not specified
-        raise click.BadOptionUsage(option_name='--network',
-                                   message=click.style("--network is required for decentralized porter.", "red"))
+    if not eth_endpoint:
+        raise click.BadOptionUsage(
+            option_name="--eth-endpoint",
+            message=click.style(
+                "--eth-endpoint is required for decentralized porter.", fg="red"
+            ),
+        )
+    if not domain:
+        # should never happen - domain defaults to 'mainnet' if not specified
+        raise click.BadOptionUsage(
+            option_name="--domain",
+            message=click.style(
+                "--domain is required for decentralized porter.", "red"
+            ),
+        )
 
-    registry = get_registry(network=network, registry_filepath=registry_filepath)
+    registry = get_registry(domain=domain, registry_filepath=registry_filepath)
     teacher = None
     if teacher_uri:
-        teacher = Ursula.from_teacher_uri(teacher_uri=teacher_uri,
-                                          min_stake=min_stake,
-                                          registry=registry,
-                                          provider_uri=eth_provider_uri)
+        teacher = Ursula.from_teacher_uri(
+            teacher_uri=teacher_uri,
+            min_stake=min_stake,
+            registry=registry,
+            eth_endpoint=eth_endpoint,
+        )
 
-    PORTER = Porter(domain=network,
-                    known_nodes={teacher} if teacher else None,
-                    registry=registry,
-                    start_learning_now=eager,
-                    eth_provider_uri=eth_provider_uri)
+    PORTER = Porter(
+        domain=domain,
+        known_nodes={teacher} if teacher else None,
+        registry=registry,
+        start_learning_now=eager,
+        eth_endpoint=eth_endpoint,
+    )
 
-    emitter.message(f"Network: {PORTER.domain.capitalize()}", color='green')
-    emitter.message(f"ETH Provider URI: {eth_provider_uri}", color='green')
+    emitter.message(f"TACo Domain: {PORTER.domain.capitalize()}", color="green")
+    emitter.message(f"ETH Endpoint URI: {eth_endpoint}", color="green")
 
     # firm up falsy status (i.e. change specified empty string to None)
     allow_origins = allow_origins if allow_origins else None

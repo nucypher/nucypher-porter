@@ -7,10 +7,7 @@ from eth_utils import to_checksum_address
 from flask import Response, request
 from nucypher.blockchain.eth.agents import ContractAgency, TACoApplicationAgent
 from nucypher.blockchain.eth.interfaces import BlockchainInterfaceFactory
-from nucypher.blockchain.eth.registry import (
-    BaseContractRegistry,
-    InMemoryContractRegistry,
-)
+from nucypher.blockchain.eth.registry import ContractRegistry
 from nucypher.characters.lawful import Ursula
 from nucypher.crypto.powers import DecryptingPower
 from nucypher.network.decryption import ThresholdDecryptionClient
@@ -39,7 +36,7 @@ BANNER = r"""
 | |   | |_| | |   | |_( (/ /| |
 |_|    \___/|_|    \___)____)_|
 
-the Pipe for TACo Application network operations
+the Pipe for TACo Application operations
 """
 
 
@@ -83,28 +80,33 @@ class Porter(Learner):
         ]
         errors: Dict[ChecksumAddress, str]
 
-    def __init__(self,
-                 domain: str = None,
-                 registry: BaseContractRegistry = None,
-                 controller: bool = True,
-                 node_class: object = Ursula,
-                 eth_provider_uri: str = None,
-                 execution_timeout: int = DEFAULT_EXECUTION_TIMEOUT,
-                 *args, **kwargs):
-        if not eth_provider_uri:
+    def __init__(
+        self,
+        domain: str = None,
+        registry: ContractRegistry = None,
+        controller: bool = True,
+        node_class: object = Ursula,
+        eth_endpoint: str = None,
+        execution_timeout: int = DEFAULT_EXECUTION_TIMEOUT,
+        *args,
+        **kwargs,
+    ):
+        if not eth_endpoint:
             raise ValueError('ETH Provider URI is required for decentralized Porter.')
 
-        if not BlockchainInterfaceFactory.is_interface_initialized(eth_provider_uri=eth_provider_uri):
-            BlockchainInterfaceFactory.initialize_interface(eth_provider_uri=eth_provider_uri)
+        if not BlockchainInterfaceFactory.is_interface_initialized(
+            endpoint=eth_endpoint
+        ):
+            BlockchainInterfaceFactory.initialize_interface(endpoint=eth_endpoint)
 
-        self.eth_provider_uri = eth_provider_uri
-        self.registry = registry or InMemoryContractRegistry.from_latest_publication(
-            network=domain
+        self.eth_endpoint = eth_endpoint
+        self.registry = registry or ContractRegistry.from_latest_publication(
+            domain=domain
         )
         self.application_agent = ContractAgency.get_agent(
             TACoApplicationAgent,
             registry=self.registry,
-            provider_uri=self.eth_provider_uri,
+            blockchain_endpoint=self.eth_endpoint,
         )
 
         super().__init__(save_metadata=True, domain=domain, node_class=node_class, *args, **kwargs)
