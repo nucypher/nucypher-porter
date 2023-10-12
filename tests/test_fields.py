@@ -27,12 +27,12 @@ from porter.fields.base import (
     String,
     StringList,
 )
-from porter.fields.cbd import (
+from porter.fields.exceptions import InvalidInputData
+from porter.fields.retrieve import RetrievalKit
+from porter.fields.taco import (
     EncryptedThresholdDecryptionRequestField,
     EncryptedThresholdDecryptionResponseField,
 )
-from porter.fields.exceptions import InvalidInputData
-from porter.fields.retrieve import RetrievalKit
 from porter.fields.umbralkey import UmbralKey
 from porter.fields.ursula import UrsulaChecksumAddress
 
@@ -259,7 +259,7 @@ def test_json_field():
                     field._deserialize(value=json.dumps(d), attr=None, data=None)
 
 
-def test_cbd_dict_field(get_random_checksum_address):
+def test_taco_dict_field(get_random_checksum_address):
     # test data
     original_data = {}
     expected_serialized_result = {}
@@ -272,7 +272,7 @@ def test_cbd_dict_field(get_random_checksum_address):
             encrypted_decryption_request
         ).decode()
 
-    # mimic usage for CBD
+    # mimic usage for TACo fields
     field = marshmallow_fields.Dict(
         keys=UrsulaChecksumAddress(), values=Base64BytesRepresentation()
     )

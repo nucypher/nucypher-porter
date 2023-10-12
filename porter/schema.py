@@ -5,12 +5,12 @@ from marshmallow import validates_schema
 
 from porter.cli.types import EIP55_CHECKSUM_ADDRESS
 from porter.fields.base import JSON, Integer, PositiveInteger, StringList
-from porter.fields.cbd import (
+from porter.fields.exceptions import InvalidArgumentCombo, InvalidInputData
+from porter.fields.retrieve import CapsuleFrag, RetrievalKit
+from porter.fields.taco import (
     EncryptedThresholdDecryptionRequestField,
     EncryptedThresholdDecryptionResponseField,
 )
-from porter.fields.exceptions import InvalidArgumentCombo, InvalidInputData
-from porter.fields.retrieve import CapsuleFrag, RetrievalKit
 from porter.fields.treasuremap import TreasureMap
 from porter.fields.umbralkey import UmbralKey
 from porter.fields.ursula import UrsulaChecksumAddress
@@ -198,11 +198,11 @@ class PRERetrieveCFrags(BaseSchema):
     )
 
 #
-# CBD Endpoints
+# TACo Endpoints
 #
 
 
-class CBDDecryptionOutcomeSchema(BaseSchema):
+class TACoDecryptOutcomeSchema(BaseSchema):
     """Schema for the result of /retrieve_cfrags endpoint."""
 
     encrypted_decryption_responses = marshmallow_fields.Dict(
@@ -217,7 +217,7 @@ class CBDDecryptionOutcomeSchema(BaseSchema):
         ordered = True
 
 
-class CBDDecrypt(BaseSchema):
+class TACoDecrypt(BaseSchema):
     threshold = Integer(
         required=True,
         load_only=True,
@@ -237,7 +237,7 @@ class CBDDecrypt(BaseSchema):
         click=click.option(
             "--encrypted-decryption-requests",
             "-e",
-            help="Encrypted decryption requests dictionary keyed by ursula address",
+            help="Encrypted decryption requests dictionary keyed by ursula checksum address",
             type=click.STRING,
             required=False,
         ),
@@ -245,7 +245,7 @@ class CBDDecrypt(BaseSchema):
 
     # output
     decryption_results = marshmallow_fields.Nested(
-        CBDDecryptionOutcomeSchema, dump_only=True
+        TACoDecryptOutcomeSchema, dump_only=True
     )
 
     @validates_schema
