@@ -69,9 +69,9 @@ class Porter(Learner):
         cfrags: Dict
         errors: Dict
 
-    class CBDDecryptionOutcome(NamedTuple):
+    class TACoDecryptOutcome(NamedTuple):
         """
-        Simple object that stores the results and errors of CBD decryption operations across
+        Simple object that stores the results and errors of TACo decrypt operations across
         one or more Ursulas.
         """
 
@@ -193,23 +193,22 @@ class Porter(Learner):
             result_outcomes.append(result_outcome)
         return result_outcomes
 
-    def cbd_decrypt(
+    def taco_decrypt(
         self,
         threshold: int,
         encrypted_decryption_requests: Dict[
             ChecksumAddress, EncryptedThresholdDecryptionRequest
         ],
-    ) -> CBDDecryptionOutcome:
+    ) -> TACoDecryptOutcome:
         decryption_client = ThresholdDecryptionClient(self)
         successes, failures = decryption_client.gather_encrypted_decryption_shares(
             encrypted_requests=encrypted_decryption_requests, threshold=threshold
         )
 
-        cbd_outcome = Porter.CBDDecryptionOutcome(
+        taco_decrypt_outcome = Porter.TACoDecryptOutcome(
             encrypted_decryption_responses=successes, errors=failures
         )
-        return cbd_outcome
-
+        return taco_decrypt_outcome
 
     def _make_reservoir(
         self,
@@ -284,11 +283,10 @@ class Porter(Learner):
             response = controller(method_name='retrieve_cfrags', control_request=request)
             return response
 
-        # TODO: do we want to rename this endpoint to not include "cbd"? (#43)
-        @porter_flask_control.route("/cbd_decrypt", methods=["POST"])
-        def cbd_decrypt() -> Response:
-            """Porter control endpoint for executing a CBD decryption request."""
-            response = controller(method_name="cbd_decrypt", control_request=request)
+        @porter_flask_control.route("/taco_decrypt", methods=["POST"])
+        def taco_decrypt() -> Response:
+            """Porter control endpoint for executing a TACo decryption request."""
+            response = controller(method_name="taco_decrypt", control_request=request)
             return response
 
         return controller

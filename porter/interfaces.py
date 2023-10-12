@@ -78,15 +78,15 @@ class PorterInterface(ControlInterface):
         }  # list of RetrievalOutcome objects
         return response_data
 
-    @attach_schema(schema.CBDDecrypt)
-    def cbd_decrypt(
+    @attach_schema(schema.TACoDecrypt)
+    def taco_decrypt(
         self,
         threshold: int,
         encrypted_decryption_requests: Dict[ChecksumAddress, bytes],
     ):
-        cbd_outcome = self.implementer.cbd_decrypt(
+        taco_outcome = self.implementer.taco_decrypt(
             threshold=threshold,
             encrypted_decryption_requests=encrypted_decryption_requests,
         )
-        response_data = {"decryption_results": cbd_outcome}
+        response_data = {"decryption_results": taco_outcome}
         return response_data
