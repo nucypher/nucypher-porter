@@ -12,17 +12,17 @@ web-based service that performs TACo-based protocol operations for
 applications.
 
 Its goal is to simplify and abstract the complexities surrounding the
-TACo protocol to negate the need for applications to interact with it
-via a Python client. Porter introduces the TACo protocol to
+TACo protocol to negate the need for applications to interact with the protocol
+directly. Porter introduces the TACo protocol to
 cross-platform functionality, including web and mobile applications.
 
 .. image:: ./porter_diagram.png
     :target: ./porter_diagram.png
 
 
-Any publicly available Porter can be used to interface with the
-Threshold Network, or some application developers opt to run their
-own.
+You can utilize any publicly available Porter to interface with the
+Threshold Network. Alternatively, some application developers may choose to
+operate their own.
 
 Running a Porter Instance
 -------------------------
