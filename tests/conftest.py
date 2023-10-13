@@ -2,6 +2,7 @@ import os
 from typing import Iterable, List, Optional, Tuple
 from unittest.mock import MagicMock
 
+import maya
 import pytest
 from click.testing import CliRunner
 from eth_typing import ChecksumAddress
@@ -312,13 +313,14 @@ def dkg_setup(
         )
         ursula.dkg_storage.store_public_key(ritual_id=ritual_id, public_key=public_key)
 
+    now = maya.now()
     ritual = CoordinatorAgent.Ritual(
         initiator=get_random_checksum_address(),
         authority=get_random_checksum_address(),
         access_controller=get_random_checksum_address(),
         dkg_size=num_shares,
-        init_timestamp=123456,
-        end_timestamp=1234567,
+        init_timestamp=now.epoch,
+        end_timestamp=now.add(days=1).epoch,
         threshold=threshold,
         total_transcripts=num_shares,
         total_aggregations=num_shares,
