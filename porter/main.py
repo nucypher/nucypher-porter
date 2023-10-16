@@ -284,6 +284,7 @@ class Porter(Learner):
             response = controller(method_name='retrieve_cfrags', control_request=request)
             return response
 
+        # TODO: do we want to rename this endpoint to not include "cbd"? (#43)
         @porter_flask_control.route("/cbd_decrypt", methods=["POST"])
         def cbd_decrypt() -> Response:
             """Porter control endpoint for executing a CBD decryption request."""

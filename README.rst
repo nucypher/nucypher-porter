@@ -7,103 +7,70 @@ Porter
 
 Overview
 --------
-NuCypher Porter can be described as the *“Infura for NuCypher”*. Porter is a web-based service that performs
-nucypher-based protocol operations on behalf of applications.
+Porter can be described as the *“Infura for TACo”*. Porter is a
+web-based service that performs TACo-based protocol operations for
+applications.
 
-Its goal is to simplify and abstract the complexities surrounding the nucypher protocol to negate the need for
-applications to interact with the network directly. Porter enables applications to behave like a "light-client"
-by delegating network intensive operations like peering and node discovery to Porter. Porter facilitates cross-platform
-support for the `nucypher protocol <https://github.com/nucypher/nucypher>`_.
+Its goal is to simplify and abstract the complexities surrounding the
+TACo protocol to negate the need for applications to interact with the protocol
+directly. Porter introduces the TACo protocol to
+cross-platform functionality, including web and mobile applications.
 
 .. image:: ./porter_diagram.png
     :target: ./porter_diagram.png
 
 
-Running Porter
---------------
+You can utilize any publicly available Porter to interface with the
+Threshold Network. Alternatively, some application developers may choose to
+operate their own.
 
-There are a variety of possible infrastructure setups for running the Porter service, and two scenarios for running
-the Porter service are provided here:
+Running a Porter Instance
+-------------------------
 
-#. Run the Porter service directly via docker, docker-compose, or the CLI (see `Run Porter Directly`_)
-#. Run the Porter service with a reverse proxy via docker-compose (see `Run Porter with Reverse Proxy`_)
+Security Considerations
+***********************
 
+-  **HTTPS:** To run the Porter service over HTTPS, it will require a
+   TLS key and a TLS certificate.
+-  **CORS:** Allowed origins for `Cross-Origin Resource Sharing
+   (CORS) <https://en.wikipedia.org/wiki/Cross-origin_resource_sharing>`_
+-  **Authentication:** Usage restriction via authentication protocols,
+   e.g. basic authentication etc.
 
-Run Porter Directly
-*******************
 
 .. note::
 
-    If running the Porter service using Docker or Docker Compose, it will run on port 80 (HTTP). If
-    running via the CLI the default port is 9155, unless specified otherwise via the ``--http-port`` option.
+    Ideally, you would run Porter behind a reverse proxy (e.g. `nginx <https://www.nginx.com/>`_) for additional
+    functionality such as HTTPS, CORS, authentication etc.
 
-Security
-^^^^^^^^
 
-* **CORS:** Allowed origins for `Cross-Origin Resource Sharing (CORS) <https://en.wikipedia.org/wiki/Cross-origin_resource_sharing>`_
-  is not enabled by default and can be enabled either via the ``--allow-origins`` option for the CLI,
-  or the ``PORTER_CORS_ALLOW_ORIGINS`` environment variable for docker-compose.
+Run via Docker
+**************
 
-  The value is expected to be a comma-delimited list of strings/regular expressions for origins to allow requests from. To allow all origins,
-  simply use "*".
+By default, Porter runs on port ``9155``.
 
-  .. note::
-
-      Origin values can be a string (for exact matches) or regular expressions (for more complex matches).
-
-      As part of CORS, the scheme (``https`` or ``http``) is also checked, so using only ``example.com`` is incorrect
-      to allow an origin from that specific domain. For exact matches, you can use ``https://example.com`` for HTTPS or
-      ``http://example.com`` for HTTP. For non-default ports (i.e. not 443 or 80), the ports should be specified
-      e.g. ``https://example.com:8000`` or ``http://example.com:8001``.
-
-      For regular expressions, to allow all sub-domains of ``example.com``, you could use ``.*\.example\.com$`` which
-      incorporates wildcards for scheme and sub-domain. To allow multiple top-level domains you could use
-      ``.*\.example\.(com|org)$`` which allows any origins from both ``example.com`` and ``example.org`` domains.
-
-via Docker
-^^^^^^^^^^
-
-Run Porter within Docker without acquiring or installing the ``nucypher-porter`` codebase.
-
-#. Get the latest image:
+#. Get the latest ``porter`` image:
 
    .. code:: bash
 
        $ docker pull nucypher/porter:latest
 
-#. Run Porter service
-
-   For HTTP service (on default port 80):
+#. Run Porter HTTP Service on port 80
 
    .. code:: bash
 
        $ docker run -d --rm \
-          --name porter-http \
+          --name porter \
           -v ~/.local/share/nucypher/:/root/.local/share/nucypher \
           -p 80:9155 \
+          --restart=unless-stopped \
           nucypher/porter:latest \
           nucypher-porter run \
-          --eth-provider <YOUR WEB3 PROVIDER URI> \
-          --network <NETWORK NAME>
+          --eth-endpoint <YOUR WEB3 PROVIDER URI> \
+          --domain <TACO DOMAIN>
 
-   * With CORS enabled to allow all origins:
-
-     .. code:: bash
-
-         $ docker run -d --rm \
-            --name porter-http-cors \
-            -v ~/.local/share/nucypher/:/root/.local/share/nucypher \
-            -v <TLS DIRECTORY>:/etc/porter/tls \
-            -p 443:9155 \
-            nucypher/porter:latest \
-            nucypher-porter run \
-            --eth-provider <YOUR WEB3 PROVIDER URI> \
-            --network <NETWORK NAME> \
-            --allow-origins "*"
-
-   .. note::
-
-       The commands above are for illustrative purposes and can be modified as necessary.
+   The command above is for illustrative purposes and can be modified as
+   necessary.
 
 #. Porter will be available on default port 80 (HTTP).
 
@@ -111,74 +78,17 @@ Run Porter within Docker without acquiring or installing the ``nucypher-porter``
 
    .. code:: bash
 
-       $ docker logs -f <PORTER SERVICE>
+       $ docker logs -f porter
 
 #. Stop Porter service
 
    .. code:: bash
 
-       $ docker stop <PORTER SERVICE>
+       $ docker stop porter
 
 
-via Docker Compose
-^^^^^^^^^^^^^^^^^^
-
-Docker Compose will start the Porter service within a Docker container.
-
-#. There is no need to install ``nucypher-porter`` after acquiring the codebase since Docker will be used.
-
-#. Set the required environment variables:
-
-   * Web3 Provider URI environment variable
-
-     .. code:: bash
-
-         $ export WEB3_PROVIDER_URI=<YOUR WEB3 PROVIDER URI>
-
-     .. note::
-
-         Local ipc is not supported when running via Docker.
-
-
-   * Network Name environment variable
-
-     .. code:: bash
-
-         $ export NUCYPHER_NETWORK=<NETWORK NAME>
-
-   * *(Optional)* Enable CORS. For example, to only allow access from your sub-domains for ``example.com``:
-
-     .. code:: bash
-
-         $ export PORTER_CORS_ALLOW_ORIGINS=".*\.example\.com$"
-
-
-#. Run Porter service
-
-   For HTTP service (on default port 80):
-
-   .. code:: bash
-
-       $ docker-compose -f deploy/docker/docker-compose.yml up -d porter-http
-
-   Porter will be available on default ports 80 (HTTP).
-
-
-#. View Porter logs
-
-   .. code:: bash
-
-       $ docker-compose -f deploy/docker/docker-compose.yml logs -f <PORTER SERVICE>
-
-#. Stop Porter service
-
-   .. code:: bash
-
-       $ docker-compose -f deploy/docker/docker-compose.yml down
-
-
-via CLI
-^^^^^^^
+Run via CLI
+***********
 
 Acquire the ``nucypher-porter`` code base, and install using pip. Either:
 
@@ -197,134 +107,27 @@ For a full list of CLI options after installation ``nucypher-porter``, run:
 
 .. code:: console
 
-  $ nucypher-porter run --help
+    $ nucypher-porter run --help
 
 
-* Run Porter service
+* Run Porter service via HTTP
+.. code:: console
 
-  * Run via HTTP
-
-    .. code:: console
-
-        $ nucypher-porter run --eth-provider <YOUR WEB3 PROVIDER URI> --network <NETWORK NAME>
+    $ nucypher-porter run --eth-endpoint <YOUR WEB3 PROVIDER URI> --domain <TACO DOMAIN>
 
 
-         ______
-        (_____ \           _
-        _____) )__   ____| |_  ____  ____
-        |  ____/ _ \ / ___)  _)/ _  )/ ___)
-        | |   | |_| | |   | |_( (/ /| |
-        |_|    \___/|_|    \___)____)_|
+     ______
+    (_____ \           _
+    _____) )__   ____| |_  ____  ____
+    |  ____/ _ \ / ___)  _)/ _  )/ ___)
+    | |   | |_| | |   | |_( (/ /| |
+    |_|    \___/|_|    \___)____)_|
 
-        the Pipe for PRE Application network operations
+    the Pipe for TACo Application operations
 
-        Network: <NETWORK NAME>
-        Provider: ...
-        Running Porter Web Controller at http://127.0.0.1:9155
-
-    To enable CORS, use the ``--allow-origins`` option:
-
-    .. code:: console
-
-        $ nucypher-porter run --eth-provider <YOUR WEB3 PROVIDER URI> --network <NETWORK NAME> --allow-origins ".*\.example\.com$"
-
-
-        ______
-        (_____ \           _
-        _____) )__   ____| |_  ____  ____
-        |  ____/ _ \ / ___)  _)/ _  )/ ___)
-        | |   | |_| | |   | |_( (/ /| |
-        |_|    \___/|_|    \___)____)_|
-
-        the Pipe for PRE Application network operations
-
-        Network: <NETWORK NAME>
-        Provider: ...
-        CORS Allow Origins: ['.*\\.example\\.com$']
-        Running Porter Web Controller at http://127.0.0.1:9155
-
-
-Run Porter with Reverse Proxy
-*****************************
-
-This type of Porter execution illustrates the use of a reverse proxy that is a go between or intermediate server that
-handles requests from clients to an internal Porter service. An NGINX reverse proxy instance is
-used in this case. It will handle functionality such as TLS, CORS, and authentication so that the Porter service
-itself does not have to, and allows for more complex configurations than provided by Porter itself. More information
-about the NGINX reverse proxy docker image used and additional configuration options
-is available `here <https://hub.docker.com/r/nginxproxy/nginx-proxy>`_.
-
-
-via Docker Compose
-^^^^^^^^^^^^^^^^^^
-
-Docker Compose will be used to start the NGINX reverse proxy and the Porter service containers.
-
-#. There is no need to install ``nucypher-porter`` after acquiring the codebase since Docker will be used.
-
-#. Set the required environment variables:
-
-   * Web3 Provider URI environment variable
-
-     .. code:: bash
-
-         $ export WEB3_PROVIDER_URI=<YOUR WEB3 PROVIDER URI>
-
-     .. note::
-
-         Local ipc is not supported when running via Docker.
-
-
-   * Network Name environment variable
-
-     .. code:: bash
-
-         $ export NUCYPHER_NETWORK=<NETWORK NAME>
-
-   * The reverse proxy is set up to run over HTTPS by default, and therefore requires a TLS directory containing
-     the TLS key and certificate for the reverse proxy. The directory is expected to contain two files:
-
-     * ``porter.local.key`` - the TLS key
-     * ``porter.local.crt`` - the TLS certificate
-
-     Set the TLS directory environment variable
-
-     .. code:: bash
-
-         $ export TLS_DIR=<ABSOLUTE PATH TO TLS DIRECTORY>
-
-   * *(Optional)* The CORS configuration is set in the ``nucypher-porter/deploy/docker/nginx/porter.local_location`` file.
-
-      .. important::
-
-          By default, CORS for the reverse proxy is configured to allow all origins
-
-#. *(Optional)* Build the docker images:
-
-   .. code:: bash
-
-       $ docker-compose -f deploy/docker/nginx/docker-compose.yml build
-
-#. Run the NGINX reverse proxy and Porter service
-
-   .. code:: bash
-
-       $ docker-compose -f deploy/docker/nginx/docker-compose.yml up -d
-
-#. The NGINX reverse proxy will be publicly accessible via the default HTTPS port 443, and will route requests to the
-   internal Porter service.
-
-#. View Porter service logs
-
-   .. code:: bash
-
-       $ docker-compose -f deploy/docker/nginx/docker-compose.yml logs -f nginx-porter
-
-#. Stop Porter service and NGINX reverse proxy
-
-   .. code:: bash
-
-       $ docker-compose -f deploy/docker/nginx/docker-compose.yml down
+    TACo Domain: <TACO DOMAIN>
+    ETH Endpoint URI: ...
+    Running Porter Web Controller at http://127.0.0.1:9155
 
 
 API
@@ -387,17 +190,92 @@ More examples shown below.
     and it is dependent on the tool being used.
 
 
+POST /cbd_decrypt
+*****************
+Use TACo nodes to decrypt data that was encrypted with associated conditions.
+
+Parameters
+^^^^^^^^^^
++-----------------------------------+----------------------+------------------------------------------------+
+| **Parameter**                     | **Type**             | **Description**                                |
++===================================+======================+================================================+
+| ``threshold``                     | Integer              | | Threshold of nodes needed to respond         |
+|                                   |                      | | successfully.                                |
++-----------------------------------+----------------------+------------------------------------------------+
+| ``encrypted_decryption_requests`` | Dict[String, String] | | Base64 encoded encrypted decryption requests |
+|                                   |                      | | keyed by node staking provider address.      |
++-----------------------------------+----------------------+------------------------------------------------+
+
+Returns
+^^^^^^^
+The result of the decryption operations performed:
+
+    * ``decryption_results`` - The list of results from the decryption operations performed; contains a mapping of
+      Node staking provider address/decryption fragment pairs. The decryption fragments are base64 encoded.
+
+
+Example Request
+^^^^^^^^^^^^^^^
+.. code:: bash
+
+    curl -X POST <PORTER URI>/cbd_decrypt \
+        -H "Content-Type: application/json" \
+        -d '{"threshold":5,
+             "encrypted_decryption_requests":{
+                  "0x04aDC6465Efa53BBD096B2aD2E3dD7DB6EA9c3F4":"RVRScQACAACTAMQgwhlSChp/epwy4evVaXSy1MTn0IjTeH+KlEqHr18tOm/FAfMbyHGdQtnqB66KWQfoEDjs/zxIqIQYM/jFDldmfNIv1RmHxGYJrcXRfF22ewFeTlPEhWmO7T6m15o1c7uas81pzsekF7/WqtTHHuStL7EuQU8Y5VKryUAx86eg6He5lQTZhQx85ZSxiCbDyHd1m8LxT31rM0Mgk7ZDOnYwK/JyNMMRo1hC9/Cl3btEsn/YKnYL4owiUmnXUM2uh+oPJ2h+C/De0KG6cmLlGu9uJOzbAbOrBjB4hoY5p4W70ecqJU8zAvs3deEbuHaa9FE7CUdsq56ugf/vtA+bzdQxIalBCJQLaqSYB/OQl2SaN+WQ/Bp4sToqUWwsDTs9dm7qyFkffqynIyrjhs+fmYI6L3LNa3bXwrKnovR4pv8QTJ67vlyO6C4/jCSjZ2CEP6vv5dlwvyE+2Tots0nJzEoPK2baz2pi2a171f612ethXEApY8OhJCNpMSlEWAATZ741gnYl7mMvP3xwgevu0i+3YD5rTkEJlVh5rQrflIRqRmw4f6qdftcFVDcMipgGoess8qHmmNw7qkKVlQQqv2tzzUtHlenjQ/mtqwE3X1PdsoYnpR/ywUYr+8nGZ7xO6g9REz74dufuccm1+HK67zS58vBy4r1vx/SHj2h9ShR9y+Rakmn35MV1frpUSDZL3w7K+PeifKgF",
+                  "0x18EC3906D608b2b0B0f240C84AdC6d28671a48ce":"RVRScQACAACTAMQgwhlSChp/epwy4evVaXSy1MTn0IjTeH+KlEqHr18tOm/FAfNu9h6h+nBMsSqFXAbjIzGrD5f2rmKN2pDqD6p+I7iJEu2+qi6Is5EveAVJsW/kkgPPSc5V7OzJUnB2ycOnRzs+Gl+vlzihwdDm64Lo5TMQuZAnW6l8O7lgcd7PO/8q4GfeH73LGaQUuhpDjkjZ1Jga7mASps3o+FxIsbMbUjHBK7FydJO0tvc9sS8tDFT5xPrLvKtr8Et+l3I2bguyfFwCuLw74yaV7Cqxx6x0pzhUeZ4BaAIgGyf1R7l2EPxeLaF+6F3yyUK1wy35BE6YfdPYh4J3Y4Tu3ccgIOORJrOQwypVrRgLy7nLzlJJuv5T+Ej7ZyFqOSevnUlccMTEHCvgRAWcq+tBO9hgTO7yNo25EoX/EUJJwZ+0S6g/kaPNkVT6jmpwdmKWULSqZ/2MRAuE4qvBhLFBbondCgnZHVYndwcefjB8OfLPeRkc5YRFkHQcxqySb1uPaoM0++3l9/cmXxotxv9TwksVoEHwWgEHGTEgcdlz9QEgryn9pISTPYGWv0/+A7tPXV88Z5owTYQprNzxgtCpyOiFhhA+H4NBZ2rSX01cNKjPzqGbB3LKWgNdbSp7HaG7BEkVSAMcCiX9xWMcfgnhCi8f3lbhGTIXJ4WvD81yIUdlPlBFsVAaLBisNUPauMphiwbCBnTRjTVaawBr",
+                  "0xABbacaDabA000000000000000000000000000009":"RVRScQACAACTAMQgwhlSChp/epwy4evVaXSy1MTn0IjTeH+KlEqHr18tOm/FAfPFriRyxW2nCZaPCfU6je/sRhv1WOKi9NOUi46s4EKPxGpkqLMk6yLrn1+xhhlfQZ7rOZ/PmWTdtnMDPfRmRwOp976wVZm8xuo76DKcL5vI/m+x6KmOtQFQL2uNu0iCS0reZ9gP87/EvzP3G1aqgIGQQrQf5jAcdfXFCnseMDcZX/Do7ElRqBVoXxYT+jsyEcPTglfU2oWrQGuJs5kO5Lm3PJUI1zLWbmSrloGPELHzPHtGQ8t3XcToDrEiSaXXRU698ErCXE9TPVctuk26AYOTikAylfEsjkocmJn8w1op0C2ccDbS7zg889BLM18f17cfIU2CEiANkoJA7Bth/beDkM00icnaZ0ZhOcqaTV48+T2pEEW/FhNSkBG1LECIxUBiJLJJYj5FpO2S1O2MHlNEVFF2BQmmw24qzE2REpB1dSoRZU4HBBqeS4IDbekGoBZ3IbGCK1xoBQwEnAQPN0Eyi8vAqYNRmSRj77n+OPJybwdUpd9Yvh/UC0nhNz7GgaZTwtN1/7kn4IY8/8Q37lyhihOdaNJATaFpJEqqz4pRoHsI3FwCTbK7N4KQTXXnR8o7x28GxfC7sX+Ff8Ybvii1nRBm9N54k+Y9HM7ihGxpnEv2hs3GAk55XjuIqJ1DJlJVBAIJioABFG6e2q8ALqHWnxOO",
+                  "0xAbbAcAdaBA000000000000000000000000000007":"RVRScQACAACTAMQgwhlSChp/epwy4evVaXSy1MTn0IjTeH+KlEqHr18tOm/FAfPr1njsR8BdPtJTcPxFUKatB5/PP0UgUKRY/hOKm0Btl/PKvlbMYQYeL2+4NJCRNev+RfZN1R8SVeJbLgZC2v8edwO0YqUWVqu4VU73VqcCn242Z/7zvwHIc7cFlLIIiZ8jboQonT49XUpvjQCRv2KlRRoR/dAs5gAVnxd/4TZNLWFh+HwQEptbh3rADbZlxptAT2rk4Lxtl4oLgSFCzvRRhptusdLEyI1a8Qn55AoeDtaARI5c7PU3TBdhK6zLJym850IM3cAAr+H1ChadRT3ntrji4ppO6umUQTpXVBSm0u4O37tWshGX/37ER+urs5D7JAdOS7bJT8o37eHZMWIeUFtxsakhowl4jUtaVayZKD64+RDDYC4UtUQVWpjhbc8x0hsLhKqqIo8EliyA97EQoLskRh4KK3aOmlAfNckQhuu8H6580vzAxLt5uVQtiVr3UbJpMqU3kj1GDe1ecTYl3NSvEhhy9M70MRttYu0JULvmv28spAZuIi05qtNTagSy32UvPMtob95THs7JOVN4BxlgqBEQTQF5Q4hKjfm1GTa01S86ZDXAO7ZpBHOHbzvOVgD/RLE6vQ/9UPvXClHI3DU0tbbpW080G04KvtN6SxMne0AmtO3Me9N3/UyGacKm1IrRR79mJb50novbESghDJET",
+                  "0xB5Fa888B41F1A252757118F427Be483E1e0d611e":"RVRScQACAACTAMQgwhlSChp/epwy4evVaXSy1MTn0IjTeH+KlEqHr18tOm/FAfPUP8mf6pA6n4PW589wNPomu/GF30cnjrgelkReVE3HtIe+AaPoIG4xFS/JCKLORjwREMbaP901RIef8fAQIFRaX8dFrwYhSfG4BgG68gl4zFwQIJys2fiqmYd2qCXtcjulnj0mlCQ/xA94lTQ0g+TgB1s1pnbn6WYmNqFUsKfpGp7g+/cRMC/zpOG4AD+Ozyr9IN5XSAE3bO3G3Ui8pGA+fSsUGA+EQx/ab/IcwGbjw8U0eUIwGWLokCu5kpJ1UzN9fr/+0tKZZsX7fONV/dXrj5Fy56Lqbf1HrWv1RIpKNYUSKXn4QfKqv9OS6yOUW38zv0h2NFOnFQlGmgjIM4KD/6Ytvp3Ne5B+SDRIIRgN8kOT88fXs3CI9I0P/pRJanrCJ2KxoVnySHKX1BTxmLPh/NLQK0xCsUw7h5lawZmsJX7G8JdD1qJKUgQ2m9o5ZMWV9kc9kQmKg1pS2LV79g/VNtFVj7ad/P8XSANUvarGpXyEctojTUsXiD2QzTvZE8hrwmoFnVMHvp2RDg9aX36MZK7K9vhP/W55TPsYhZ+1I3/B9d47JYMGo6WseSN8oIJnlqk4LUp1vnYiIRE5yoUG1quK+XwEcgqWePAfRqF9W19f8AUZth4+E47t0GLUVA38GD8RdxhZu8bGzhffXLwQ3J/G",
+                  "0xaBBACADABA000000000000000000000000000005":"RVRScQACAACTAMQgwhlSChp/epwy4evVaXSy1MTn0IjTeH+KlEqHr18tOm/FAfOyePokgnuuvse3eOxLCuJ6QBq6r799898Ib6mLhZ7RBHRtrdErimC2fXDIiVQ5UfxhLUpCMx20fBgGvzi9SZiKz0K06xrX1WvEVb9shK3PSh20mLG/PIwI108aI/jBJJsO5/rnCk0gUTarWY3+PQHnGbLagaaxJvdXtJ/8/C/RiL8ieNGOn19g8osdKTVxMNy4zZ4lMXW+C/VMBMQWPxR2n5VuMoFUrHidnHADxYMfv1/mdwHOK6AqNphX+hfmx0PxMt6kMipdOWHC15LqCy+wtlm1eMu5CuakC/DZqAPXX6fSxApIK5DD3zjWaRRFThDdwfZy3Q0I58l9D+NSUU59n1hgxO04e53BOU+AJ7X71iLEhgsdt36M7u4cm9s0l+r+F/CWlsf3UwBjJS0xGgOIfzHlpmsqHTADmphBx3eP6CZbIRBZ/JBDhCRyqxlfEonuYXg/mVXeBjunglu6roqGJ1p/AyPSMAlWnGcTNsoC07nR5hdNWL/fraZZcTAEOg043ZEZzKvqIZhZyvqCZ1dKtaChU8C9+ax9+UnI7SWS8dI1Lc2TTBVk3XLLqtMXZtbCKausve6sHS5Xm9t/YV5pY0WPfvOeFZ03NPQ0PlTv1JRqVj9VOCMxL7W43eEXOjj1cusd08XzBrWlhEVNZC5G8lxI",
+                  "0xaBBAcadabA000000000000000000000000000008":"RVRScQACAACTAMQgwhlSChp/epwy4evVaXSy1MTn0IjTeH+KlEqHr18tOm/FAfPgCj9zBXVXdvc7ULeIUPEdxuTTt0dUpUajPVhFLyks20VAkv92h96ZRmVDLRdP41stCKbQwfmDxZphJSNl58A/tCPBwcr2xMjjDmDwxTmKtshdM1XX/t7PE2eFInMHASoSwYv6PMhFcFvQ7mKS+nQQldafGT/9i4cu4mGoOsY2KZhNd53NU2k6bQrFuinQP5Wr7EPw8l+pTtBPzUXxVH7iRBwVj4UVnzUMUxv4yFFnyPxJ95GXkgkPE3e+XMs+LpCc1i/iqgOi8Rnm3YmF8YYgT7sGM+5BqhFncYLoqz5JVVkwO0Ep6U3cVI6iidMFxWhAH1NiwUTGVwAiisaOHgy5jRS5BS/vqoWGNN7bmSbWtU7TBd8ahPGGybRejwofy8/1dUi8Vxu5hB9VhgLfIF4bXWwEIjUtRqgZRbE/q3wdyCnOmnz39Sf5QrSvS7haZ2ZK1WN94h28oCiHFG8PMdSA0TVCyBeJe2nx5WkKdOdaFfmozXx5A0xjlvTW+D5uqFnw8aAwWu1fIuY70Dabk9lOfARPOGa5QySMLtWLE47uH96BisHhHOXVNMUTmpwNbqqLyCgFhqpnRIbqAYIMdAhbD8XhhCEqWfNRIpZYbbPZu4eKWmLhLy7kKKy0/KZC2TVd9QP5f3n7pRjJE/Qu1X2iPoO5",
+                  "0xaBbaCadaBA000000000000000000000000000006":"RVRScQACAACTAMQgwhlSChp/epwy4evVaXSy1MTn0IjTeH+KlEqHr18tOm/FAfOlQRtUlA1X52lcI5y6O+leZhH7BbIzawqMht+UBjjAYg9AdYGL8Az0kR5hwPzFFJ/qLYecUGZQm4Fbp4CIUoeJ/AsbPCUTw9VlceLlNGVxd+pe8Ej6hr76sCiiFpmo+mTvX3aKlj5WpJUiNEJCyZKTffBdK+kkQKLmb4xo4JPfmSHWr71KhYO5+L9Ctc4styA96fYopp31WHlcWlcYaNGAS8RCvsDK9GBvpxTad32se2+L0J2Zu9C0TjKnuRZ+mscGZxtgOkqH9p1fGchZFliwEzDHrcJhwS0tfqCPIwTveVgKIk/1uNlUAX81rkIR7vZCinIExQXfozUzqy1PotLntS1q4ZjKmOcI1GBbIEfcuB7ZvudeMf8+dqraEkgvjPR9oyUZ+YWZMYE0wlMVqVgwZFAGw7xFkRqbWUn6089LESJ55gqeskN+3PCq4yF6rdlfUrW2KC0KECV1nxmeZP+e9Wxze5wRu7LOgsoF3EKwcrRPtJi7xpSOCRQJFaDp+ZcNFYtSv78pxWaSClfjks5Tk20zbXXmjyPdPGvGdxBQfBxfY7ut5mRuKW4awY1mA+3KT0sJqgolIW4bDI5EP2Kvmvg6ynva5zLQhwiGQNCIi/9S4n51W+L0W8/6vkXeYehfcvRMtYpbtfxTDMhvHGzfJx+t"
+             }}'
+
+
+Example Response
+^^^^^^^^^^^^^^^^
+.. code::
+
+    Status: 200 OK
+
+
+.. code:: json
+
+    {
+       "result":{
+          "decryption_results":{
+             "encrypted_decryption_responses":{
+                "0xaBbaCadaBA000000000000000000000000000006":"RVRScwACAACSAMUC0QOCuW22G1u9q8ultJf7GmknsSt3tgFbbDXH8wYzebij5wobdpUIQmO5AiEriFWAEzdZwYhdlEDdG8Av+gzVkZNYGmPdjUk0Q7C6VEJpMB0CXDZr0H3oqNnMOHzCAbwbmYimxw0Wb12xTtaPPh4GUNnTiSegI3Bp1Ug5F7LF97cBepi/WwxxX8yC2XiAGawwEtXV8/Ll4gEbhW1RK/pqq97qH1QQeXVL7MtryvgkhRKOOdjEJ2m/gaEQOlzt5ChM1BLOiR35tfVc+UABYB9jy/F5lMt84Ac31sAhJZzWGFfQV+JUgkJGN2isIUQukYgiHpCA1oQ99CJcve3mZSSpZLFdxrrpshNe+rPWVqZTs0C5Qh0cl98jvQZQumD567CscofLhKQJV4g4mkyFlv9eKNkqSEEcSx2bmTr8rGqEQFqIGcUJbCzPebgGXzHjrcH23l9jY0h53k1LY2IzYndOXqNv0Wf+cYMEPx4x1eDhkQucmypsGcAEjo4uFbXnFkk/kiHas+HtoommlAPWeyXmDfPEhVMPkU2P8lf7OuYnQpBrZF5d1nnIN9cXRWW2EHceiSmllRMkN4NnqWy5B/rJ5UudCDJaf3gbhEhV0VEzJAKRGbPE5kau2JyPSdPFLiYYIhRTy6Sw1XQVUe9v6sy1ykTmSav0TeO1NWph7SyZQGJotm5fPPSvSuFG5AoMc2zD8kPY2eBSNMncvCCu7L0pxyVPSMJyE80OEQEXA8W2kfSQKfbr8nLQf0D5H4nI7XuN2ecgpjWfglKlD8W8rlbdWQ2ydLQYSmeko8cXInOMHrOSckuWnpjw/92eWWnkXkiqTOhHtwNf39eDBbXCQGZDLZEPis9MP+yiuUaR88rftkRprNSXJW7cP3Q4FXvKI+xZuEOCWqiOuxokR6S2DRRt2neDNO8TP6HrjjAIrG+3LfvoH5j920DHn3SnhPRH3febMQw=",
+                "0x40896f32bD685E6F5C74A5b6ab4d8c7953cbFA53":"RVRScwACAACSAMUC0ec0FnIRxE4p3kjRVzmuEMWZKlk9wADuNeeW4mJoI5GiS7G0/dL8ZIlkLv2BiQXNJAuY3IZTZvkT1ppFRrBK8s65OjzBWvS+Mmarf9nj6qJovkS8szLsMV8qKSwF5KIrHC0RUYHqTSiAL0azkie5VRevY/F9QiG9yX4FGg2wzaHUEv0e14m8bbk/+a+tpQRFkgX3psjModOEoxHSqbEm9oRkVgySj0KEaXjwyPhbGhGDMjoEHuE/t3dw9/3ykKRPonDyG28SEJlTe9rDKbfxqqCxUjd3bgmyFym0APcPyh8EeA9mdGa5PWcuxe0HT0ff2aGV518MUBfk+DQ3l784B7mSRkSqpwgO0vEldeiujihUU5BGDskBL5qzuoJNzC0Giy7YcbMRIgAFsFZ9CjBN5xj3bftJewzrE4JRMMtdskhUJiEJ4ii3gwEmhR3qRnA8lLb8425JnI8cCsV6TwPy+kjYiHDw2BSQw6cm84wz99rqLCZ51CeWgLvs/nph/EISPpMhdA5Gju7F3HZF+Vlx64WIQPz+r/WGLhWaHcTKDTLajPVTFKFtWQodcIl84KjIvRVGFtbpx4PsZtLNdBotfQSX8KGCvZ9Sr58Ccq54A0u1Y6JWjC7B2uOowqd/xepXqNR0FFLHGIk5YYe0uNmX5uJA16yTJs/VNu5kqdWr0dvFXafmMk5M4JSioRk90ERRFhQXtUks4HR49sRCA18r7Tk4xANDC3ePO+XJ1CnH4v49076N4DckKIcf7V23wFW3veS1mwMWPauhlk+xndnyNENl1N+d6cx1hAy5G+AlK2s35RKWdafQ3+f049qk6zDwXiU7h+7CpQEXxP1iK/EZzZDVuSAjRvhqzUTtUR+sAheVNGgIUbjXmgeu/3o2kTcNhOaMS6PT9Z1ogSzDap8DDl9ihE6sSPYAnexdhrtSr9aPGixD9MX4YaQQ2ovW5+gvao0=",
+                "0xD27a0b270FBB5b090C5bBdD98e439EA992605436":"RVRScwACAACSAMUC0Y8NgrSrmQwHk4kjLqjEkyQg6A7OiGWDTuZH7U6LkApsw+cBJQTtI+TKJaWl1rOHGGfwoUEf7qJyBiNSRc/mGqMGX9C4Ufgbd+O7ld6P8zxbcFJKoirVyeXMZGz9jfMFsSBzjmSuZbtepPmcVcgOcouJaofNi6VfwwMJtjueMfM8M3f7W/cWZIPH+OXQFTw+tVrP1Tu0S1rU+SvHDLfnRf9cqhyEAZrhONdLUQMDOMzf1ksI3hsZV8LtDq0b1Ov3rshoqQzVgyeSUGP6l+GYTqdeS0fRhuGY071oDjKNssYQ/14JiyJsUEbolg6gG7onbPTjuoz0lLSTYUV+9rWdh2nTcj8gwk/ywKmSXA3s0449II5hZkKd6HH+5jTUvMP/ak/aCk6UWPTezV1a1jfhBnmDbxTxG9Ejjhiaa2iH1Uk6eGJ2t/r5N2e5nQxnIJyx6VYVS3FNMDOPT2DJaTpJxK0lP5bpLo2u/kxZNZALgahayb1TXKXVqe0XJMjLDehPeL75/dcNXCjwKMIet9HCjav8iOvsZoGkZPnd6oAIXq/O3GMEUzn3jgVyETOk03TjtnyoYDK9whP2C7Xa07+a5LNx4YofjFGdAE9zmqTI7Am9sttj5uCeFobEldYgv6mWFAWSCbnW+vYqAldGNRamH8ZUw/je1wmndFjBo0KPFNFypB7Nlygxu2luhgqkqttq5z1tq+HG9IRASh8VyoRdSlCFnmHtWavac4J7sWIfpBfIGXeTj96PXL1MmehTvPAukv/qQ2F304OHdeC/HUUT64ukfufqQtTeZ/m64kDC/pDOkXiAiy8hPnU87+fWKpl8kOTufRx7Qo2EHenjaJF+bOV76uhFmICyY7jTSkS8W6O78M2MQcSCPCqF1tcxz9I98zgUsh7hkHFWTE1AHB6eq+x5s32k2K5wdomzObUHSymhH5clhgibDilhULnSnTw8MYk=",
+                "0xAbbAcAdaBA000000000000000000000000000007":"RVRScwACAACSAMUC0b9T7D+3J8vVFlHo1bbeGyZnrh50uRri0h4oO9XkFC3fCveLQM9F5vS/4BBEh3bk5S8MRszX1DMfHcDuOzMFw36bA3pd87pELVsd7IYwKsqyNb5JuMDskdShT5tQEaardEs8Hbwv2xFQeZpTdQxhAzZL/cOBrOTuq9JfB1LwvMEgGf/uvBRup2UxhYuYunNUB4gEiHHlbI1TO5AURJq7R2PKNV4dmggv8X3kUdvvK3hz0IaIBvswoZhXSu3wCzVvM9wJrq6vuVEnhvh3TbcaS6kM1Q8n2cmjc13eiG/OmkAWiAbXz7wLewVTV9nHP7qZvpqoy/hJiOsl5pZ1wls42DuH5YUu1Mp2pAofSvxLTl1xR+1y4gUhOUsoX+vnjEvb5ZftK4/720btc+T9giQ8gptnJKR6QKLMZOAaU17Q2cVKRHd4kAdF90/afQc2yVmjjmiC6zNKUaJJIBDO1J63C7afBMXxyh0tQ1n92w3YrUC27so/dlCUfqe4PL6HjGzOa/Y5El7T4tM0P+wEbGs14XM+cbMl7Ub58mFtTXR0nlOfFHtEDG+QnywTAXxXCw3jR1PiVZ6PWKtNIZeKMvVO8fXI6YFRuYNoHhtA9ogft2qo3/YD/QeCegrPI9brqbhXGrbavyaKV1qqUwPCOKLmfDIwvcucr7pKGc9vgrhiQp8lltAqslu8pa1DBG0pducVAYReH9WwD+dJEjmEh5LHLm/4ddR9KVXxn1bpGTkpw9Zp5hhBADzs2XCZmhGmSrb/H53u9mBIXxvaH9tBJeNSo3TTcds6bvVnoN70qYwe72UZVunZh2ThwldZLNuQLlbbDC5xF695eL6GuNgmdYQqVPq77BSfCGEXvFKbtd3ecNYmqNtsf+Yo8014SYKw5qBGSB12szH0w8MEXu5cel+4PcDApi/z2TXhgSzH+DIcLdHlBRIY2D/sIw98wlOW6gt/3lw=",
+                "0xaBBAcadabA000000000000000000000000000008":"RVRScwACAACSAMUC0Qqm6cDZHHBJgK86+MehwqBFWz4guKcJMFhX/RjrpwH7HR0Z0iLTjLxevluC5PnyuqDJFysvLsliulKIDYlWi5ryFxpYP533QQtLfoaAUXd9ypm/yzlg4VkRHpr6cRTBYxjlLYCpUsTqPNOnbm1YWT/UnIBtzPAoHDkZLXYX+yKbuMjsgs66gPfOheMIZAjcLyNby9kSqWBYxejDm0IyqJmh5JxHSnsmpCpQcexV0300KQ01fPHjuxo5C29IK7NzlVW9gSQtCm7jL1lEitvlKIghpsA7lRWZ1atDFT9AqbFBaHH42knhdSaYD10NmW6eL27L0Is69ydaihZnlv70DezQKEVJsXVQltwkFovfbJVWBWvuURhiOHavnJ9mqJ610VGxPNMiACnhvWK3L6zsdO/CuEdh070QtCMUH4zin5TYI/dbc9Zy1yBTzUhAE0xHRLI4H4Rs9w6Vw1vzE+VndCa5Ey0WVD6Bx+/0/CGkSc3j9/lbsxRMDswMjWIa2J7RhP5/FzwiBWTz7WSsOq/IT71m2578uKSsxQxzdqFgrqCW6Pm/5OMigN/e/R1SkyH2u8gJG7gwzkTJqsUQl54Y/GRk3LS3Wco+dSIr/EnwW5EwDZ2P0ADkRcdDjQjub7Ao0Ut40p/m2noiJKhK2+0JO7c0aMsKP7+xNS5Hc3m1nGpcz2AvM7s0HWRX54U3brKSZ6P66NcoHHxeP60B87ephPeSfyAkK9+m7l7xpahmJy7bJAv5vkAJcYtOcJvNO6Pk3S83qzYjKyKKf8MLZSP2REp/mqs98iIw6C2cNJSZ822zN+ifPY3WQ0yWpweEU1CSMMfgepuQCVAxxC08k5Xfx8SV4Shw1ZgDcgcKVv5vJmb1Pcfoe4fkr8805IXEY1pd/UHOJYAEK1HygQH0o1QtgHQxrGr1lCbUE3nGQZYwQj15n+Yo3sbhyHsmUp+bP5looDg="
+             },
+             "errors":{
+             }
+          }
+       },
+       "version":"1.0.0"
+    }
+
+.. note::
+
+    Only a threshold of responses are returned if the request is successful.
+
+
+
 GET /get_ursulas
 ****************
-Sample available Ursulas for a policy as part of Alice's ``grant`` workflow. Returns a list of Ursulas
-and their associated information that is used for the policy.
+Sample available TACo nodes (Ursulas). Returns a list of TACo node staking provider
+and associated information.
 
 Parameters
 ^^^^^^^^^^
 +----------------------------------+---------------+-----------------------------------------------+
 | **Parameter**                    | **Type**      | **Description**                               |
 +==================================+===============+===============================================+
-| ``quantity``                     | Integer       | Number of total Ursulas to return.            |
+| ``quantity``                     | Integer       | Number of total TACo nodes to return.         |
 +----------------------------------+---------------+-----------------------------------------------+
 | ``include_ursulas`` *(Optional)* | List[String]  | | List of Ursula checksum addresses to        |
 |                                  |               | | give preference to. If any of these Ursulas |
@@ -477,12 +355,15 @@ Example Response
     }
 
 
+PRE
+***
+
 POST /retrieve_cfrags
-*********************
-Get data re-encrypted by the network as part of Bob's ``retrieve`` workflow.
+^^^^^^^^^^^^^^^^^^^^^
+Get data proxy re-encrypted by TACo nodes (Ursulas).
 
 Parameters
-^^^^^^^^^^
+++++++++++
 +-------------------------------------------+---------------+----------------------------------------+
 | **Parameter**                             | **Type**      | **Description**                        |
 +===========================================+===============+========================================+
@@ -504,7 +385,7 @@ Parameters
 +-------------------------------------------+---------------+----------------------------------------+
 
 
-    * A single *retrieval kit* is an encapsulation of the information necessary to obtain cfrags from Ursulas.
+    * A single *retrieval kit* is an encapsulation of the information necessary to obtain cfrags from TACo nodes.
       It contains a capsule and the checksum addresses of the Ursulas from which the requester has
       already received cfrags, i.e. the Ursulas in the treasure map to skip.
 
@@ -532,7 +413,7 @@ Parameters
 
 
 Returns
-^^^^^^^
++++++++
 The result of the re-encryption operations performed:
 
     * ``retrieval_results`` - The list of results from the re-encryption operations performed; contains a mapping of
@@ -541,7 +422,7 @@ The result of the re-encryption operations performed:
       *retrieval kit*, the corresponding list of cfrags could be empty or less than the expected threshold.
 
 Example Request
-^^^^^^^^^^^^^^^
++++++++++++++++
 .. code:: bash
 
     curl -X POST <PORTER URI>/retrieve_cfrags \
@@ -555,7 +436,7 @@ Example Request
 
 
 Example Response
-^^^^^^^^^^^^^^^^
+++++++++++++++++
 .. code::
 
     Status: 200 OK
