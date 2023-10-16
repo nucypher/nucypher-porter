@@ -36,15 +36,15 @@ def test_taco_decryption(porter, dkg_setup, dkg_encrypted_data):
         )
         shared_secrets[ursula.checksum_address] = shared_secret
 
-    taco_decrypt_outcome = porter.taco_decrypt(
+    decrypt_outcome = porter.decrypt(
         threshold=threshold, encrypted_decryption_requests=encrypted_decryption_requests
     )
 
     # sufficient successes
-    assert len(taco_decrypt_outcome.encrypted_decryption_responses) >= threshold
+    assert len(decrypt_outcome.encrypted_decryption_responses) >= threshold
 
     # no errors
-    assert len(taco_decrypt_outcome.errors) == 0
+    assert len(decrypt_outcome.errors) == 0
 
     cohort_addresses = [ursula.checksum_address for ursula in cohort]
 
@@ -52,7 +52,7 @@ def test_taco_decryption(porter, dkg_setup, dkg_encrypted_data):
     for (
         ursula_address,
         encrypted_decryption_response,
-    ) in taco_decrypt_outcome.encrypted_decryption_responses.items():
+    ) in decrypt_outcome.encrypted_decryption_responses.items():
         assert ursula_address in cohort_addresses
         shared_secret = shared_secrets[ursula_address]
         decryption_response = encrypted_decryption_response.decrypt(
@@ -81,12 +81,12 @@ def test_taco_decryption(porter, dkg_setup, dkg_encrypted_data):
             requester_public_key=requester_secret_key.public_key(),
         )
 
-    taco_decrypt_outcome = porter.taco_decrypt(
+    decrypt_outcome = porter.decrypt(
         threshold=threshold, encrypted_decryption_requests=encrypted_decryption_requests
     )
 
     # sufficient successes
-    assert len(taco_decrypt_outcome.encrypted_decryption_responses) == 0
+    assert len(decrypt_outcome.encrypted_decryption_responses) == 0
 
     # no errors
-    assert len(taco_decrypt_outcome.errors) == len(cohort)  # all ursulas fail
+    assert len(decrypt_outcome.errors) == len(cohort)  # all ursulas fail

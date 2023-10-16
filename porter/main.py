@@ -69,7 +69,7 @@ class Porter(Learner):
         cfrags: Dict
         errors: Dict
 
-    class TACoDecryptOutcome(NamedTuple):
+    class DecryptOutcome(NamedTuple):
         """
         Simple object that stores the results and errors of TACo decrypt operations across
         one or more Ursulas.
@@ -193,22 +193,22 @@ class Porter(Learner):
             result_outcomes.append(result_outcome)
         return result_outcomes
 
-    def taco_decrypt(
+    def decrypt(
         self,
         threshold: int,
         encrypted_decryption_requests: Dict[
             ChecksumAddress, EncryptedThresholdDecryptionRequest
         ],
-    ) -> TACoDecryptOutcome:
+    ) -> DecryptOutcome:
         decryption_client = ThresholdDecryptionClient(self)
         successes, failures = decryption_client.gather_encrypted_decryption_shares(
             encrypted_requests=encrypted_decryption_requests, threshold=threshold
         )
 
-        taco_decrypt_outcome = Porter.TACoDecryptOutcome(
+        decrypt_outcome = Porter.DecryptOutcome(
             encrypted_decryption_responses=successes, errors=failures
         )
-        return taco_decrypt_outcome
+        return decrypt_outcome
 
     def _make_reservoir(
         self,
@@ -283,10 +283,10 @@ class Porter(Learner):
             response = controller(method_name='retrieve_cfrags', control_request=request)
             return response
 
-        @porter_flask_control.route("/taco_decrypt", methods=["POST"])
-        def taco_decrypt() -> Response:
+        @porter_flask_control.route("/decrypt", methods=["POST"])
+        def decrypt() -> Response:
             """Porter control endpoint for executing a TACo decryption request."""
-            response = controller(method_name="taco_decrypt", control_request=request)
+            response = controller(method_name="decrypt", control_request=request)
             return response
 
         return controller
