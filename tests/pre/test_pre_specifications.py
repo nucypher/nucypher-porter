@@ -4,10 +4,9 @@ import random
 import pytest
 from nucypher.crypto.powers import DecryptingPower
 from nucypher_core import TreasureMap as TreasureMapClass
-from nucypher_core.umbral import PublicKey, SecretKey
+from nucypher_core.umbral import PublicKey
 
 from porter.fields.exceptions import (
-    InvalidArgumentCombo,
     InvalidInputData,
     SpecificationError,
 )
@@ -16,143 +15,10 @@ from porter.fields.umbralkey import UmbralKey
 from porter.main import Porter
 from porter.schema import (
     BaseSchema,
-    PREGetUrsulas,
     PRERetrievalOutcomeSchema,
     PRERetrieveCFrags,
-    UrsulaInfoSchema,
 )
 from porter.utils import retrieval_request_setup
-
-
-def test_alice_get_ursulas_schema(get_random_checksum_address):
-    #
-    # Input i.e. load
-    #
-
-    # no args
-    with pytest.raises(InvalidInputData):
-        PREGetUrsulas().load({})
-
-    quantity = 10
-    required_data = {
-        "quantity": quantity,
-    }
-
-    # required args
-    PREGetUrsulas().load(required_data)
-
-    # missing required args
-    updated_data = {k: v for k, v in required_data.items() if k != "quantity"}
-    with pytest.raises(InvalidInputData):
-        PREGetUrsulas().load(updated_data)
-
-    # optional components
-
-    # only exclude
-    updated_data = dict(required_data)
-    exclude_ursulas = []
-    for i in range(2):
-        exclude_ursulas.append(get_random_checksum_address())
-    updated_data["exclude_ursulas"] = exclude_ursulas
-    PREGetUrsulas().load(updated_data)
-
-    # only include
-    updated_data = dict(required_data)
-    include_ursulas = []
-    for i in range(3):
-        include_ursulas.append(get_random_checksum_address())
-    updated_data["include_ursulas"] = include_ursulas
-    PREGetUrsulas().load(updated_data)
-
-    # both exclude and include
-    updated_data = dict(required_data)
-    updated_data["exclude_ursulas"] = exclude_ursulas
-    updated_data["include_ursulas"] = include_ursulas
-    PREGetUrsulas().load(updated_data)
-
-    # list input formatted as ',' separated strings
-    updated_data = dict(required_data)
-    updated_data["exclude_ursulas"] = ",".join(exclude_ursulas)
-    updated_data["include_ursulas"] = ",".join(include_ursulas)
-    data = PREGetUrsulas().load(updated_data)
-    assert data["exclude_ursulas"] == exclude_ursulas
-    assert data["include_ursulas"] == include_ursulas
-
-    # single value as string cast to list
-    updated_data = dict(required_data)
-    updated_data["exclude_ursulas"] = exclude_ursulas[0]
-    updated_data["include_ursulas"] = include_ursulas[0]
-    data = PREGetUrsulas().load(updated_data)
-    assert data["exclude_ursulas"] == [exclude_ursulas[0]]
-    assert data["include_ursulas"] == [include_ursulas[0]]
-
-    # invalid include entry
-    updated_data = dict(required_data)
-    updated_data["exclude_ursulas"] = exclude_ursulas
-    updated_data["include_ursulas"] = list(include_ursulas)  # make copy to modify
-    updated_data["include_ursulas"].append("0xdeadbeef")
-    with pytest.raises(InvalidInputData):
-        PREGetUrsulas().load(updated_data)
-
-    # invalid exclude entry
-    updated_data = dict(required_data)
-    updated_data["exclude_ursulas"] = list(exclude_ursulas)  # make copy to modify
-    updated_data["exclude_ursulas"].append("0xdeadbeef")
-    updated_data["include_ursulas"] = include_ursulas
-    with pytest.raises(InvalidInputData):
-        PREGetUrsulas().load(updated_data)
-
-    # too many ursulas to include
-    updated_data = dict(required_data)
-    too_many_ursulas_to_include = []
-    while len(too_many_ursulas_to_include) <= quantity:
-        too_many_ursulas_to_include.append(get_random_checksum_address())
-    updated_data["include_ursulas"] = too_many_ursulas_to_include
-    with pytest.raises(InvalidArgumentCombo):
-        # number of ursulas to include exceeds quantity to sample
-        PREGetUrsulas().load(updated_data)
-
-    # include and exclude addresses are not mutually exclusive - include has common entry
-    updated_data = dict(required_data)
-    updated_data["exclude_ursulas"] = exclude_ursulas
-    updated_data["include_ursulas"] = list(include_ursulas)  # make copy to modify
-    updated_data["include_ursulas"].append(
-        exclude_ursulas[0]
-    )  # one address that overlaps
-    with pytest.raises(InvalidArgumentCombo):
-        # 1 address in both include and exclude lists
-        PREGetUrsulas().load(updated_data)
-
-    # include and exclude addresses are not mutually exclusive - exclude has common entry
-    updated_data = dict(required_data)
-    updated_data["exclude_ursulas"] = list(exclude_ursulas)  # make copy to modify
-    updated_data["exclude_ursulas"].append(
-        include_ursulas[0]
-    )  # on address that overlaps
-    updated_data["include_ursulas"] = include_ursulas
-    with pytest.raises(InvalidArgumentCombo):
-        # 1 address in both include and exclude lists
-        PREGetUrsulas().load(updated_data)
-
-    #
-    # Output i.e. dump
-    #
-    ursulas_info = []
-    expected_ursulas_info = []
-    port = 11500
-    for i in range(3):
-        ursula_info = Porter.UrsulaInfo(
-            get_random_checksum_address(),
-            f"https://127.0.0.1:{port+i}",
-            SecretKey.random().public_key(),
-        )
-        ursulas_info.append(ursula_info)
-
-        # use schema to determine expected output (encrypting key gets changed to hex)
-        expected_ursulas_info.append(UrsulaInfoSchema().dump(ursula_info))
-
-    output = PREGetUrsulas().dump(obj={"ursulas": ursulas_info})
-    assert output == {"ursulas": expected_ursulas_info}
 
 
 def test_alice_revoke():
