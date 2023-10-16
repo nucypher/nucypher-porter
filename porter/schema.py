@@ -55,10 +55,11 @@ class UrsulaInfoSchema(BaseSchema):
 
 
 #
-# PRE Endpoints
+# Common Endpoints
 #
 
-class PREGetUrsulas(BaseSchema):
+
+class GetUrsulas(BaseSchema):
     quantity = PositiveInteger(
         required=True,
         load_only=True,
@@ -115,6 +116,10 @@ class PREGetUrsulas(BaseSchema):
             raise InvalidArgumentCombo(f"Ursulas to include and exclude are not mutually exclusive; "
                                        f"common entries {common_ursulas}")
 
+
+#
+# PRE Endpoints
+#
 
 class PRERevoke(BaseSchema):
     pass  # TODO need to understand revoke process better

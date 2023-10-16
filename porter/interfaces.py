@@ -32,10 +32,7 @@ class PorterInterface(ControlInterface):
     def __init__(self, porter: 'Porter' = None, *args, **kwargs):
         super().__init__(implementer=porter, *args, **kwargs)
 
-    #
-    # Alice Endpoints
-    #
-    @attach_schema(schema.PREGetUrsulas)
+    @attach_schema(schema.GetUrsulas)
     def get_ursulas(self,
                     quantity: int,
                     exclude_ursulas: Optional[List[ChecksumAddress]] = None,
