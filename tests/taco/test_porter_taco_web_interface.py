@@ -18,9 +18,7 @@ from porter.fields.taco import EncryptedThresholdDecryptionRequestField
 
 def test_taco_decrypt(porter, porter_web_controller, dkg_setup, dkg_encrypted_data):
     # Send bad data to assert error return
-    response = porter_web_controller.post(
-        "/taco_decrypt", data=json.dumps({"bad": "input"})
-    )
+    response = porter_web_controller.post("/decrypt", data=json.dumps({"bad": "input"}))
     assert response.status_code == 400
 
     # Setup
@@ -65,9 +63,7 @@ def test_taco_decrypt(porter, porter_web_controller, dkg_setup, dkg_encrypted_da
     #
     # Success
     #
-    response = porter_web_controller.post(
-        "/taco_decrypt", data=json.dumps(request_data)
-    )
+    response = porter_web_controller.post("/decrypt", data=json.dumps(request_data))
     assert response.status_code == 200
 
     response_data = json.loads(response.data)
@@ -147,9 +143,7 @@ def test_taco_decrypt(porter, porter_web_controller, dkg_setup, dkg_encrypted_da
         "threshold": threshold,
         "encrypted_decryption_requests": encrypted_decryption_requests,
     }
-    response = porter_web_controller.post(
-        "/taco_decrypt", data=json.dumps(request_data)
-    )
+    response = porter_web_controller.post("/decrypt", data=json.dumps(request_data))
     response_data = json.loads(response.data)
 
     decryption_results = response_data["result"]["decryption_results"]

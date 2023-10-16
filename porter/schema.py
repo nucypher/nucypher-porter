@@ -202,7 +202,7 @@ class PRERetrieveCFrags(BaseSchema):
 #
 
 
-class TACoDecryptOutcomeSchema(BaseSchema):
+class DecryptOutcomeSchema(BaseSchema):
     """Schema for the result of /retrieve_cfrags endpoint."""
 
     encrypted_decryption_responses = marshmallow_fields.Dict(
@@ -217,7 +217,7 @@ class TACoDecryptOutcomeSchema(BaseSchema):
         ordered = True
 
 
-class TACoDecrypt(BaseSchema):
+class Decrypt(BaseSchema):
     threshold = Integer(
         required=True,
         load_only=True,
@@ -244,9 +244,7 @@ class TACoDecrypt(BaseSchema):
     )
 
     # output
-    decryption_results = marshmallow_fields.Nested(
-        TACoDecryptOutcomeSchema, dump_only=True
-    )
+    decryption_results = marshmallow_fields.Nested(DecryptOutcomeSchema, dump_only=True)
 
     @validates_schema
     def check_valid_threshold_and_requests(self, data, **kwargs):
