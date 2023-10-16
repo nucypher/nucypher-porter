@@ -3,22 +3,22 @@ from eth_utils import to_checksum_address
 from nucypher_core import SessionStaticSecret, ThresholdDecryptionRequest
 from nucypher_core.ferveo import FerveoVariant
 
-from porter.fields.cbd import (
+from porter.fields.exceptions import InvalidArgumentCombo, InvalidInputData
+from porter.fields.taco import (
     EncryptedThresholdDecryptionRequestField,
     EncryptedThresholdDecryptionResponseField,
 )
-from porter.fields.exceptions import InvalidArgumentCombo, InvalidInputData
 from porter.main import Porter
-from porter.schema import CBDDecrypt, CBDDecryptionOutcomeSchema
+from porter.schema import Decrypt, DecryptOutcomeSchema
 
 
-def test_cbd_decrypt(
+def test_taco_decrypt(
     porter, dkg_setup, dkg_encrypted_data, get_random_checksum_address
 ):
     ritual_id, public_key, cohort, threshold = dkg_setup
     threshold_message_kit, expected_plaintext = dkg_encrypted_data
 
-    cbd_decrypt_schema = CBDDecrypt()
+    decrypt_schema = Decrypt()
 
     decryption_request = ThresholdDecryptionRequest(
         ritual_id=ritual_id,
@@ -51,18 +51,18 @@ def test_cbd_decrypt(
 
     # no args
     with pytest.raises(InvalidInputData):
-        cbd_decrypt_schema.load({})
+        decrypt_schema.load({})
 
     # missing required args
     with pytest.raises(InvalidInputData):
         request_data = {"threshold": threshold}
-        cbd_decrypt_schema.load(request_data)
+        decrypt_schema.load(request_data)
 
     with pytest.raises(InvalidInputData):
         request_data = {
             "encrypted_decryption_requests": encrypted_decryption_requests,
         }
-        cbd_decrypt_schema.load(request_data)
+        decrypt_schema.load(request_data)
 
     # invalid param names
     with pytest.raises(InvalidInputData):
@@ -70,14 +70,14 @@ def test_cbd_decrypt(
             "dkg_threshold": threshold,
             "encrypted_decryption_requests": encrypted_decryption_requests,
         }
-        cbd_decrypt_schema.load(request_data)
+        decrypt_schema.load(request_data)
 
     with pytest.raises(InvalidInputData):
         request_data = {
             "threshold": threshold,
             "encrypted_dec_requests": encrypted_decryption_requests,
         }
-        cbd_decrypt_schema.load(request_data)
+        decrypt_schema.load(request_data)
 
     # invalid param types
     with pytest.raises(InvalidInputData):
@@ -85,7 +85,7 @@ def test_cbd_decrypt(
             "threshold": "threshold? we don't need no stinking threshold",
             "encrypted_decryption_requests": encrypted_decryption_requests,
         }
-        cbd_decrypt_schema.load(request_data)
+        decrypt_schema.load(request_data)
 
     # invalid param combination
     with pytest.raises(InvalidArgumentCombo):
@@ -94,14 +94,14 @@ def test_cbd_decrypt(
             + 1,  # threshold larger than number of requests
             "encrypted_decryption_requests": encrypted_decryption_requests,
         }
-        cbd_decrypt_schema.load(request_data)
+        decrypt_schema.load(request_data)
 
     # simple schema successful load
     request_data = {
         "threshold": threshold,
         "encrypted_decryption_requests": encrypted_decryption_requests,
     }
-    cbd_decrypt_schema.load(request_data)
+    decrypt_schema.load(request_data)
 
     # actual outcomes
     encrypted_decryption_requests = {}
@@ -120,16 +120,16 @@ def test_cbd_decrypt(
             ursula.checksum_address
         ] = encrypted_decryption_request
 
-    cbd_outcome = porter.cbd_decrypt(
+    decrypt_outcome = porter.decrypt(
         threshold=threshold, encrypted_decryption_requests=encrypted_decryption_requests
     )
 
-    assert len(cbd_outcome.errors) == 0, f"{cbd_outcome.errors}"
-    assert len(cbd_outcome.encrypted_decryption_responses) >= threshold
+    assert len(decrypt_outcome.errors) == 0, f"{decrypt_outcome.errors}"
+    assert len(decrypt_outcome.encrypted_decryption_responses) >= threshold
 
-    cbd_outcome_schema = CBDDecryptionOutcomeSchema()
-    outcome_json = cbd_outcome_schema.dump(cbd_outcome)
-    output = cbd_decrypt_schema.dump(obj={"decryption_results": cbd_outcome})
+    decrypt_outcome_schema = DecryptOutcomeSchema()
+    outcome_json = decrypt_outcome_schema.dump(decrypt_outcome)
+    output = decrypt_schema.dump(obj={"decryption_results": decrypt_outcome})
     assert (
         len(output["decryption_results"]["encrypted_decryption_responses"]) >= threshold
     )
@@ -141,7 +141,7 @@ def test_cbd_decrypt(
     for (
         ursula_checksum_address,
         encrypted_decryption_response,
-    ) in cbd_outcome.encrypted_decryption_responses.items():
+    ) in decrypt_outcome.encrypted_decryption_responses.items():
         assert output["decryption_results"]["encrypted_decryption_responses"][
             ursula_checksum_address
         ] == encrypted_response_field._serialize(
@@ -159,12 +159,12 @@ def test_cbd_decrypt(
         ursula_checksum_address = to_checksum_address(cohort[i].checksum_address)
         errors[ursula_checksum_address] = f"Error Message {i}"
 
-    faked_cbd_outcome = Porter.CBDDecryptionOutcome(
-        encrypted_decryption_responses=cbd_outcome.encrypted_decryption_responses,
+    faked_decrypt_outcome = Porter.DecryptOutcome(
+        encrypted_decryption_responses=decrypt_outcome.encrypted_decryption_responses,
         errors=errors,
     )
-    faked_outcome_json = cbd_outcome_schema.dump(faked_cbd_outcome)
-    output = cbd_decrypt_schema.dump(obj={"decryption_results": faked_cbd_outcome})
+    faked_outcome_json = decrypt_outcome_schema.dump(faked_decrypt_outcome)
+    output = decrypt_schema.dump(obj={"decryption_results": faked_decrypt_outcome})
     assert (
         len(output["decryption_results"]["encrypted_decryption_responses"]) >= threshold
     )
@@ -175,7 +175,7 @@ def test_cbd_decrypt(
     for (
         ursula_checksum_address,
         encrypted_decryption_response,
-    ) in faked_cbd_outcome.encrypted_decryption_responses.items():
+    ) in faked_decrypt_outcome.encrypted_decryption_responses.items():
         assert output["decryption_results"]["encrypted_decryption_responses"][
             ursula_checksum_address
         ] == encrypted_response_field._serialize(

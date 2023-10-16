@@ -9,23 +9,16 @@ from nucypher_core import (
 )
 from nucypher_core.ferveo import (
     DecryptionShareSimple,
-    combine_decryption_shares_simple,
     FerveoVariant,
+    combine_decryption_shares_simple,
 )
 
-from porter.fields.cbd import EncryptedThresholdDecryptionRequestField
+from porter.fields.taco import EncryptedThresholdDecryptionRequestField
 
 
-def test_cbd_decrypt(
-    porter,
-    porter_web_controller,
-    dkg_setup,
-    dkg_encrypted_data
-):
+def test_taco_decrypt(porter, porter_web_controller, dkg_setup, dkg_encrypted_data):
     # Send bad data to assert error return
-    response = porter_web_controller.post(
-        "/cbd_decrypt", data=json.dumps({"bad": "input"})
-    )
+    response = porter_web_controller.post("/decrypt", data=json.dumps({"bad": "input"}))
     assert response.status_code == 400
 
     # Setup
@@ -70,9 +63,7 @@ def test_cbd_decrypt(
     #
     # Success
     #
-    response = porter_web_controller.post(
-        "/cbd_decrypt", data=json.dumps(request_data)
-    )
+    response = porter_web_controller.post("/decrypt", data=json.dumps(request_data))
     assert response.status_code == 200
 
     response_data = json.loads(response.data)
@@ -85,8 +76,9 @@ def test_cbd_decrypt(
 
     assert len(decryption_results["encrypted_decryption_responses"]) >= threshold
 
-    cohort_addresses = [to_checksum_address(ursula.checksum_address) for ursula in cohort]
-
+    cohort_addresses = [
+        to_checksum_address(ursula.checksum_address) for ursula in cohort
+    ]
 
     encrypted_decryption_responses = decryption_results[
         "encrypted_decryption_responses"
@@ -151,9 +143,7 @@ def test_cbd_decrypt(
         "threshold": threshold,
         "encrypted_decryption_requests": encrypted_decryption_requests,
     }
-    response = porter_web_controller.post(
-        "/cbd_decrypt", data=json.dumps(request_data)
-    )
+    response = porter_web_controller.post("/decrypt", data=json.dumps(request_data))
     response_data = json.loads(response.data)
 
     decryption_results = response_data["result"]["decryption_results"]

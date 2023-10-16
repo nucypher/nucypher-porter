@@ -32,10 +32,7 @@ class PorterInterface(ControlInterface):
     def __init__(self, porter: 'Porter' = None, *args, **kwargs):
         super().__init__(implementer=porter, *args, **kwargs)
 
-    #
-    # Alice Endpoints
-    #
-    @attach_schema(schema.PREGetUrsulas)
+    @attach_schema(schema.GetUrsulas)
     def get_ursulas(self,
                     quantity: int,
                     exclude_ursulas: Optional[List[ChecksumAddress]] = None,
@@ -78,15 +75,15 @@ class PorterInterface(ControlInterface):
         }  # list of RetrievalOutcome objects
         return response_data
 
-    @attach_schema(schema.CBDDecrypt)
-    def cbd_decrypt(
+    @attach_schema(schema.Decrypt)
+    def decrypt(
         self,
         threshold: int,
         encrypted_decryption_requests: Dict[ChecksumAddress, bytes],
     ):
-        cbd_outcome = self.implementer.cbd_decrypt(
+        decrypt_outcome = self.implementer.decrypt(
             threshold=threshold,
             encrypted_decryption_requests=encrypted_decryption_requests,
         )
-        response_data = {"decryption_results": cbd_outcome}
+        response_data = {"decryption_results": decrypt_outcome}
         return response_data

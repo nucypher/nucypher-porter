@@ -190,7 +190,7 @@ More examples shown below.
     and it is dependent on the tool being used.
 
 
-POST /cbd_decrypt
+POST /decrypt
 *****************
 Use TACo nodes to decrypt data that was encrypted with associated conditions.
 
@@ -218,7 +218,7 @@ Example Request
 ^^^^^^^^^^^^^^^
 .. code:: bash
 
-    curl -X POST <PORTER URI>/cbd_decrypt \
+    curl -X POST <PORTER URI>/decrypt \
         -H "Content-Type: application/json" \
         -d '{"threshold":5,
              "encrypted_decryption_requests":{

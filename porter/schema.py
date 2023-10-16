@@ -5,12 +5,12 @@ from marshmallow import validates_schema
 
 from porter.cli.types import EIP55_CHECKSUM_ADDRESS
 from porter.fields.base import JSON, Integer, PositiveInteger, StringList
-from porter.fields.cbd import (
+from porter.fields.exceptions import InvalidArgumentCombo, InvalidInputData
+from porter.fields.retrieve import CapsuleFrag, RetrievalKit
+from porter.fields.taco import (
     EncryptedThresholdDecryptionRequestField,
     EncryptedThresholdDecryptionResponseField,
 )
-from porter.fields.exceptions import InvalidArgumentCombo, InvalidInputData
-from porter.fields.retrieve import CapsuleFrag, RetrievalKit
 from porter.fields.treasuremap import TreasureMap
 from porter.fields.umbralkey import UmbralKey
 from porter.fields.ursula import UrsulaChecksumAddress
@@ -55,10 +55,11 @@ class UrsulaInfoSchema(BaseSchema):
 
 
 #
-# PRE Endpoints
+# Common Endpoints
 #
 
-class PREGetUrsulas(BaseSchema):
+
+class GetUrsulas(BaseSchema):
     quantity = PositiveInteger(
         required=True,
         load_only=True,
@@ -115,6 +116,10 @@ class PREGetUrsulas(BaseSchema):
             raise InvalidArgumentCombo(f"Ursulas to include and exclude are not mutually exclusive; "
                                        f"common entries {common_ursulas}")
 
+
+#
+# PRE Endpoints
+#
 
 class PRERevoke(BaseSchema):
     pass  # TODO need to understand revoke process better
@@ -198,11 +203,11 @@ class PRERetrieveCFrags(BaseSchema):
     )
 
 #
-# CBD Endpoints
+# TACo Endpoints
 #
 
 
-class CBDDecryptionOutcomeSchema(BaseSchema):
+class DecryptOutcomeSchema(BaseSchema):
     """Schema for the result of /retrieve_cfrags endpoint."""
 
     encrypted_decryption_responses = marshmallow_fields.Dict(
@@ -217,7 +222,7 @@ class CBDDecryptionOutcomeSchema(BaseSchema):
         ordered = True
 
 
-class CBDDecrypt(BaseSchema):
+class Decrypt(BaseSchema):
     threshold = Integer(
         required=True,
         load_only=True,
@@ -237,16 +242,14 @@ class CBDDecrypt(BaseSchema):
         click=click.option(
             "--encrypted-decryption-requests",
             "-e",
-            help="Encrypted decryption requests dictionary keyed by ursula address",
+            help="Encrypted decryption requests dictionary keyed by ursula checksum address",
             type=click.STRING,
             required=False,
         ),
     )
 
     # output
-    decryption_results = marshmallow_fields.Nested(
-        CBDDecryptionOutcomeSchema, dump_only=True
-    )
+    decryption_results = marshmallow_fields.Nested(DecryptOutcomeSchema, dump_only=True)
 
     @validates_schema
     def check_valid_threshold_and_requests(self, data, **kwargs):
