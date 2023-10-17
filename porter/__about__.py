@@ -14,7 +14,7 @@ __url__ = "https://github.com/nucypher/nucypher-porter"
 
 __summary__ = "Pipe for TACo on Threshold Network"
 
-__version__ = "1.0.0"
+__version__ = "7.0.0-rc.2"
 
 __author__ = "NuCypher"
 
