@@ -2,8 +2,7 @@ name: Build and Push Docker Image (version tags)
 
 on:
   push:
-    tags:
-      - v*.*.*
+    tags: [ 'v*.*.*' ]
 
 jobs:
   docker:
