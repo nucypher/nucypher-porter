@@ -23,6 +23,7 @@ from nucypher_core import (
     TreasureMap,
 )
 from nucypher_core.umbral import PublicKey
+from prometheus_flask_exporter import PrometheusMetrics
 
 from porter.controllers import PorterCLIController, WebController
 from porter.interfaces import PorterInterface
@@ -239,6 +240,10 @@ class Porter(Learner):
 
         # Register Flask Decorator
         porter_flask_control = controller.make_control_transport()
+
+        # static information as metric
+        metrics = PrometheusMetrics(porter_flask_control)
+        metrics.info('app_info', 'Application info', version='1.0.3')
 
         # CORS origins
         if cors_allow_origins_list:
