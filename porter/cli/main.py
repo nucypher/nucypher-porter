@@ -119,8 +119,10 @@ def run(
         allow_origins_list = allow_origins.split(",")  # split into list of origins to allow
         emitter.message(PORTER_CORS_ALLOWED_ORIGINS.format(allow_origins=allow_origins_list), color='green')
 
-    controller = PORTER.make_web_controller(crash_on_error=False,
-                                            cors_allow_origins_list=allow_origins_list)
+    controller = PORTER.make_web_controller(
+        crash_on_error=False,
+        cors_allow_origins_list=allow_origins_list
+    )
     message = PORTER_RUN_MESSAGE.format(http_port=http_port)
     emitter.message(message, color='green', bold=True)
     return controller.start(port=http_port,
