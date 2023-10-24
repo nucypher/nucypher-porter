@@ -244,6 +244,10 @@ class Porter(Learner):
         # static information as metric
         metrics = PrometheusMetrics(porter_flask_control)
         metrics.info('app_info', 'Application info', version='1.0.3')
+        by_path_counter = metrics.counter(
+            'by_path_counter', 'Request count by request paths',
+            labels={'path': lambda: request.path}
+        )
 
         # CORS origins
         if cors_allow_origins_list:
@@ -271,24 +275,28 @@ class Porter(Learner):
         # Porter Control HTTP Endpoints
         #
         @porter_flask_control.route('/get_ursulas', methods=['GET'])
+        @by_path_counter
         def get_ursulas() -> Response:
             """Porter control endpoint for sampling Ursulas on behalf of Alice."""
             response = controller(method_name='get_ursulas', control_request=request)
             return response
 
         @porter_flask_control.route("/revoke", methods=['POST'])
+        @by_path_counter
         def revoke():
             """Porter control endpoint for off-chain revocation of a policy on behalf of Alice."""
             response = controller(method_name='revoke', control_request=request)
             return response
 
         @porter_flask_control.route("/retrieve_cfrags", methods=['POST'])
+        @by_path_counter
         def retrieve_cfrags() -> Response:
             """Porter control endpoint for executing a PRE work order on behalf of Bob."""
             response = controller(method_name='retrieve_cfrags', control_request=request)
             return response
 
         @porter_flask_control.route("/decrypt", methods=["POST"])
+        @by_path_counter
         def decrypt() -> Response:
             """Porter control endpoint for executing a TACo decryption request."""
             response = controller(method_name="decrypt", control_request=request)
