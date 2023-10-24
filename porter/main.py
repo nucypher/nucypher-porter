@@ -1,6 +1,3 @@
-from pathlib import Path
-from typing import Dict, List, NamedTuple, Optional, Sequence
-
 from constant_sorrow.constants import NO_CONTROL_PROTOCOL
 from eth_typing import ChecksumAddress
 from eth_utils import to_checksum_address
@@ -23,7 +20,9 @@ from nucypher_core import (
     TreasureMap,
 )
 from nucypher_core.umbral import PublicKey
+from pathlib import Path
 from prometheus_flask_exporter import PrometheusMetrics
+from typing import Dict, List, NamedTuple, Optional, Sequence
 
 from porter.controllers import PorterCLIController, WebController
 from porter.interfaces import PorterInterface
@@ -229,6 +228,9 @@ class Porter(Learner):
         self.controller = controller
         return controller
 
+    def _setup_prometheus(self, app):
+        self.controller.metrics = PrometheusMetrics(app)
+
     def make_web_controller(self,
                             crash_on_error: bool = False,
                             htpasswd_filepath: Path = None,
@@ -240,11 +242,12 @@ class Porter(Learner):
 
         # Register Flask Decorator
         porter_flask_control = controller.make_control_transport()
+        self._setup_prometheus(porter_flask_control)
 
         # static information as metric
-        metrics = PrometheusMetrics(porter_flask_control)
-        metrics.info('app_info', 'Application info', version='1.0.3')
-        by_path_counter = metrics.counter(
+
+        self.controller.metrics.info('app_info', 'Application info', version='1.0.3')
+        by_path_counter = controller.metrics.counter(
             'by_path_counter', 'Request count by request paths',
             labels={'path': lambda: request.path}
         )

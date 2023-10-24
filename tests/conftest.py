@@ -1,8 +1,6 @@
-import os
-from typing import Iterable, List, Optional, Tuple
-from unittest.mock import MagicMock
-
 import maya
+import os
+import prometheus_client
 import pytest
 from click.testing import CliRunner
 from eth_typing import ChecksumAddress
@@ -27,9 +25,7 @@ from nucypher.policy.conditions.lingo import ConditionLingo
 from nucypher.utilities.logging import GlobalLoggerSettings
 from nucypher_core import HRAC, Address, ThresholdMessageKit, TreasureMap
 from nucypher_core.ferveo import DkgPublicKey, Validator
-
-from porter.emitters import WebEmitter
-from porter.main import Porter
+from prometheus_flask_exporter import PrometheusMetrics
 from tests.constants import (
     MOCK_ETH_PROVIDER_URI,
     TESTERCHAIN_CHAIN_ID,
@@ -38,6 +34,11 @@ from tests.constants import (
 from tests.mock.agents import MockContractAgent
 from tests.mock.interfaces import MockBlockchain
 from tests.utils.registry import MockRegistrySource, mock_registry_sources
+from typing import Iterable, List, Optional, Tuple
+from unittest.mock import MagicMock
+
+from porter.emitters import WebEmitter
+from porter.main import Porter
 
 # Crash on server error by default
 WebEmitter._crash_on_error_default = True
@@ -256,7 +257,12 @@ def random_treasure_map_data(alice, bob, ursulas):
 
 
 @pytest.fixture(scope='module')
-def porter_web_controller(porter):
+def porter_web_controller(porter, monkeymodule):
+    def _setup_prometheus(_porter, app):
+        _porter.controller.metrics = PrometheusMetrics(app)
+        _porter.controller.metrics.registry = prometheus_client.CollectorRegistry(auto_describe=True)
+
+    Porter._setup_prometheus = _setup_prometheus
     web_controller = porter.make_web_controller(crash_on_error=False)
     yield web_controller.test_client()
 
