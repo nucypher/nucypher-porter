@@ -37,9 +37,15 @@ jobs:
       run: pip install .[dev]
 
     - name: Run tests
+      if: matrix.python-version != '3.9'
       run: |
-        coverage run -m pytest tests
-        coverage xml -i
+        python -m pytest tests
+
+    - name: Run tests (Coverage)
+      if: matrix.python-version == '3.9'
+      run: |
+        coverage run --data-file=test_data -m pytest tests
+        coverage xml -i --data-file=test_data -o coverage.xml
 
     - name: Upload test coverage to Codecov
       if: matrix.python-version == '3.9'
@@ -48,3 +54,4 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         fail_ci_if_error: true
         verbose: true
+        files: coverage.xml
