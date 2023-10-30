@@ -30,6 +30,7 @@ jobs:
     - name: Run tests
       run: |
         coverage run -m pytest tests
+        coverage xml -i
 
     - name: Upload test coverage to Codecov
       if: matrix.python-version == '3.9'
