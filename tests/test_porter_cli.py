@@ -1,11 +1,10 @@
 import pytest
 from nucypher.characters.lawful import Ursula
-from nucypher.config.constants import TEMPORARY_DOMAIN
 
 from porter.cli.literature import PORTER_CORS_ALLOWED_ORIGINS, PORTER_RUN_MESSAGE
 from porter.cli.main import porter_cli
 from porter.main import Porter
-from tests.constants import TEST_ETH_PROVIDER_URI
+from tests.constants import TEMPORARY_DOMAIN_NAME, TEST_ETH_PROVIDER_URI
 from tests.utils.ursula import select_test_port
 
 
@@ -22,7 +21,7 @@ def test_porter_cli_run_simple(click_runner, teacher_uri):
         "run",
         "--dry-run",
         "--domain",
-        TEMPORARY_DOMAIN,
+        TEMPORARY_DOMAIN_NAME,
         "--eth-endpoint",
         TEST_ETH_PROVIDER_URI,
         "--teacher",
@@ -31,7 +30,7 @@ def test_porter_cli_run_simple(click_runner, teacher_uri):
     result = click_runner.invoke(porter_cli, porter_run_command, catch_exceptions=False)
     assert result.exit_code == 0, result.output
     output = result.output
-    assert f"Domain: {TEMPORARY_DOMAIN}" in output
+    assert f"Domain: {TEMPORARY_DOMAIN_NAME}" in output
     assert PORTER_RUN_MESSAGE.format(http_port=Porter.DEFAULT_PORT) in output
 
     # Non-default port
@@ -40,7 +39,7 @@ def test_porter_cli_run_simple(click_runner, teacher_uri):
         "run",
         "--dry-run",
         "--domain",
-        TEMPORARY_DOMAIN,
+        TEMPORARY_DOMAIN_NAME,
         "--eth-endpoint",
         TEST_ETH_PROVIDER_URI,
         "--http-port",
@@ -51,7 +50,7 @@ def test_porter_cli_run_simple(click_runner, teacher_uri):
     result = click_runner.invoke(porter_cli, porter_run_command, catch_exceptions=False)
     assert result.exit_code == 0, result.output
     output = result.output
-    assert f"Domain: {TEMPORARY_DOMAIN}" in output
+    assert f"Domain: {TEMPORARY_DOMAIN_NAME}" in output
     assert PORTER_RUN_MESSAGE.format(http_port=non_default_port) in output
 
 
@@ -60,7 +59,7 @@ def test_porter_cli_run_eth_provider_must_be_provided(click_runner, teacher_uri)
         "run",
         "--dry-run",
         "--domain",
-        TEMPORARY_DOMAIN,
+        TEMPORARY_DOMAIN_NAME,
         "--teacher",
         teacher_uri,
     )
@@ -76,7 +75,7 @@ def test_cli_run_with_cors_origin(click_runner, teacher_uri):
         "run",
         "--dry-run",
         "--domain",
-        TEMPORARY_DOMAIN,
+        TEMPORARY_DOMAIN_NAME,
         "--eth-endpoint",
         TEST_ETH_PROVIDER_URI,
         "--teacher",
@@ -97,7 +96,7 @@ def test_cli_run_with_empty_string_cors_origin(click_runner, teacher_uri):
         "run",
         "--dry-run",
         "--domain",
-        TEMPORARY_DOMAIN,
+        TEMPORARY_DOMAIN_NAME,
         "--eth-endpoint",
         TEST_ETH_PROVIDER_URI,
         "--teacher",
