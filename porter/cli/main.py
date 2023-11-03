@@ -1,5 +1,5 @@
 import click
-from nucypher.blockchain.eth.domains import TACoDomain
+from nucypher.blockchain.eth import domains
 from nucypher.characters.lawful import Ursula
 from nucypher.cli.config import group_general_config
 from nucypher.cli.options import (
@@ -30,7 +30,7 @@ def porter_cli():
 
 @porter_cli.command()
 @group_general_config
-@option_domain(default=TACoDomain.DEFAULT_DOMAIN_NAME, validate=True, required=False)
+@option_domain(default=str(domains.DEFAULT_DOMAIN), validate=True, required=False)
 @option_eth_endpoint(required=False)
 @option_teacher_uri
 @option_registry_filepath
@@ -90,6 +90,7 @@ def run(
             ),
         )
 
+    domain = domains.get_domain(domain)
     registry = get_registry(domain=domain, registry_filepath=registry_filepath)
     teacher = None
     if teacher_uri:
@@ -108,7 +109,7 @@ def run(
         eth_endpoint=eth_endpoint,
     )
 
-    emitter.message(f"TACo Domain: {PORTER.domain.capitalize()}", color="green")
+    emitter.message(f"TACo Domain: {str(PORTER.domain).capitalize()}", color="green")
     emitter.message(f"ETH Endpoint URI: {eth_endpoint}", color="green")
 
     # firm up falsy status (i.e. change specified empty string to None)

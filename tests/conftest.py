@@ -1,5 +1,8 @@
-import maya
 import os
+from typing import Iterable, List, Optional, Tuple
+from unittest.mock import MagicMock
+
+import maya
 import prometheus_client
 import pytest
 from click.testing import CliRunner
@@ -12,12 +15,10 @@ from nucypher.blockchain.eth.agents import (
     StakingProvidersReservoir,
     TACoApplicationAgent,
 )
-from nucypher.blockchain.eth.domains import DomainInfo, TACoDomain
 from nucypher.blockchain.eth.interfaces import BlockchainInterfaceFactory
 from nucypher.blockchain.eth.registry import ContractRegistry
 from nucypher.blockchain.eth.signers.software import Web3Signer
 from nucypher.characters.lawful import Enrico, Ursula
-from nucypher.config.constants import TEMPORARY_DOMAIN
 from nucypher.crypto.ferveo import dkg
 from nucypher.crypto.powers import DecryptingPower, RitualisticPower
 from nucypher.network.nodes import Learner, Teacher
@@ -26,19 +27,17 @@ from nucypher.utilities.logging import GlobalLoggerSettings
 from nucypher_core import HRAC, Address, ThresholdMessageKit, TreasureMap
 from nucypher_core.ferveo import DkgPublicKey, Validator
 from prometheus_flask_exporter import PrometheusMetrics
+
+from porter.emitters import WebEmitter
+from porter.main import Porter
 from tests.constants import (
     MOCK_ETH_PROVIDER_URI,
+    TEMPORARY_DOMAIN,
     TESTERCHAIN_CHAIN_ID,
-    TESTERCHAIN_CHAIN_INFO,
 )
 from tests.mock.agents import MockContractAgent
 from tests.mock.interfaces import MockBlockchain
 from tests.utils.registry import MockRegistrySource, mock_registry_sources
-from typing import Iterable, List, Optional, Tuple
-from unittest.mock import MagicMock
-
-from porter.emitters import WebEmitter
-from porter.main import Porter
 
 # Crash on server error by default
 WebEmitter._crash_on_error_default = True
@@ -116,14 +115,6 @@ def mock_condition_blockchains(module_mocker):
     module_mocker.patch.dict(
         "nucypher.policy.conditions.evm._CONDITION_CHAINS",
         {TESTERCHAIN_CHAIN_ID: "eth-tester/pyevm"},
-    )
-
-    test_domain_info = DomainInfo(
-        TEMPORARY_DOMAIN, TESTERCHAIN_CHAIN_INFO, TESTERCHAIN_CHAIN_INFO
-    )
-
-    module_mocker.patch.object(
-        TACoDomain, "get_domain_info", return_value=test_domain_info
     )
 
 
@@ -361,7 +352,7 @@ CONDITIONS = {
     "version": ConditionLingo.VERSION,
     "condition": {
         "conditionType": "time",
-        "returnValueTest": {"value": "0", "comparator": ">"},
+        "returnValueTest": {"value": 0, "comparator": ">"},
         "method": "blocktime",
         "chain": TESTERCHAIN_CHAIN_ID,
     },

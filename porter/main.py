@@ -1,8 +1,12 @@
+from pathlib import Path
+from typing import Dict, List, NamedTuple, Optional, Sequence
+
 from constant_sorrow.constants import NO_CONTROL_PROTOCOL
 from eth_typing import ChecksumAddress
 from eth_utils import to_checksum_address
 from flask import Response, request
 from nucypher.blockchain.eth.agents import ContractAgency, TACoApplicationAgent
+from nucypher.blockchain.eth.domains import TACoDomain
 from nucypher.blockchain.eth.interfaces import BlockchainInterfaceFactory
 from nucypher.blockchain.eth.registry import ContractRegistry
 from nucypher.characters.lawful import Ursula
@@ -20,9 +24,7 @@ from nucypher_core import (
     TreasureMap,
 )
 from nucypher_core.umbral import PublicKey
-from pathlib import Path
 from prometheus_flask_exporter import PrometheusMetrics
-from typing import Dict, List, NamedTuple, Optional, Sequence
 
 from porter.controllers import PorterCLIController, WebController
 from porter.interfaces import PorterInterface
@@ -82,7 +84,7 @@ class Porter(Learner):
 
     def __init__(
         self,
-        domain: str = None,
+        domain: TACoDomain = None,
         registry: ContractRegistry = None,
         controller: bool = True,
         node_class: object = Ursula,
