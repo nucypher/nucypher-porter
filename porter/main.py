@@ -130,6 +130,12 @@ class Porter(Learner):
                     exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
                     include_ursulas: Optional[Sequence[ChecksumAddress]] = None) -> List[UrsulaInfo]:
         reservoir = self._make_reservoir(exclude_ursulas, include_ursulas)
+        available_nodes_to_sample = len(reservoir.values) + len(reservoir.reservoir)
+        if available_nodes_to_sample < quantity:
+            raise ValueError(
+                f"Insufficient nodes ({available_nodes_to_sample}) from which to sample {quantity}"
+            )
+
         value_factory = PrefetchStrategy(reservoir, quantity)
 
         def get_ursula_info(ursula_address) -> Porter.UrsulaInfo:
