@@ -42,6 +42,9 @@ repos:
     rev: 1.7.2
     hooks:
     -   id: darker
-        args: [--isort]
-        additional_dependencies:
-          - isort~=5.9
+
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: 'v0.1.4'
+    hooks:
+      - id: ruff

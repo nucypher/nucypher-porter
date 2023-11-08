@@ -1,7 +1,6 @@
 import click
-from marshmallow import INCLUDE, Schema
+from marshmallow import INCLUDE, Schema, validates_schema
 from marshmallow import fields as marshmallow_fields
-from marshmallow import validates_schema
 
 from porter.cli.types import EIP55_CHECKSUM_ADDRESS
 from porter.fields.base import JSON, Integer, PositiveInteger, StringList
@@ -103,9 +102,11 @@ class GetUrsulas(BaseSchema):
     def check_valid_quantity_and_include_ursulas(self, data, **kwargs):
         # TODO does this make sense - perhaps having extra ursulas could be a good thing if some are down or can't
         #  be contacted at that time
-        ursulas_to_include = data.get('include_ursulas')
-        if ursulas_to_include and len(ursulas_to_include) > data['quantity']:
-            raise InvalidArgumentCombo(f"Ursulas to include is greater than quantity requested")
+        ursulas_to_include = data.get("include_ursulas")
+        if ursulas_to_include and len(ursulas_to_include) > data["quantity"]:
+            raise InvalidArgumentCombo(
+                "Ursulas to include is greater than quantity requested"
+            )
 
     @validates_schema
     def check_include_and_exclude_are_mutually_exclusive(self, data, **kwargs):
@@ -258,5 +259,5 @@ class Decrypt(BaseSchema):
         encrypted_decryption_requests = data.get("encrypted_decryption_requests")
         if len(encrypted_decryption_requests) < threshold:
             raise InvalidArgumentCombo(
-                f"Number of provided requests must be >= the expected threshold"
+                "Number of provided requests must be >= the expected threshold"
             )

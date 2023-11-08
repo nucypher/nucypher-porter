@@ -1,7 +1,7 @@
 from nucypher_core import TreasureMap as TreasureMapClass
 
-from porter.fields.exceptions import InvalidInputData
 from porter.fields.base import Base64BytesRepresentation
+from porter.fields.exceptions import InvalidInputData
 
 
 class TreasureMap(Base64BytesRepresentation):

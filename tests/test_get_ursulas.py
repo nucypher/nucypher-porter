@@ -203,6 +203,10 @@ def test_get_ursulas_python_interface(porter, ursulas):
     for address in exclude_ursulas:
         assert address not in returned_ursula_addresses
 
+    # too many ursulas requested
+    with pytest.raises(ValueError, match="Insufficient nodes"):
+        porter.get_ursulas(quantity=len(ursulas) + 1)
+
 
 def test_get_ursulas_web_interface(porter_web_controller, ursulas):
     # Send bad data to assert error return
@@ -268,11 +272,12 @@ def test_get_ursulas_web_interface(porter_web_controller, ursulas):
         assert address not in returned_ursula_addresses
 
     #
-    # Failure case
+    # Failure case: too many ursulas requested
     #
     failed_ursula_params = dict(get_ursulas_params)
     failed_ursula_params["quantity"] = len(ursulas_list) + 1  # too many to get
     response = porter_web_controller.get(
         "/get_ursulas", data=json.dumps(failed_ursula_params)
     )
-    assert response.status_code == 500
+    assert response.status_code == 400
+    assert "Insufficient nodes" in response.text

@@ -3,15 +3,14 @@ import random
 import string
 from typing import Dict, List, Optional, Tuple
 
-from nucypher_core import MessageKit, RetrievalKit
-
 from nucypher.characters.lawful import Enrico
 from nucypher.crypto.powers import DecryptingPower
+from nucypher_core import MessageKit, RetrievalKit
 
 from porter.fields.base import JSON
-from porter.fields.umbralkey import UmbralKey
 from porter.fields.retrieve import RetrievalKit as RetrievalKitField
 from porter.fields.treasuremap import TreasureMap
+from porter.fields.umbralkey import UmbralKey
 
 
 def generate_random_label() -> bytes:
@@ -83,9 +82,9 @@ def retrieval_request_setup(enacted_policy,
 
 
 def retrieval_params_decode_from_rest(retrieval_params: Dict) -> Dict:
-    decode_bytes = lambda field, data: field()._deserialize(
-        value=data, attr=None, data=None
-    )
+    def decode_bytes(field, data):
+        return field()._deserialize(value=data, attr=None, data=None)
+
     decoded_params = dict(
         treasure_map=decode_bytes(TreasureMap, retrieval_params["treasure_map"]),
         retrieval_kits=[

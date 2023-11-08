@@ -5,7 +5,7 @@ from eth_typing import ChecksumAddress
 from nucypher_core import RetrievalKit, TreasureMap
 from nucypher_core.umbral import PublicKey
 
-from porter import schema
+from porter import main, schema
 
 
 def attach_schema(schema):
@@ -29,7 +29,7 @@ class ControlInterface:
 
 
 class PorterInterface(ControlInterface):
-    def __init__(self, porter: 'Porter' = None, *args, **kwargs):
+    def __init__(self, porter: "main.Porter" = None, *args, **kwargs):
         super().__init__(implementer=porter, *args, **kwargs)
 
     @attach_schema(schema.GetUrsulas)

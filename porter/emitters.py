@@ -4,9 +4,9 @@ from http import HTTPStatus
 from typing import Callable
 
 from flask import Response
+from nucypher.utilities.logging import Logger
 
 import porter
-from nucypher.utilities.logging import Logger
 
 
 def null_stream():

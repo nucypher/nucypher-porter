@@ -34,3 +34,10 @@
         directory = "misc"
         name = "Misc"
         showcontent = true
+
+[tool.ruff]
+select = ["E", "F", "I"]
+ignore = ["E501"]
+
+[tool.ruff.isort]
+known-first-party = ["porter"]
