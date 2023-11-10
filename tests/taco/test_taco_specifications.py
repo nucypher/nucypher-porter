@@ -12,39 +12,24 @@ from porter.main import Porter
 from porter.schema import Decrypt, DecryptOutcomeSchema
 
 
-def test_taco_decrypt(
-    porter, dkg_setup, dkg_encrypted_data, get_random_checksum_address
-):
+def test_taco_decrypt_schema(dkg_setup, dkg_encrypted_data):
     ritual_id, public_key, cohort, threshold = dkg_setup
     threshold_message_kit, expected_plaintext = dkg_encrypted_data
 
     decrypt_schema = Decrypt()
 
-    decryption_request = ThresholdDecryptionRequest(
-        ritual_id=ritual_id,
-        variant=FerveoVariant.Simple,
-        ciphertext_header=threshold_message_kit.ciphertext_header,
-        acp=threshold_message_kit.acp,
-        context=None,
+    requester_secret_key = SessionStaticSecret.random()
+    encrypted_decryption_requests = _generate_encrypted_requests(
+        cohort, requester_secret_key, ritual_id, threshold_message_kit
     )
 
-    requester_secret_key = SessionStaticSecret.random()
-
     encrypted_request_field = EncryptedThresholdDecryptionRequestField()
-    encrypted_decryption_requests = {}
-    for ursula in cohort:
-        ursula_decryption_request_static_key = (
-            ursula.threshold_request_power.get_pubkey_from_ritual_id(ritual_id)
-        )
-        shared_secret = requester_secret_key.derive_shared_secret(
-            ursula_decryption_request_static_key
-        )
-        encrypted_decryption_request = decryption_request.encrypt(
-            shared_secret=shared_secret,
-            requester_public_key=requester_secret_key.public_key(),
-        )
+    for (
+        checksum_address,
+        encrypted_decryption_request,
+    ) in encrypted_decryption_requests.items():
         encrypted_decryption_requests[
-            ursula.checksum_address
+            checksum_address
         ] = encrypted_request_field._serialize(
             value=encrypted_decryption_request, attr=None, obj=None
         )
@@ -87,6 +72,46 @@ def test_taco_decrypt(
         }
         decrypt_schema.load(request_data)
 
+    # invalid threshold value
+    with pytest.raises(InvalidInputData):
+        request_data = {
+            "threshold": 0,
+            "encrypted_decryption_requests": encrypted_decryption_requests,
+        }
+        decrypt_schema.load(request_data)
+
+    with pytest.raises(InvalidInputData):
+        request_data = {
+            "threshold": -1,
+            "encrypted_decryption_requests": encrypted_decryption_requests,
+        }
+        decrypt_schema.load(request_data)
+
+    # ivnalid timeout value
+    with pytest.raises(InvalidInputData):
+        request_data = {
+            "threshold": threshold,
+            "encrypted_decryption_requests": encrypted_decryption_requests,
+            "timeout": "some number",
+        }
+        decrypt_schema.load(request_data)
+
+    with pytest.raises(InvalidInputData):
+        request_data = {
+            "threshold": threshold,
+            "encrypted_decryption_requests": encrypted_decryption_requests,
+            "timeout": 0,
+        }
+        decrypt_schema.load(request_data)
+
+    with pytest.raises(InvalidInputData):
+        request_data = {
+            "threshold": threshold,
+            "encrypted_decryption_requests": encrypted_decryption_requests,
+            "timeout": -1,
+        }
+        decrypt_schema.load(request_data)
+
     # invalid param combination
     with pytest.raises(InvalidArgumentCombo):
         request_data = {
@@ -103,23 +128,18 @@ def test_taco_decrypt(
     }
     decrypt_schema.load(request_data)
 
-    # actual outcomes
-    encrypted_decryption_requests = {}
-    for ursula in cohort:
-        ursula_decryption_request_static_key = (
-            ursula.threshold_request_power.get_pubkey_from_ritual_id(ritual_id)
-        )
-        shared_secret = requester_secret_key.derive_shared_secret(
-            ursula_decryption_request_static_key
-        )
-        encrypted_decryption_request = decryption_request.encrypt(
-            shared_secret=shared_secret,
-            requester_public_key=requester_secret_key.public_key(),
-        )
-        encrypted_decryption_requests[
-            ursula.checksum_address
-        ] = encrypted_decryption_request
 
+def test_taco_decrypt(porter, dkg_setup, dkg_encrypted_data):
+    ritual_id, public_key, cohort, threshold = dkg_setup
+    threshold_message_kit, expected_plaintext = dkg_encrypted_data
+
+    decrypt_schema = Decrypt()
+
+    requester_secret_key = SessionStaticSecret.random()
+
+    encrypted_decryption_requests = _generate_encrypted_requests(
+        cohort, requester_secret_key, ritual_id, threshold_message_kit
+    )
     decrypt_outcome = porter.decrypt(
         threshold=threshold, encrypted_decryption_requests=encrypted_decryption_requests
     )
@@ -192,3 +212,33 @@ def test_taco_decrypt(
         )
 
     assert output == {"decryption_results": faked_outcome_json}
+
+
+def _generate_encrypted_requests(
+    cohort, requester_secret_key, ritual_id, threshold_message_kit
+):
+    decryption_request = ThresholdDecryptionRequest(
+        ritual_id=ritual_id,
+        variant=FerveoVariant.Simple,
+        ciphertext_header=threshold_message_kit.ciphertext_header,
+        acp=threshold_message_kit.acp,
+        context=None,
+    )
+
+    encrypted_decryption_requests = {}
+    for ursula in cohort:
+        ursula_decryption_request_static_key = (
+            ursula.threshold_request_power.get_pubkey_from_ritual_id(ritual_id)
+        )
+        shared_secret = requester_secret_key.derive_shared_secret(
+            ursula_decryption_request_static_key
+        )
+        encrypted_decryption_request = decryption_request.encrypt(
+            shared_secret=shared_secret,
+            requester_public_key=requester_secret_key.public_key(),
+        )
+        encrypted_decryption_requests[
+            ursula.checksum_address
+        ] = encrypted_decryption_request
+
+    return encrypted_decryption_requests
