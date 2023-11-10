@@ -224,10 +224,17 @@ class Porter(Learner):
         encrypted_decryption_requests: Dict[
             ChecksumAddress, EncryptedThresholdDecryptionRequest
         ],
+        timeout: Optional[int] = None,
     ) -> DecryptOutcome:
         decryption_client = ThresholdDecryptionClient(self)
-        successes, failures = decryption_client.gather_encrypted_decryption_shares(
+
+        kwargs = dict(
             encrypted_requests=encrypted_decryption_requests, threshold=threshold
+        )
+        if timeout:
+            kwargs["timeout"] = timeout
+        successes, failures = decryption_client.gather_encrypted_decryption_shares(
+            **kwargs
         )
 
         decrypt_outcome = Porter.DecryptOutcome(

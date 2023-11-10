@@ -80,10 +80,12 @@ class PorterInterface(ControlInterface):
         self,
         threshold: int,
         encrypted_decryption_requests: Dict[ChecksumAddress, bytes],
+        timeout: Optional[int] = None,
     ):
         decrypt_outcome = self.implementer.decrypt(
             threshold=threshold,
             encrypted_decryption_requests=encrypted_decryption_requests,
+            timeout=timeout,
         )
         response_data = {"decryption_results": decrypt_outcome}
         return response_data
