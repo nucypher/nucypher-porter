@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "46a5138d44f1bae27372c812ba7b68f4bddd9dcd22f75a3ebf590224fcb47134"
+            "sha256": "7d055e62ad6d8e60f11ef25f6d304d46167bc7009c0876180421d4f18235d19c"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -1124,8 +1124,8 @@
             "version": "==1.0.0"
         },
         "nucypher": {
-            "git": "https://github.com/nucypher/nucypher.git",
-            "ref": "598ad313762fa2a5c8653f5996e888e75d9370ed"
+            "git": "https://github.com/derekpierre/nucypher.git",
+            "ref": "f751cb385e03909529c733a402b674c7c2f28cdd"
         },
         "nucypher-core": {
             "hashes": [
@@ -2517,6 +2517,9 @@
             "version": "==15.1.0"
         },
         "coverage": {
+            "extras": [
+                "toml"
+            ],
             "hashes": [
                 "sha256:027018943386e7b942fa832372ebc120155fd970837489896099f5cfa2890f79",
                 "sha256:11b990d520ea75e7ee8dcab5bc908072aaada194a794db9f6d7d5cfd19661e5a",
@@ -3638,8 +3641,8 @@
             "version": "==1.8.0"
         },
         "nucypher": {
-            "git": "https://github.com/nucypher/nucypher.git",
-            "ref": "598ad313762fa2a5c8653f5996e888e75d9370ed"
+            "git": "https://github.com/derekpierre/nucypher.git",
+            "ref": "f751cb385e03909529c733a402b674c7c2f28cdd"
         },
         "nucypher-core": {
             "hashes": [
@@ -4533,10 +4536,10 @@
         },
         "sentry-sdk": {
             "hashes": [
-                "sha256:1cce906dc86afda1ecd22c4716b0c846639151a3c3b59e23826711c6525c5642",
-                "sha256:816aeb900a54bba2d9346bad8ffac2d258c4fa09271b95a6533a714e9000f074"
+                "sha256:04e392db9a0d59bd49a51b9e3a92410ac5867556820465057c2ef89a38e953e9",
+                "sha256:a7865952701e46d38b41315c16c075367675c48d049b90a4cc2e41991ebc7efa"
             ],
-            "version": "==1.33.1"
+            "version": "==1.35.0"
         },
         "service-identity": {
             "hashes": [
