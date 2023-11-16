@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Dict, List, NamedTuple, Optional, Sequence
 
@@ -53,9 +54,9 @@ class Porter(Learner):
     _LONG_LEARNING_DELAY = 30
     _ROUNDS_WITHOUT_NODES_AFTER_WHICH_TO_SLOW_DOWN = 25
 
-    DEFAULT_EXECUTION_TIMEOUT = 15  # 15s
-
     DEFAULT_PORT = 9155
+
+    MAX_DECRYPTION_TIMEOUT = os.getenv("PORTER_MAX_DECRYPTION_TIMEOUT", default=15)  # same default as `nucypher`
 
     _interface_class = PorterInterface
 
@@ -232,7 +233,7 @@ class Porter(Learner):
             encrypted_requests=encrypted_decryption_requests, threshold=threshold
         )
         if timeout:
-            kwargs["timeout"] = timeout
+            kwargs["timeout"] = min(self.MAX_DECRYPTION_TIMEOUT, timeout)
         successes, failures = decryption_client.gather_encrypted_decryption_shares(
             **kwargs
         )
