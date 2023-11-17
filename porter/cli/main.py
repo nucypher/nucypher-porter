@@ -30,8 +30,15 @@ def porter_cli():
 
 @porter_cli.command()
 @group_general_config
-@option_domain(default=str(domains.DEFAULT_DOMAIN), validate=True, required=False)
-@option_eth_endpoint(required=False)
+@option_domain(default=str(domains.DEFAULT_DOMAIN), validate=True, required=True)
+@option_eth_endpoint(required=True)
+@click.option(
+    "--polygon-endpoint",
+    "polygon_endpoint",
+    help="Connection URL for Polygon chain",
+    type=click.STRING,
+    required=True,
+)
 @option_teacher_uri
 @option_registry_filepath
 @option_min_stake
@@ -62,6 +69,7 @@ def run(
     general_config,
     domain,
     eth_endpoint,
+    polygon_endpoint,
     teacher_uri,
     registry_filepath,
     min_stake,
@@ -72,23 +80,6 @@ def run(
 ):
     """Start Porter's Web controller."""
     emitter = setup_emitter(general_config, banner=BANNER)
-
-    # HTTP/HTTPS
-    if not eth_endpoint:
-        raise click.BadOptionUsage(
-            option_name="--eth-endpoint",
-            message=click.style(
-                "--eth-endpoint is required for decentralized porter.", fg="red"
-            ),
-        )
-    if not domain:
-        # should never happen - domain defaults to 'mainnet' if not specified
-        raise click.BadOptionUsage(
-            option_name="--domain",
-            message=click.style(
-                "--domain is required for decentralized porter.", "red"
-            ),
-        )
 
     domain = domains.get_domain(domain)
     registry = get_registry(domain=domain, registry_filepath=registry_filepath)
@@ -107,10 +98,12 @@ def run(
         registry=registry,
         start_learning_now=eager,
         eth_endpoint=eth_endpoint,
+        polygon_endpoint=polygon_endpoint,
     )
 
     emitter.message(f"TACo Domain: {str(PORTER.domain).capitalize()}", color="green")
     emitter.message(f"ETH Endpoint URI: {eth_endpoint}", color="green")
+    emitter.message(f"Polygon Endpoint URI: {polygon_endpoint}", color="green")
 
     # firm up falsy status (i.e. change specified empty string to None)
     allow_origins = allow_origins if allow_origins else None

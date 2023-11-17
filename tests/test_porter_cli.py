@@ -24,6 +24,8 @@ def test_porter_cli_run_simple(click_runner, teacher_uri):
         TEMPORARY_DOMAIN_NAME,
         "--eth-endpoint",
         TEST_ETH_PROVIDER_URI,
+        "--polygon-endpoint",
+        TEST_ETH_PROVIDER_URI,
         "--teacher",
         teacher_uri,
     )
@@ -41,6 +43,8 @@ def test_porter_cli_run_simple(click_runner, teacher_uri):
         "--domain",
         TEMPORARY_DOMAIN_NAME,
         "--eth-endpoint",
+        TEST_ETH_PROVIDER_URI,
+        "--polygon-endpoint",
         TEST_ETH_PROVIDER_URI,
         "--http-port",
         non_default_port,
@@ -60,12 +64,30 @@ def test_porter_cli_run_eth_provider_must_be_provided(click_runner, teacher_uri)
         "--dry-run",
         "--domain",
         TEMPORARY_DOMAIN_NAME,
+        "--polygon-endpoint",
+        TEST_ETH_PROVIDER_URI,
         "--teacher",
         teacher_uri,
     )
     result = click_runner.invoke(porter_cli, porter_run_command, catch_exceptions=False)
     assert result.exit_code != 0, result.output
-    assert f"--eth-endpoint is required" in result.output
+    assert "Missing option '--eth-endpoint'" in result.output
+
+
+def test_porter_cli_run_polygon_provider_must_be_provided(click_runner, teacher_uri):
+    porter_run_command = (
+        "run",
+        "--dry-run",
+        "--domain",
+        TEMPORARY_DOMAIN_NAME,
+        "--eth-endpoint",
+        TEST_ETH_PROVIDER_URI,
+        "--teacher",
+        teacher_uri,
+    )
+    result = click_runner.invoke(porter_cli, porter_run_command, catch_exceptions=False)
+    assert result.exit_code != 0, result.output
+    assert "Missing option '--polygon-endpoint'" in result.output
 
 
 def test_cli_run_with_cors_origin(click_runner, teacher_uri):
@@ -77,6 +99,8 @@ def test_cli_run_with_cors_origin(click_runner, teacher_uri):
         "--domain",
         TEMPORARY_DOMAIN_NAME,
         "--eth-endpoint",
+        TEST_ETH_PROVIDER_URI,
+        "--polygon-endpoint",
         TEST_ETH_PROVIDER_URI,
         "--teacher",
         teacher_uri,
@@ -98,6 +122,8 @@ def test_cli_run_with_empty_string_cors_origin(click_runner, teacher_uri):
         "--domain",
         TEMPORARY_DOMAIN_NAME,
         "--eth-endpoint",
+        TEST_ETH_PROVIDER_URI,
+        "--polygon-endpoint",
         TEST_ETH_PROVIDER_URI,
         "--teacher",
         teacher_uri,

@@ -5,8 +5,11 @@ from constant_sorrow.constants import NO_CONTROL_PROTOCOL
 from eth_typing import ChecksumAddress
 from eth_utils import to_checksum_address
 from flask import Response, request
-from nucypher.blockchain.eth.agents import ContractAgency, TACoApplicationAgent
-from nucypher.blockchain.eth.domains import TACoDomain
+from nucypher.blockchain.eth.agents import (
+    ContractAgency,
+    TACoChildApplicationAgent,
+)
+from nucypher.blockchain.eth.domains import DEFAULT_DOMAIN, TACoDomain
 from nucypher.blockchain.eth.interfaces import BlockchainInterfaceFactory
 from nucypher.blockchain.eth.registry import ContractRegistry
 from nucypher.characters.lawful import Ursula
@@ -84,31 +87,33 @@ class Porter(Learner):
 
     def __init__(
         self,
-        domain: TACoDomain = None,
+        eth_endpoint: str,
+        polygon_endpoint: str,
+        domain: TACoDomain = DEFAULT_DOMAIN,
         registry: ContractRegistry = None,
         controller: bool = True,
         node_class: object = Ursula,
-        eth_endpoint: str = None,
         execution_timeout: int = DEFAULT_EXECUTION_TIMEOUT,
         *args,
         **kwargs,
     ):
+        if not domain:
+            raise ValueError("TACo Domain must be provided.")
         if not eth_endpoint:
-            raise ValueError('ETH Provider URI is required for decentralized Porter.')
+            raise ValueError("ETH Provider URI must be provided.")
+        if not polygon_endpoint:
+            raise ValueError("Polygon Provider URI must be provided.")
 
-        if not BlockchainInterfaceFactory.is_interface_initialized(
-            endpoint=eth_endpoint
-        ):
-            BlockchainInterfaceFactory.initialize_interface(endpoint=eth_endpoint)
+        self._initialize_endpoints(eth_endpoint, polygon_endpoint)
+        self.eth_endpoint, self.polygon_endpoint = eth_endpoint, polygon_endpoint
 
-        self.eth_endpoint = eth_endpoint
         self.registry = registry or ContractRegistry.from_latest_publication(
             domain=domain
         )
-        self.application_agent = ContractAgency.get_agent(
-            TACoApplicationAgent,
+        self.taco_child_application_agent = ContractAgency.get_agent(
+            TACoChildApplicationAgent,
             registry=self.registry,
-            blockchain_endpoint=self.eth_endpoint,
+            blockchain_endpoint=self.polygon_endpoint,
         )
 
         super().__init__(save_metadata=True, domain=domain, node_class=node_class, *args, **kwargs)
@@ -124,6 +129,18 @@ class Porter(Learner):
             self.make_cli_controller()
 
         self.log.info(BANNER)
+
+    @staticmethod
+    def _initialize_endpoints(eth_endpoint: str, polygon_endpoint: str):
+        if not BlockchainInterfaceFactory.is_interface_initialized(
+            endpoint=eth_endpoint
+        ):
+            BlockchainInterfaceFactory.initialize_interface(endpoint=eth_endpoint)
+
+        if not BlockchainInterfaceFactory.is_interface_initialized(
+            endpoint=polygon_endpoint
+        ):
+            BlockchainInterfaceFactory.initialize_interface(endpoint=polygon_endpoint)
 
     def get_ursulas(self,
                     quantity: int,
@@ -224,7 +241,7 @@ class Porter(Learner):
         include_ursulas: Optional[Sequence[ChecksumAddress]] = None,
     ):
         return make_staking_provider_reservoir(
-            application_agent=self.application_agent,
+            application_agent=self.taco_child_application_agent,
             exclude_addresses=exclude_ursulas,
             include_addresses=include_ursulas,
         )

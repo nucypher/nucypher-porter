@@ -13,7 +13,7 @@ from nucypher.blockchain.eth.agents import (
     ContractAgency,
     CoordinatorAgent,
     StakingProvidersReservoir,
-    TACoApplicationAgent,
+    TACoChildApplicationAgent,
 )
 from nucypher.blockchain.eth.interfaces import BlockchainInterfaceFactory
 from nucypher.blockchain.eth.registry import ContractRegistry
@@ -182,7 +182,7 @@ def mock_sample_reservoir(testerchain, mock_contract_agency):
         }
         return StakingProvidersReservoir(addresses)
 
-    mock_agent = mock_contract_agency.get_agent(TACoApplicationAgent)
+    mock_agent = mock_contract_agency.get_agent(TACoChildApplicationAgent)
     mock_agent.get_staking_provider_reservoir = mock_reservoir
 
 
@@ -208,6 +208,7 @@ def porter(ursulas, mock_rest_middleware, test_registry):
     porter = Porter(
         domain=TEMPORARY_DOMAIN,
         eth_endpoint=MOCK_ETH_PROVIDER_URI,
+        polygon_endpoint=MOCK_ETH_PROVIDER_URI,
         registry=test_registry,
         abort_on_learning_error=True,
         start_learning_now=True,
@@ -340,7 +341,7 @@ def dkg_setup(
     # Configure CoordinatorAgent
     coordinator_agent.get_ritual.return_value = ritual
     coordinator_agent.get_ritual_status.return_value = (
-        CoordinatorAgent.Ritual.Status.FINALIZED
+        CoordinatorAgent.Ritual.Status.ACTIVE
     )
     coordinator_agent.is_encryption_authorized.return_value = True
 

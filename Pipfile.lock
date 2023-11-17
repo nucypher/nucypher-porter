@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "46a5138d44f1bae27372c812ba7b68f4bddd9dcd22f75a3ebf590224fcb47134"
+            "sha256": "cb97453b370ef434cc8ac515b2e63564cf07c9b8b997e24f155f3ed25f5bbfb2"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -1125,7 +1125,7 @@
         },
         "nucypher": {
             "git": "https://github.com/nucypher/nucypher.git",
-            "ref": "598ad313762fa2a5c8653f5996e888e75d9370ed"
+            "ref": "c0d12e14e4526f3fb3549a1176d0b2a79923c5ca"
         },
         "nucypher-core": {
             "hashes": [
@@ -3639,7 +3639,7 @@
         },
         "nucypher": {
             "git": "https://github.com/nucypher/nucypher.git",
-            "ref": "598ad313762fa2a5c8653f5996e888e75d9370ed"
+            "ref": "c0d12e14e4526f3fb3549a1176d0b2a79923c5ca"
         },
         "nucypher-core": {
             "hashes": [
@@ -4533,10 +4533,10 @@
         },
         "sentry-sdk": {
             "hashes": [
-                "sha256:1cce906dc86afda1ecd22c4716b0c846639151a3c3b59e23826711c6525c5642",
-                "sha256:816aeb900a54bba2d9346bad8ffac2d258c4fa09271b95a6533a714e9000f074"
+                "sha256:04e392db9a0d59bd49a51b9e3a92410ac5867556820465057c2ef89a38e953e9",
+                "sha256:a7865952701e46d38b41315c16c075367675c48d049b90a4cc2e41991ebc7efa"
             ],
-            "version": "==1.33.1"
+            "version": "==1.35.0"
         },
         "service-identity": {
             "hashes": [
