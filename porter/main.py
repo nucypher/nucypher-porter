@@ -151,11 +151,16 @@ class Porter(Learner):
         include_ursulas: Optional[Sequence[ChecksumAddress]] = None,
         timeout: Optional[int] = None,
     ) -> List[UrsulaInfo]:
-        timeout = (
-            min(timeout, self.MAX_GET_URSULAS_TIMEOUT)
-            if timeout
-            else self.MAX_GET_URSULAS_TIMEOUT
-        )
+        if timeout and timeout > self.MAX_GET_URSULAS_TIMEOUT:
+            self.log.warn(
+                f"Provided sampling timeout ({timeout}s) exceeds "
+                f"maximum ({self.MAX_GET_URSULAS_TIMEOUT}s); "
+                f"using {self.MAX_GET_URSULAS_TIMEOUT}s instead"
+            )
+            timeout = self.MAX_GET_URSULAS_TIMEOUT
+        else:
+            timeout = timeout or self.MAX_GET_URSULAS_TIMEOUT
+
         reservoir = self._make_reservoir(exclude_ursulas, include_ursulas)
         available_nodes_to_sample = len(reservoir.values) + len(reservoir.reservoir)
         if available_nodes_to_sample < quantity:
@@ -238,14 +243,20 @@ class Porter(Learner):
         timeout: Optional[int] = None,
     ) -> DecryptOutcome:
         decryption_client = ThresholdDecryptionClient(self)
+        if timeout and timeout > self.MAX_DECRYPTION_TIMEOUT:
+            self.log.warn(
+                f"Provided decryption timeout ({timeout}s) exceeds "
+                f"maximum ({self.MAX_DECRYPTION_TIMEOUT}s); "
+                f"using {self.MAX_DECRYPTION_TIMEOUT}s instead"
+            )
+            timeout = self.MAX_DECRYPTION_TIMEOUT
+        else:
+            timeout = timeout or self.MAX_DECRYPTION_TIMEOUT
 
-        kwargs = dict(
-            encrypted_requests=encrypted_decryption_requests, threshold=threshold
-        )
-        if timeout:
-            kwargs["timeout"] = min(self.MAX_DECRYPTION_TIMEOUT, timeout)
         successes, failures = decryption_client.gather_encrypted_decryption_shares(
-            **kwargs
+            encrypted_requests=encrypted_decryption_requests,
+            threshold=threshold,
+            timeout=timeout,
         )
 
         decrypt_outcome = Porter.DecryptOutcome(
