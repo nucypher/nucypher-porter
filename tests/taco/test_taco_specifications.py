@@ -87,7 +87,7 @@ def test_taco_decrypt_schema(dkg_setup, dkg_encrypted_data):
         }
         decrypt_schema.load(request_data)
 
-    # ivnalid timeout value
+    # invalid timeout value
     with pytest.raises(InvalidInputData):
         request_data = {
             "threshold": threshold,

@@ -95,6 +95,18 @@ class GetUrsulas(BaseSchema):
         required=False,
         load_only=True)
 
+    timeout = PositiveInteger(
+        required=False,
+        load_only=True,
+        click=click.option(
+            "--timeout",
+            "-t",
+            help="Timeout for getting the required quantity of ursulas",
+            type=click.INT,
+            required=False,
+        ),
+    )
+
     # output
     ursulas = marshmallow_fields.List(marshmallow_fields.Nested(UrsulaInfoSchema), dump_only=True)
 

@@ -56,7 +56,10 @@ class Porter(Learner):
 
     DEFAULT_PORT = 9155
 
-    MAX_DECRYPTION_TIMEOUT = os.getenv("PORTER_MAX_DECRYPTION_TIMEOUT", default=15)  # same default as `nucypher`
+    MAX_GET_URSULAS_TIMEOUT = os.getenv("PORTER_GET_URSULAS_TIMEOUT", default=15)
+    MAX_DECRYPTION_TIMEOUT = os.getenv(
+        "PORTER_MAX_DECRYPTION_TIMEOUT", default=15
+    )  # TODO use same default constant as `nucypher`
 
     _interface_class = PorterInterface
 
@@ -94,7 +97,6 @@ class Porter(Learner):
         registry: ContractRegistry = None,
         controller: bool = True,
         node_class: object = Ursula,
-        execution_timeout: int = DEFAULT_EXECUTION_TIMEOUT,
         *args,
         **kwargs,
     ):
@@ -120,7 +122,6 @@ class Porter(Learner):
         super().__init__(save_metadata=True, domain=domain, node_class=node_class, *args, **kwargs)
 
         self.log = Logger(self.__class__.__name__)
-        self.execution_timeout = execution_timeout
 
         # Controller Interface
         self.interface = self._interface_class(porter=self)
@@ -143,10 +144,18 @@ class Porter(Learner):
         ):
             BlockchainInterfaceFactory.initialize_interface(endpoint=polygon_endpoint)
 
-    def get_ursulas(self,
-                    quantity: int,
-                    exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
-                    include_ursulas: Optional[Sequence[ChecksumAddress]] = None) -> List[UrsulaInfo]:
+    def get_ursulas(
+        self,
+        quantity: int,
+        exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
+        include_ursulas: Optional[Sequence[ChecksumAddress]] = None,
+        timeout: Optional[int] = None,
+    ) -> List[UrsulaInfo]:
+        timeout = (
+            min(timeout, self.MAX_GET_URSULAS_TIMEOUT)
+            if timeout
+            else self.MAX_GET_URSULAS_TIMEOUT
+        )
         reservoir = self._make_reservoir(exclude_ursulas, include_ursulas)
         available_nodes_to_sample = len(reservoir.values) + len(reservoir.reservoir)
         if available_nodes_to_sample < quantity:
@@ -172,16 +181,17 @@ class Porter(Learner):
                 self.log.debug(f"Ursula ({ursula_address}) is unreachable: {str(e)}")
                 raise
 
-        self.block_until_number_of_known_nodes_is(quantity,
-                                                  timeout=self.execution_timeout,
-                                                  learn_on_this_thread=True,
-                                                  eager=True)
+        self.block_until_number_of_known_nodes_is(
+            quantity, timeout=timeout, learn_on_this_thread=True, eager=True
+        )
 
-        worker_pool = WorkerPool(worker=get_ursula_info,
-                                 value_factory=value_factory,
-                                 target_successes=quantity,
-                                 timeout=self.execution_timeout,
-                                 stagger_timeout=1)
+        worker_pool = WorkerPool(
+            worker=get_ursula_info,
+            value_factory=value_factory,
+            target_successes=quantity,
+            timeout=timeout,
+            stagger_timeout=1,
+        )
         worker_pool.start()
         try:
             successes = worker_pool.block_until_target_successes()
