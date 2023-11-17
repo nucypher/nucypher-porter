@@ -9,7 +9,7 @@ from nucypher.blockchain.eth.agents import (
     ContractAgency,
     TACoChildApplicationAgent,
 )
-from nucypher.blockchain.eth.domains import TACoDomain
+from nucypher.blockchain.eth.domains import DEFAULT_DOMAIN, TACoDomain
 from nucypher.blockchain.eth.interfaces import BlockchainInterfaceFactory
 from nucypher.blockchain.eth.registry import ContractRegistry
 from nucypher.characters.lawful import Ursula
@@ -87,16 +87,23 @@ class Porter(Learner):
 
     def __init__(
         self,
-        domain: TACoDomain = None,
+        eth_endpoint: str,
+        polygon_endpoint: str,
+        domain: TACoDomain = DEFAULT_DOMAIN,
         registry: ContractRegistry = None,
         controller: bool = True,
         node_class: object = Ursula,
-        eth_endpoint: str = None,
-        polygon_endpoint: str = None,
         execution_timeout: int = DEFAULT_EXECUTION_TIMEOUT,
         *args,
         **kwargs,
     ):
+        if not domain:
+            raise ValueError("TACo Domain must be provided.")
+        if not eth_endpoint:
+            raise ValueError("ETH Provider URI must be provided.")
+        if not polygon_endpoint:
+            raise ValueError("Polygon Provider URI must be provided.")
+
         self._initialize_endpoints(eth_endpoint, polygon_endpoint)
         self.eth_endpoint, self.polygon_endpoint = eth_endpoint, polygon_endpoint
 
@@ -125,19 +132,15 @@ class Porter(Learner):
 
     @staticmethod
     def _initialize_endpoints(eth_endpoint: str, polygon_endpoint: str):
-        if not eth_endpoint:
-            raise ValueError("ETH Provider URI is required for Porter.")
         if not BlockchainInterfaceFactory.is_interface_initialized(
             endpoint=eth_endpoint
         ):
             BlockchainInterfaceFactory.initialize_interface(endpoint=eth_endpoint)
 
-        if not polygon_endpoint:
-            raise ValueError("Polygon Provider URI is required for Porter.")
         if not BlockchainInterfaceFactory.is_interface_initialized(
             endpoint=polygon_endpoint
         ):
-            BlockchainInterfaceFactory.initialize_interface(endpoint=eth_endpoint)
+            BlockchainInterfaceFactory.initialize_interface(endpoint=polygon_endpoint)
 
     def get_ursulas(self,
                     quantity: int,
