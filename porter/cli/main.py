@@ -35,7 +35,7 @@ def porter_cli():
 @click.option(
     "--polygon-endpoint",
     "polygon_endpoint",
-    help="Connection URL for PRE payment method",
+    help="Connection URL for Polygon chain",
     type=click.STRING,
     required=True,
 )
