@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "cb97453b370ef434cc8ac515b2e63564cf07c9b8b997e24f155f3ed25f5bbfb2"
+            "sha256": "921be080430cd3c8426997b002acb20e83bc40fe0680c7f2dfeb1ca35a211027"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -1124,8 +1124,8 @@
             "version": "==1.0.0"
         },
         "nucypher": {
-            "git": "https://github.com/nucypher/nucypher.git",
-            "ref": "c0d12e14e4526f3fb3549a1176d0b2a79923c5ca"
+            "git": "https://github.com/derekpierre/nucypher.git",
+            "ref": "98e565c925f0eca0dda015e9cae98f8818e15c7b"
         },
         "nucypher-core": {
             "hashes": [
@@ -2517,6 +2517,9 @@
             "version": "==15.1.0"
         },
         "coverage": {
+            "extras": [
+                "toml"
+            ],
             "hashes": [
                 "sha256:027018943386e7b942fa832372ebc120155fd970837489896099f5cfa2890f79",
                 "sha256:11b990d520ea75e7ee8dcab5bc908072aaada194a794db9f6d7d5cfd19661e5a",
@@ -3638,8 +3641,8 @@
             "version": "==1.8.0"
         },
         "nucypher": {
-            "git": "https://github.com/nucypher/nucypher.git",
-            "ref": "c0d12e14e4526f3fb3549a1176d0b2a79923c5ca"
+            "git": "https://github.com/derekpierre/nucypher.git",
+            "ref": "98e565c925f0eca0dda015e9cae98f8818e15c7b"
         },
         "nucypher-core": {
             "hashes": [
