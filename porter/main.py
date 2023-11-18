@@ -58,8 +58,9 @@ class Porter(Learner):
 
     MAX_GET_URSULAS_TIMEOUT = os.getenv("PORTER_GET_URSULAS_TIMEOUT", default=15)
     MAX_DECRYPTION_TIMEOUT = os.getenv(
-        "PORTER_MAX_DECRYPTION_TIMEOUT", default=15
-    )  # TODO use same default constant as `nucypher`
+        "PORTER_MAX_DECRYPTION_TIMEOUT",
+        default=ThresholdDecryptionClient.DEFAULT_DECRYPTION_TIMEOUT,
+    )
 
     _interface_class = PorterInterface
 
