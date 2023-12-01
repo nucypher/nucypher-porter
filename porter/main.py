@@ -225,7 +225,7 @@ class Porter(Learner):
             alice_verifying_key,
             bob_encrypting_key,
             bob_verifying_key,
-            **context,
+            context,
         )
         result_outcomes = []
         for result, error in zip(results, errors):
