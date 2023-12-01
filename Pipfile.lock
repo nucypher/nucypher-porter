@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "921be080430cd3c8426997b002acb20e83bc40fe0680c7f2dfeb1ca35a211027"
+            "sha256": "44245636b42b4077da1acbb4f6bc0e651f83dbcd54475f7fd5991cf5a767916d"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -1124,8 +1124,8 @@
             "version": "==1.0.0"
         },
         "nucypher": {
-            "git": "https://github.com/derekpierre/nucypher.git",
-            "ref": "98e565c925f0eca0dda015e9cae98f8818e15c7b"
+            "git": "https://github.com/nucypher/nucypher.git",
+            "ref": "c3d126f522cdf19e8badf76ed20af034897e2b4b"
         },
         "nucypher-core": {
             "hashes": [
@@ -1254,11 +1254,11 @@
         },
         "prometheus-client": {
             "hashes": [
-                "sha256:35f7a8c22139e2bb7ca5a698e92d38145bc8dc74c1c0bf56f25cca886a764e17",
-                "sha256:8de3ae2755f890826f4b6479e5571d4f74ac17a81345fe69a6778fdb92579184"
+                "sha256:4585b0d1223148c27a225b10dbec5ae9bc4c81a99a3fa80774fa6209935324e1",
+                "sha256:c88b1e6ecf6b41cd8fb5731c7ae919bf66df6ec6fafa555cd6c0e16ca169ae92"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==0.18.0"
+            "version": "==0.19.0"
         },
         "prometheus-flask-exporter": {
             "hashes": [
@@ -2517,9 +2517,6 @@
             "version": "==15.1.0"
         },
         "coverage": {
-            "extras": [
-                "toml"
-            ],
             "hashes": [
                 "sha256:027018943386e7b942fa832372ebc120155fd970837489896099f5cfa2890f79",
                 "sha256:11b990d520ea75e7ee8dcab5bc908072aaada194a794db9f6d7d5cfd19661e5a",
@@ -3641,8 +3638,8 @@
             "version": "==1.8.0"
         },
         "nucypher": {
-            "git": "https://github.com/derekpierre/nucypher.git",
-            "ref": "98e565c925f0eca0dda015e9cae98f8818e15c7b"
+            "git": "https://github.com/nucypher/nucypher.git",
+            "ref": "c3d126f522cdf19e8badf76ed20af034897e2b4b"
         },
         "nucypher-core": {
             "hashes": [
@@ -3888,11 +3885,11 @@
         },
         "prometheus-client": {
             "hashes": [
-                "sha256:35f7a8c22139e2bb7ca5a698e92d38145bc8dc74c1c0bf56f25cca886a764e17",
-                "sha256:8de3ae2755f890826f4b6479e5571d4f74ac17a81345fe69a6778fdb92579184"
+                "sha256:4585b0d1223148c27a225b10dbec5ae9bc4c81a99a3fa80774fa6209935324e1",
+                "sha256:c88b1e6ecf6b41cd8fb5731c7ae919bf66df6ec6fafa555cd6c0e16ca169ae92"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==0.18.0"
+            "version": "==0.19.0"
         },
         "prompt-toolkit": {
             "hashes": [
@@ -4536,10 +4533,10 @@
         },
         "sentry-sdk": {
             "hashes": [
-                "sha256:04e392db9a0d59bd49a51b9e3a92410ac5867556820465057c2ef89a38e953e9",
-                "sha256:a7865952701e46d38b41315c16c075367675c48d049b90a4cc2e41991ebc7efa"
+                "sha256:0017fa73b8ae2d4e57fd2522ee3df30453715b29d2692142793ec5d5f90b94a6",
+                "sha256:8feab81de6bbf64f53279b085bd3820e3e737403b0a0d9317f73a2c3374ae359"
             ],
-            "version": "==1.35.0"
+            "version": "==1.38.0"
         },
         "service-identity": {
             "hashes": [
