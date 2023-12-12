@@ -27,6 +27,8 @@ operate their own.
 Running a Porter Instance
 -------------------------
 
+By default, Porter runs on port ``9155``.
+
 Security Considerations
 ***********************
 
@@ -39,15 +41,32 @@ Security Considerations
 
 
 .. note::
+    Managing a Porter instance on ``mainnet`` requires solid server
+    administration skills. This includes understanding how to provision and
+    secure servers, applying security best practices, and maintaining
+    consistent system performance. Key competencies like network configuration,
+    SSL/TLS encryption, and CORS, are also essential to ensure the
+    secure and efficient operation of your Porter instance.
 
-    Ideally, you would run Porter behind a reverse proxy (e.g. `nginx <https://www.nginx.com/>`_) for additional
-    functionality such as HTTPS, CORS, authentication etc.
+.. warning::
+
+    By default, Porter runs over HTTP. However, Porter instances must be
+    secured with a valid HTTPS certificate in order to be compatible with
+    network applications.  A Porter instance running without SSL/TLS is not
+    only insecure but also browser-based apps and websites will be
+    unable to connect.
+
+    To secure your Porter instance with HTTPS, use a reverse proxy
+    like `Nginx <https://www.nginx.com/>`_ or
+    `Apache <https://httpd.apache.org/docs/2.4/ssl/ssl_howto.html>`_ for SSL
+    processing, and potentially `Let's Encrypt <https://letsencrypt.org/>`_
+    for automated SSL certificate issuance and renewal. Additionally, consider
+    using cloud-based services like AWS/Digital Ocean load balancers or
+    Cloudflare for SSL termination and enhanced security.
 
 
 Run via Docker
 **************
-
-By default, Porter runs on port ``9155``.
 
 #. Get the latest ``porter`` image:
 
@@ -66,7 +85,8 @@ By default, Porter runs on port ``9155``.
           --restart=unless-stopped \
           nucypher/porter:latest \
           nucypher-porter run \
-          --eth-endpoint <YOUR WEB3 PROVIDER URI> \
+          --eth-endpoint <YOUR ETH WEB3 PROVIDER URI> \
+          --polygon-endpoint <YOUR POLYGON WEB3 PROVIDER URI> \
           --domain <TACO DOMAIN>
 
    The command above is for illustrative purposes and can be modified as
@@ -113,7 +133,7 @@ For a full list of CLI options after installation ``nucypher-porter``, run:
 * Run Porter service via HTTP
 .. code:: console
 
-    $ nucypher-porter run --eth-endpoint <YOUR WEB3 PROVIDER URI> --domain <TACO DOMAIN>
+    $ nucypher-porter run --eth-endpoint <YOUR ETH WEB3 PROVIDER URI> --polygon-endpoint <YOUR POLYGON WEB3 PROVIDER URI> --domain <TACO DOMAIN>
 
 
      ______
@@ -127,6 +147,7 @@ For a full list of CLI options after installation ``nucypher-porter``, run:
 
     TACo Domain: <TACO DOMAIN>
     ETH Endpoint URI: ...
+    Polygon Endpoint URI: ...
     Running Porter Web Controller at http://127.0.0.1:9155
 
 
@@ -256,7 +277,7 @@ Example Response
              }
           }
        },
-       "version":"1.0.0"
+       "version": "3.3.0"
     }
 
 .. note::
@@ -351,7 +372,7 @@ Example Response
              }
           ]
        },
-       "version": "1.0.0"
+       "version": "3.3.0"
     }
 
 
@@ -455,5 +476,5 @@ Example Response
              }
           ]
        },
-       "version": "1.0.0"
+       "version": "3.3.0"
     }
