@@ -1,3 +1,4 @@
+import pytest
 from nucypher_core import SessionStaticSecret, ThresholdDecryptionRequest
 from nucypher_core.ferveo import (
     DecryptionShareSimple,
@@ -6,7 +7,8 @@ from nucypher_core.ferveo import (
 )
 
 
-def test_taco_decryption(porter, dkg_setup, dkg_encrypted_data):
+@pytest.mark.parametrize("timeout", [None, 5, 7, 9])
+def test_taco_decryption_success(porter, dkg_setup, dkg_encrypted_data, timeout):
     ritual_id, public_key, cohort, threshold = dkg_setup
     threshold_message_kit, expected_plaintext = dkg_encrypted_data
 
@@ -37,7 +39,9 @@ def test_taco_decryption(porter, dkg_setup, dkg_encrypted_data):
         shared_secrets[ursula.checksum_address] = shared_secret
 
     decrypt_outcome = porter.decrypt(
-        threshold=threshold, encrypted_decryption_requests=encrypted_decryption_requests
+        threshold=threshold,
+        encrypted_decryption_requests=encrypted_decryption_requests,
+        timeout=timeout,
     )
 
     # sufficient successes
@@ -67,6 +71,21 @@ def test_taco_decryption(porter, dkg_setup, dkg_encrypted_data):
     cleartext = threshold_message_kit.decrypt_with_shared_secret(combined_shares)
     assert bytes(cleartext) == expected_plaintext
 
+
+@pytest.mark.parametrize("timeout", [None, 5, 7, 9])
+def test_taco_decryption_failure(porter, dkg_setup, dkg_encrypted_data, timeout):
+    ritual_id, public_key, cohort, threshold = dkg_setup
+    threshold_message_kit, expected_plaintext = dkg_encrypted_data
+
+    decryption_request = ThresholdDecryptionRequest(
+        ritual_id=ritual_id,
+        variant=FerveoVariant.Simple,
+        ciphertext_header=threshold_message_kit.ciphertext_header,
+        acp=threshold_message_kit.acp,
+    )
+
+    requester_secret_key = SessionStaticSecret.random()
+
     #
     # errors - invalid encrypting key used for request
     #
@@ -82,7 +101,9 @@ def test_taco_decryption(porter, dkg_setup, dkg_encrypted_data):
         )
 
     decrypt_outcome = porter.decrypt(
-        threshold=threshold, encrypted_decryption_requests=encrypted_decryption_requests
+        threshold=threshold,
+        encrypted_decryption_requests=encrypted_decryption_requests,
+        timeout=timeout,
     )
 
     # sufficient successes

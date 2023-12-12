@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Dict, List, NamedTuple, Optional, Sequence
 
@@ -53,9 +54,13 @@ class Porter(Learner):
     _LONG_LEARNING_DELAY = 30
     _ROUNDS_WITHOUT_NODES_AFTER_WHICH_TO_SLOW_DOWN = 25
 
-    DEFAULT_EXECUTION_TIMEOUT = 15  # 15s
-
     DEFAULT_PORT = 9155
+
+    MAX_GET_URSULAS_TIMEOUT = os.getenv("PORTER_GET_URSULAS_TIMEOUT", default=15)
+    MAX_DECRYPTION_TIMEOUT = os.getenv(
+        "PORTER_MAX_DECRYPTION_TIMEOUT",
+        default=ThresholdDecryptionClient.DEFAULT_DECRYPTION_TIMEOUT,
+    )
 
     _interface_class = PorterInterface
 
@@ -93,7 +98,6 @@ class Porter(Learner):
         registry: ContractRegistry = None,
         controller: bool = True,
         node_class: object = Ursula,
-        execution_timeout: int = DEFAULT_EXECUTION_TIMEOUT,
         *args,
         **kwargs,
     ):
@@ -119,7 +123,6 @@ class Porter(Learner):
         super().__init__(save_metadata=True, domain=domain, node_class=node_class, *args, **kwargs)
 
         self.log = Logger(self.__class__.__name__)
-        self.execution_timeout = execution_timeout
 
         # Controller Interface
         self.interface = self._interface_class(porter=self)
@@ -142,10 +145,23 @@ class Porter(Learner):
         ):
             BlockchainInterfaceFactory.initialize_interface(endpoint=polygon_endpoint)
 
-    def get_ursulas(self,
-                    quantity: int,
-                    exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
-                    include_ursulas: Optional[Sequence[ChecksumAddress]] = None) -> List[UrsulaInfo]:
+    def get_ursulas(
+        self,
+        quantity: int,
+        exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
+        include_ursulas: Optional[Sequence[ChecksumAddress]] = None,
+        timeout: Optional[int] = None,
+    ) -> List[UrsulaInfo]:
+        if timeout and timeout > self.MAX_GET_URSULAS_TIMEOUT:
+            self.log.warn(
+                f"Provided sampling timeout ({timeout}s) exceeds "
+                f"maximum ({self.MAX_GET_URSULAS_TIMEOUT}s); "
+                f"using {self.MAX_GET_URSULAS_TIMEOUT}s instead"
+            )
+            timeout = self.MAX_GET_URSULAS_TIMEOUT
+        else:
+            timeout = timeout or self.MAX_GET_URSULAS_TIMEOUT
+
         reservoir = self._make_reservoir(exclude_ursulas, include_ursulas)
         available_nodes_to_sample = len(reservoir.values) + len(reservoir.reservoir)
         if available_nodes_to_sample < quantity:
@@ -171,16 +187,17 @@ class Porter(Learner):
                 self.log.debug(f"Ursula ({ursula_address}) is unreachable: {str(e)}")
                 raise
 
-        self.block_until_number_of_known_nodes_is(quantity,
-                                                  timeout=self.execution_timeout,
-                                                  learn_on_this_thread=True,
-                                                  eager=True)
+        self.block_until_number_of_known_nodes_is(
+            quantity, timeout=timeout, learn_on_this_thread=True, eager=True
+        )
 
-        worker_pool = WorkerPool(worker=get_ursula_info,
-                                 value_factory=value_factory,
-                                 target_successes=quantity,
-                                 timeout=self.execution_timeout,
-                                 stagger_timeout=1)
+        worker_pool = WorkerPool(
+            worker=get_ursula_info,
+            value_factory=value_factory,
+            target_successes=quantity,
+            timeout=timeout,
+            stagger_timeout=1,
+        )
         worker_pool.start()
         try:
             successes = worker_pool.block_until_target_successes()
@@ -208,7 +225,7 @@ class Porter(Learner):
             alice_verifying_key,
             bob_encrypting_key,
             bob_verifying_key,
-            **context,
+            context,
         )
         result_outcomes = []
         for result, error in zip(results, errors):
@@ -224,10 +241,23 @@ class Porter(Learner):
         encrypted_decryption_requests: Dict[
             ChecksumAddress, EncryptedThresholdDecryptionRequest
         ],
+        timeout: Optional[int] = None,
     ) -> DecryptOutcome:
         decryption_client = ThresholdDecryptionClient(self)
+        if timeout and timeout > self.MAX_DECRYPTION_TIMEOUT:
+            self.log.warn(
+                f"Provided decryption timeout ({timeout}s) exceeds "
+                f"maximum ({self.MAX_DECRYPTION_TIMEOUT}s); "
+                f"using {self.MAX_DECRYPTION_TIMEOUT}s instead"
+            )
+            timeout = self.MAX_DECRYPTION_TIMEOUT
+        else:
+            timeout = timeout or self.MAX_DECRYPTION_TIMEOUT
+
         successes, failures = decryption_client.gather_encrypted_decryption_shares(
-            encrypted_requests=encrypted_decryption_requests, threshold=threshold
+            encrypted_requests=encrypted_decryption_requests,
+            threshold=threshold,
+            timeout=timeout,
         )
 
         decrypt_outcome = Porter.DecryptOutcome(

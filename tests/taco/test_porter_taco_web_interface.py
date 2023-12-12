@@ -1,6 +1,7 @@
 import json
 from base64 import b64decode
 
+import pytest
 from eth_utils import to_checksum_address
 from nucypher_core import (
     EncryptedThresholdDecryptionResponse,
@@ -16,11 +17,16 @@ from nucypher_core.ferveo import (
 from porter.fields.taco import EncryptedThresholdDecryptionRequestField
 
 
-def test_taco_decrypt(porter, porter_web_controller, dkg_setup, dkg_encrypted_data):
+def test_taco_decrypt_bad_input(porter_web_controller):
     # Send bad data to assert error return
     response = porter_web_controller.post("/decrypt", data=json.dumps({"bad": "input"}))
     assert response.status_code == 400
 
+
+@pytest.mark.parametrize("timeout", [None, 5, 7, 9])
+def test_taco_decrypt(
+    porter, porter_web_controller, dkg_setup, dkg_encrypted_data, timeout
+):
     # Setup
     ritual_id, public_key, cohort, threshold = dkg_setup
     threshold_message_kit, expected_plaintext = dkg_encrypted_data
@@ -59,6 +65,8 @@ def test_taco_decrypt(porter, porter_web_controller, dkg_setup, dkg_encrypted_da
         "threshold": threshold,
         "encrypted_decryption_requests": encrypted_decryption_requests,
     }
+    if timeout:
+        request_data["timeout"] = timeout
 
     #
     # Success
@@ -106,6 +114,26 @@ def test_taco_decrypt(porter, porter_web_controller, dkg_setup, dkg_encrypted_da
     cleartext = threshold_message_kit.decrypt_with_shared_secret(combined_shares)
     assert bytes(cleartext) == expected_plaintext
 
+
+@pytest.mark.parametrize("timeout", [None, 5, 10, 15])
+def test_taco_decrypt_errors(
+    porter, porter_web_controller, dkg_setup, dkg_encrypted_data, timeout
+):
+    # Setup
+    ritual_id, public_key, cohort, threshold = dkg_setup
+    threshold_message_kit, expected_plaintext = dkg_encrypted_data
+
+    requester_secret_key = SessionStaticSecret.random()
+
+    encrypted_request_field = EncryptedThresholdDecryptionRequestField()
+
+    decryption_request = ThresholdDecryptionRequest(
+        ritual_id=ritual_id,
+        variant=FerveoVariant.Simple,
+        ciphertext_header=threshold_message_kit.ciphertext_header,
+        acp=threshold_message_kit.acp,
+    )
+
     #
     # Errors (some invalid threshold decryption requests)
     #
@@ -143,6 +171,9 @@ def test_taco_decrypt(porter, porter_web_controller, dkg_setup, dkg_encrypted_da
         "threshold": threshold,
         "encrypted_decryption_requests": encrypted_decryption_requests,
     }
+    if timeout:
+        request_data["timeout"] = timeout
+
     response = porter_web_controller.post("/decrypt", data=json.dumps(request_data))
     response_data = json.loads(response.data)
 

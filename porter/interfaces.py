@@ -33,14 +33,18 @@ class PorterInterface(ControlInterface):
         super().__init__(implementer=porter, *args, **kwargs)
 
     @attach_schema(schema.GetUrsulas)
-    def get_ursulas(self,
-                    quantity: int,
-                    exclude_ursulas: Optional[List[ChecksumAddress]] = None,
-                    include_ursulas: Optional[List[ChecksumAddress]] = None) -> Dict:
+    def get_ursulas(
+        self,
+        quantity: int,
+        exclude_ursulas: Optional[List[ChecksumAddress]] = None,
+        include_ursulas: Optional[List[ChecksumAddress]] = None,
+        timeout: Optional[int] = None,
+    ) -> Dict:
         ursulas_info = self.implementer.get_ursulas(
             quantity=quantity,
             exclude_ursulas=exclude_ursulas,
             include_ursulas=include_ursulas,
+            timeout=timeout,
         )
 
         response_data = {"ursulas": ursulas_info}  # list of UrsulaInfo objects
@@ -80,10 +84,12 @@ class PorterInterface(ControlInterface):
         self,
         threshold: int,
         encrypted_decryption_requests: Dict[ChecksumAddress, bytes],
+        timeout: Optional[int] = None,
     ):
         decrypt_outcome = self.implementer.decrypt(
             threshold=threshold,
             encrypted_decryption_requests=encrypted_decryption_requests,
+            timeout=timeout,
         )
         response_data = {"decryption_results": decrypt_outcome}
         return response_data

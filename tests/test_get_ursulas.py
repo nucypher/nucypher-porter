@@ -54,6 +54,13 @@ def test_get_ursulas_schema(get_random_checksum_address):
     updated_data["include_ursulas"] = include_ursulas
     GetUrsulas().load(updated_data)
 
+    # both exclude and include and timeout
+    updated_data = dict(required_data)
+    updated_data["exclude_ursulas"] = exclude_ursulas
+    updated_data["include_ursulas"] = include_ursulas
+    updated_data["timeout"] = 20
+    GetUrsulas().load(updated_data)
+
     # list input formatted as ',' separated strings
     updated_data = dict(required_data)
     updated_data["exclude_ursulas"] = ",".join(exclude_ursulas)
@@ -118,6 +125,27 @@ def test_get_ursulas_schema(get_random_checksum_address):
         # 1 address in both include and exclude lists
         GetUrsulas().load(updated_data)
 
+    # invalid timeout value
+    with pytest.raises(InvalidInputData):
+        updated_data = dict(required_data)
+        updated_data["exclude_ursulas"] = exclude_ursulas
+        updated_data["timeout"] = "some number"
+        GetUrsulas().load(updated_data)
+
+    with pytest.raises(InvalidInputData):
+        updated_data = dict(required_data)
+        updated_data["exclude_ursulas"] = exclude_ursulas
+        updated_data["include_ursulas"] = include_ursulas
+        updated_data["timeout"] = 0
+        GetUrsulas().load(updated_data)
+
+    with pytest.raises(InvalidInputData):
+        updated_data = dict(required_data)
+        updated_data["exclude_ursulas"] = exclude_ursulas
+        updated_data["include_ursulas"] = include_ursulas
+        updated_data["timeout"] = -1
+        GetUrsulas().load(updated_data)
+
     #
     # Output i.e. dump
     #
@@ -139,7 +167,8 @@ def test_get_ursulas_schema(get_random_checksum_address):
     assert output == {"ursulas": expected_ursulas_info}
 
 
-def test_get_ursulas_python_interface(porter, ursulas):
+@pytest.mark.parametrize("timeout", [None, 15, 20])
+def test_get_ursulas_python_interface(porter, ursulas, timeout):
     # simple
     quantity = 4
     ursulas_info = porter.get_ursulas(quantity=quantity)
@@ -156,7 +185,7 @@ def test_get_ursulas_python_interface(porter, ursulas):
         ursulas_list[1].checksum_address,
     ]
     ursulas_info = porter.get_ursulas(
-        quantity=quantity, include_ursulas=include_ursulas
+        quantity=quantity, include_ursulas=include_ursulas, timeout=timeout
     )
     returned_ursula_addresses = {
         ursula_info.checksum_address for ursula_info in ursulas_info
@@ -171,7 +200,7 @@ def test_get_ursulas_python_interface(porter, ursulas):
     for i in range(number_to_exclude):
         exclude_ursulas.append(ursulas_list[i].checksum_address)
     ursulas_info = porter.get_ursulas(
-        quantity=quantity, exclude_ursulas=exclude_ursulas
+        quantity=quantity, exclude_ursulas=exclude_ursulas, timeout=timeout
     )
     returned_ursula_addresses = {
         ursula_info.checksum_address for ursula_info in ursulas_info
@@ -193,6 +222,7 @@ def test_get_ursulas_python_interface(porter, ursulas):
         quantity=quantity,
         include_ursulas=include_ursulas,
         exclude_ursulas=exclude_ursulas,
+        timeout=timeout,
     )
     returned_ursula_addresses = {
         ursula_info.checksum_address for ursula_info in ursulas_info
@@ -208,7 +238,8 @@ def test_get_ursulas_python_interface(porter, ursulas):
         porter.get_ursulas(quantity=len(ursulas) + 1)
 
 
-def test_get_ursulas_web_interface(porter_web_controller, ursulas):
+@pytest.mark.parametrize("timeout", [None, 10, 20])
+def test_get_ursulas_web_interface(porter_web_controller, ursulas, timeout):
     # Send bad data to assert error return
     response = porter_web_controller.get(
         "/get_ursulas", data=json.dumps({"bad": "input"})
@@ -232,6 +263,9 @@ def test_get_ursulas_web_interface(porter_web_controller, ursulas):
         "exclude_ursulas": exclude_ursulas,
     }
 
+    if timeout:
+        get_ursulas_params["timeout"] = timeout
+
     #
     # Success
     #
@@ -254,11 +288,15 @@ def test_get_ursulas_web_interface(porter_web_controller, ursulas):
     #
     # Test Query parameters
     #
-    response = porter_web_controller.get(
+    query_params = (
         f"/get_ursulas?quantity={quantity}"
         f'&include_ursulas={",".join(include_ursulas)}'
         f'&exclude_ursulas={",".join(exclude_ursulas)}'
     )
+    if timeout:
+        query_params += f"&timeout={timeout}"
+
+    response = porter_web_controller.get(query_params)
     assert response.status_code == 200
     response_data = json.loads(response.data)
     ursulas_info = response_data["result"]["ursulas"]

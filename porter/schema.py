@@ -3,7 +3,7 @@ from marshmallow import INCLUDE, Schema, validates_schema
 from marshmallow import fields as marshmallow_fields
 
 from porter.cli.types import EIP55_CHECKSUM_ADDRESS
-from porter.fields.base import JSON, Integer, PositiveInteger, StringList
+from porter.fields.base import JSON, PositiveInteger, StringList
 from porter.fields.exceptions import InvalidArgumentCombo, InvalidInputData
 from porter.fields.retrieve import CapsuleFrag, RetrievalKit
 from porter.fields.taco import (
@@ -94,6 +94,18 @@ class GetUrsulas(BaseSchema):
             default=[]),
         required=False,
         load_only=True)
+
+    timeout = PositiveInteger(
+        required=False,
+        load_only=True,
+        click=click.option(
+            "--timeout",
+            "-t",
+            help="Timeout for getting the required quantity of ursulas",
+            type=click.INT,
+            required=False,
+        ),
+    )
 
     # output
     ursulas = marshmallow_fields.List(marshmallow_fields.Nested(UrsulaInfoSchema), dump_only=True)
@@ -224,7 +236,7 @@ class DecryptOutcomeSchema(BaseSchema):
 
 
 class Decrypt(BaseSchema):
-    threshold = Integer(
+    threshold = PositiveInteger(
         required=True,
         load_only=True,
         click=click.option(
@@ -245,6 +257,17 @@ class Decrypt(BaseSchema):
             "-e",
             help="Encrypted decryption requests dictionary keyed by ursula checksum address",
             type=click.STRING,
+            required=True,
+        ),
+    )
+    timeout = PositiveInteger(
+        required=False,
+        load_only=True,
+        click=click.option(
+            "--timeout",
+            "-t",
+            help="Timeout for decryption operation",
+            type=click.INT,
             required=False,
         ),
     )

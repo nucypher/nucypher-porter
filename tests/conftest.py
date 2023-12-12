@@ -214,7 +214,6 @@ def porter(ursulas, mock_rest_middleware, test_registry):
         start_learning_now=True,
         known_nodes=ursulas,
         verify_node_bonding=False,
-        execution_timeout=2,
         network_middleware=mock_rest_middleware,
     )
     yield porter
