@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Dict, List, NamedTuple, Optional, Sequence
+from typing import Dict, List, NamedTuple, Optional, Sequence, Union
 
 from constant_sorrow.constants import NO_CONTROL_PROTOCOL
 from eth_typing import ChecksumAddress
@@ -152,15 +152,9 @@ class Porter(Learner):
         include_ursulas: Optional[Sequence[ChecksumAddress]] = None,
         timeout: Optional[int] = None,
     ) -> List[UrsulaInfo]:
-        if timeout and timeout > self.MAX_GET_URSULAS_TIMEOUT:
-            self.log.warn(
-                f"Provided sampling timeout ({timeout}s) exceeds "
-                f"maximum ({self.MAX_GET_URSULAS_TIMEOUT}s); "
-                f"using {self.MAX_GET_URSULAS_TIMEOUT}s instead"
-            )
-            timeout = self.MAX_GET_URSULAS_TIMEOUT
-        else:
-            timeout = timeout or self.MAX_GET_URSULAS_TIMEOUT
+        timeout = self._configure_timeout(
+            "sampling", timeout, self.MAX_GET_URSULAS_TIMEOUT
+        )
 
         reservoir = self._make_reservoir(exclude_ursulas, include_ursulas)
         available_nodes_to_sample = len(reservoir.values) + len(reservoir.reservoir)
@@ -244,15 +238,9 @@ class Porter(Learner):
         timeout: Optional[int] = None,
     ) -> DecryptOutcome:
         decryption_client = ThresholdDecryptionClient(self)
-        if timeout and timeout > self.MAX_DECRYPTION_TIMEOUT:
-            self.log.warn(
-                f"Provided decryption timeout ({timeout}s) exceeds "
-                f"maximum ({self.MAX_DECRYPTION_TIMEOUT}s); "
-                f"using {self.MAX_DECRYPTION_TIMEOUT}s instead"
-            )
-            timeout = self.MAX_DECRYPTION_TIMEOUT
-        else:
-            timeout = timeout or self.MAX_DECRYPTION_TIMEOUT
+        timeout = self._configure_timeout(
+            "decryption", timeout, self.MAX_DECRYPTION_TIMEOUT
+        )
 
         successes, failures = decryption_client.gather_encrypted_decryption_shares(
             encrypted_requests=encrypted_decryption_requests,
@@ -264,6 +252,20 @@ class Porter(Learner):
             encrypted_decryption_responses=successes, errors=failures
         )
         return decrypt_outcome
+
+    def _configure_timeout(
+        self, operation: str, timeout: Union[int, None], max_timeout: int
+    ):
+        if timeout and timeout > max_timeout:
+            self.log.warn(
+                f"Provided {operation} timeout ({timeout}s) exceeds "
+                f"maximum ({max_timeout}s); "
+                f"using {max_timeout}s instead"
+            )
+            timeout = max_timeout
+        else:
+            timeout = timeout or max_timeout
+        return timeout
 
     def _make_reservoir(
         self,
