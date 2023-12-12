@@ -56,7 +56,7 @@ class Porter(Learner):
 
     DEFAULT_PORT = 9155
 
-    MAX_GET_URSULAS_TIMEOUT = os.getenv("PORTER_GET_URSULAS_TIMEOUT", default=15)
+    MAX_GET_URSULAS_TIMEOUT = os.getenv("PORTER_MAX_GET_URSULAS_TIMEOUT", default=15)
     MAX_DECRYPTION_TIMEOUT = os.getenv(
         "PORTER_MAX_DECRYPTION_TIMEOUT",
         default=ThresholdDecryptionClient.DEFAULT_DECRYPTION_TIMEOUT,

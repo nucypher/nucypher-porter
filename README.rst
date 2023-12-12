@@ -65,6 +65,22 @@ Security Considerations
     Cloudflare for SSL termination and enhanced security.
 
 
+Configurable Operation Timeouts
+*******************************
+Some Porter endpoints allow optional integer timeouts to be specified as a
+parameter. However, to prevent DDOS attacks, timeouts are capped. By default
+the ``/decrypt`` and ``/get_ursulas`` endpoints limit their timeouts at 15s. If
+the optional timeout parameter is not provided or the provided timeout
+parameter value is greater than the default timeout, the timeout used for the
+operation will be the default timeout.
+
+If modifying the default timeout values is desirable, they can be configured
+via environment variables:
+
+* ``PORTER_MAX_DECRYPTION_TIMEOUT`` for ``/decrypt`` operations
+* ``PORTER_MAX_GET_URSULAS_TIMEOUT`` for ``/get_ursulas`` operations
+
+
 Run via Docker
 **************
 
@@ -226,6 +242,15 @@ Parameters
 | ``encrypted_decryption_requests`` | Dict[String, String] | | Base64 encoded encrypted decryption requests |
 |                                   |                      | | keyed by node staking provider address.      |
 +-----------------------------------+----------------------+------------------------------------------------+
+| ``timeout``                       | *(Optional)* int     | | The timeout for the operation. Default value |
+|                                   |                      | | is 15s unless the Porter instance is         |
+|                                   |                      | | configured to modify the default setting via |
+|                                   |                      | | the ``PORTER_MAX_DECRYPTION_TIMEOUT`` env    |
+|                                   |                      | | variable on startup. Timeouts provided that  |
+|                                   |                      | | are greater than this max default value are  |
+|                                   |                      | | capped at the default value                  |
++-----------------------------------+----------------------+------------------------------------------------+
+
 
 Returns
 ^^^^^^^
@@ -293,19 +318,27 @@ and associated information.
 
 Parameters
 ^^^^^^^^^^
-+----------------------------------+---------------+-----------------------------------------------+
-| **Parameter**                    | **Type**      | **Description**                               |
-+==================================+===============+===============================================+
-| ``quantity``                     | Integer       | Number of total TACo nodes to return.         |
-+----------------------------------+---------------+-----------------------------------------------+
-| ``include_ursulas`` *(Optional)* | List[String]  | | List of Ursula checksum addresses to        |
-|                                  |               | | give preference to. If any of these Ursulas |
-|                                  |               | | are unavailable, they will not be included  |
-|                                  |               | | in result.                                  |
-+----------------------------------+---------------+-----------------------------------------------+
-| ``exclude_ursulas`` *(Optional)* | List[String]  | | List of Ursula checksum addresses to not    |
-|                                  |               | | include in the result.                      |
-+----------------------------------+---------------+-----------------------------------------------+
++----------------------------------+------------------+------------------------------------------------+
+| **Parameter**                    | **Type**         | **Description**                                |
++==================================+==================+================================================+
+| ``quantity``                     | Integer          | Number of total TACo nodes to return.          |
++----------------------------------+------------------+------------------------------------------------+
+| ``include_ursulas`` *(Optional)* | List[String]     | | List of Ursula checksum addresses to         |
+|                                  |                  | | give preference to. If any of these Ursulas  |
+|                                  |                  | | are unavailable, they will not be included   |
+|                                  |                  | | in result.                                   |
++----------------------------------+------------------+------------------------------------------------+
+| ``exclude_ursulas`` *(Optional)* | List[String]     | | List of Ursula checksum addresses to not     |
+|                                  |                  | | include in the result.                       |
++----------------------------------+------------------+------------------------------------------------+
+| ``timeout``                      | *(Optional)* int | | The timeout for the operation. Default value |
+|                                  |                  | | is 15s unless the Porter instance is         |
+|                                  |                  | | configured to modify the default setting via |
+|                                  |                  | | the ``PORTER_MAX_GET_URSULAS_TIMEOUT`` env   |
+|                                  |                  | | variable on startup. Timeouts provided that  |
+|                                  |                  | | are greater than this max default value are  |
+|                                  |                  | | capped at the default value                  |
++----------------------------------+------------------+------------------------------------------------+
 
 
 Returns
