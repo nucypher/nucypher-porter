@@ -5,7 +5,7 @@ repos:
 
       - id: tests
         name: Run Unit Tests
-        entry: scripts/run_unit_tests.sh
+        entry: scripts/run_tests.sh
         language: system
         types: [python]
         stages: [push]  # required additional setup: pre-commit install && pre-commit install -t pre-push
@@ -39,9 +39,12 @@ repos:
 
 
   - repo: https://github.com/akaihola/darker
-    rev: 1.4.2
+    rev: 1.7.2
     hooks:
     -   id: darker
-        args: [--isort]
-        additional_dependencies:
-        -   isort~=5.9
+
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: 'v0.1.4'
+    hooks:
+      - id: ruff

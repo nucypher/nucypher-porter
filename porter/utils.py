@@ -3,15 +3,14 @@ import random
 import string
 from typing import Dict, List, Optional, Tuple
 
-from nucypher_core import MessageKit, RetrievalKit
-
 from nucypher.characters.lawful import Enrico
 from nucypher.crypto.powers import DecryptingPower
+from nucypher_core import MessageKit, RetrievalKit
 
 from porter.fields.base import JSON
-from porter.fields.key import Key
 from porter.fields.retrieve import RetrievalKit as RetrievalKitField
 from porter.fields.treasuremap import TreasureMap
+from porter.fields.umbralkey import UmbralKey
 
 
 def generate_random_label() -> bytes:
@@ -51,17 +50,17 @@ def retrieval_request_setup(enacted_policy,
     bob.start_learning_loop()
 
     # We can pass any number of capsules as args; here we pass just one.
-    enrico = Enrico(policy_encrypting_key=enacted_policy.public_key)
+    enrico = Enrico(encrypting_key=enacted_policy.public_key)
     message_kits = []
     if specific_messages:
         for message in specific_messages:
-            message_kits.append(enrico.encrypt_message(message))
+            message_kits.append(enrico.encrypt_for_pre(message))
     else:
         for i in range(num_random_messages):
             random_message = "".join(
                 random.choice(string.ascii_lowercase) for j in range(20)
             ).encode()  # random message
-            message_kits.append(enrico.encrypt_message(random_message))
+            message_kits.append(enrico.encrypt_for_pre(random_message))
 
     encode_bytes = (lambda field, obj: field()._serialize(value=obj, attr=None, obj=None)) if encode_for_rest else (lambda field, obj: obj)
 
@@ -71,9 +70,9 @@ def retrieval_request_setup(enacted_policy,
             encode_bytes(RetrievalKitField, RetrievalKit.from_message_kit(message_kit))
             for message_kit in message_kits
         ],
-        alice_verifying_key=encode_bytes(Key, alice.stamp.as_umbral_pubkey()),
-        bob_encrypting_key=encode_bytes(Key, bob.public_keys(DecryptingPower)),
-        bob_verifying_key=encode_bytes(Key, bob.stamp.as_umbral_pubkey()),
+        alice_verifying_key=encode_bytes(UmbralKey, alice.stamp.as_umbral_pubkey()),
+        bob_encrypting_key=encode_bytes(UmbralKey, bob.public_keys(DecryptingPower)),
+        bob_verifying_key=encode_bytes(UmbralKey, bob.stamp.as_umbral_pubkey()),
     )
     # context is optional
     if context:
@@ -83,18 +82,24 @@ def retrieval_request_setup(enacted_policy,
 
 
 def retrieval_params_decode_from_rest(retrieval_params: Dict) -> Dict:
-    decode_bytes = lambda field, data: field()._deserialize(
-        value=data, attr=None, data=None
-    )
+    def decode_bytes(field, data):
+        return field()._deserialize(value=data, attr=None, data=None)
+
     decoded_params = dict(
         treasure_map=decode_bytes(TreasureMap, retrieval_params["treasure_map"]),
         retrieval_kits=[
             decode_bytes(RetrievalKitField, kit)
             for kit in retrieval_params["retrieval_kits"]
         ],
-        alice_verifying_key=decode_bytes(Key, retrieval_params["alice_verifying_key"]),
-        bob_encrypting_key=decode_bytes(Key, retrieval_params["bob_encrypting_key"]),
-        bob_verifying_key=decode_bytes(Key, retrieval_params["bob_verifying_key"]),
+        alice_verifying_key=decode_bytes(
+            UmbralKey, retrieval_params["alice_verifying_key"]
+        ),
+        bob_encrypting_key=decode_bytes(
+            UmbralKey, retrieval_params["bob_encrypting_key"]
+        ),
+        bob_verifying_key=decode_bytes(
+            UmbralKey, retrieval_params["bob_verifying_key"]
+        ),
     )
     # context is optional
     if "context" in retrieval_params:

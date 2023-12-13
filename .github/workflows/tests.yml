@@ -12,31 +12,46 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.9", "3.11"]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install -e .[dev]
-        python -m pip install -r dev-requirements.txt
-        python scripts/install_solc.py
+    - id: python_cache
+      name: Retrieve Cached Python Dependencies
+      uses: actions/cache@v3
+      with:
+        path: ${{ env.pythonLocation }}
+        key: ${{ runner.os }}-pip-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('dev-requirements.txt', 'requirements.txt') }}
+
+    - name: Upgrade pip
+      if: steps.python_cache.outputs.cache-hit != 'true'
+      run: python -m pip install --upgrade pip
+
+    - name: Install dependencies (incl. updated code)
+      run: pip install .[dev]
 
     - name: Run tests
+      if: matrix.python-version != '3.9'
       run: |
         python -m pytest tests
 
+    - name: Run tests (Coverage)
+      if: matrix.python-version == '3.9'
+      run: |
+        coverage run --data-file=test_data -m pytest tests
+        coverage xml -i --data-file=test_data -o coverage.xml
+
     - name: Upload test coverage to Codecov
-      if: matrix.python-version == '3.8'
+      if: matrix.python-version == '3.9'
       uses: codecov/codecov-action@v3.1.1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         fail_ci_if_error: true
         verbose: true
+        files: coverage.xml

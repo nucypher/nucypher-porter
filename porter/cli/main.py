@@ -1,24 +1,20 @@
 import click
-from nucypher.blockchain.eth.networks import NetworksInventory
+from nucypher.blockchain.eth import domains
 from nucypher.characters.lawful import Ursula
 from nucypher.cli.config import group_general_config
 from nucypher.cli.options import (
-    option_network,
-    option_eth_provider_uri,
-    option_teacher_uri,
+    option_domain,
+    option_eth_endpoint,
+    option_min_stake,
     option_registry_filepath,
-    option_min_stake
+    option_teacher_uri,
 )
 from nucypher.cli.types import NETWORK_PORT
-from nucypher.cli.utils import setup_emitter, get_registry
-from nucypher.config.constants import TEMPORARY_DOMAIN
+from nucypher.cli.utils import get_registry, setup_emitter
 
-from porter.cli.help import echo_version, echo_config_root_path, echo_logging_root_path
-from porter.cli.literature import (
-    PORTER_CORS_ALLOWED_ORIGINS,
-    PORTER_RUN_MESSAGE
-)
-from porter.main import Porter, BANNER
+from porter.cli.help import echo_config_root_path, echo_logging_root_path, echo_version
+from porter.cli.literature import PORTER_CORS_ALLOWED_ORIGINS, PORTER_RUN_MESSAGE
+from porter.main import BANNER, Porter
 
 
 @click.group()
@@ -34,52 +30,80 @@ def porter_cli():
 
 @porter_cli.command()
 @group_general_config
-@option_network(default=NetworksInventory.DEFAULT, validate=True, required=False)
-@option_eth_provider_uri(required=False)
+@option_domain(default=str(domains.DEFAULT_DOMAIN), validate=True, required=True)
+@option_eth_endpoint(required=True)
+@click.option(
+    "--polygon-endpoint",
+    "polygon_endpoint",
+    help="Connection URL for Polygon chain",
+    type=click.STRING,
+    required=True,
+)
 @option_teacher_uri
 @option_registry_filepath
 @option_min_stake
-@click.option('--http-port', help="Porter HTTP/HTTPS port for JSON endpoint", type=NETWORK_PORT, default=Porter.DEFAULT_PORT)
-@click.option('--allow-origins', help="The CORS origin(s) comma-delimited list of strings/regexes for origins to allow - no origins allowed by default", type=click.STRING)
-@click.option('--dry-run', '-x', help="Execute normally without actually starting Porter", is_flag=True)
-@click.option('--eager', help="Start learning and scraping the network before starting up other services", is_flag=True, default=True)
-def run(general_config,
-        network,
-        eth_provider_uri,
-        teacher_uri,
-        registry_filepath,
-        min_stake,
-        http_port,
-        allow_origins,
-        dry_run,
-        eager):
+@click.option(
+    "--http-port",
+    help="Porter HTTP/HTTPS port for JSON endpoint",
+    type=NETWORK_PORT,
+    default=Porter.DEFAULT_PORT,
+)
+@click.option(
+    "--allow-origins",
+    help="The CORS origin(s) comma-delimited list of strings/regexes for origins to allow - no origins allowed by default",
+    type=click.STRING,
+)
+@click.option(
+    "--dry-run",
+    "-x",
+    help="Execute normally without actually starting Porter",
+    is_flag=True,
+)
+@click.option(
+    "--eager",
+    help="Start learning and scraping the domain before starting up other services",
+    is_flag=True,
+    default=True,
+)
+def run(
+    general_config,
+    domain,
+    eth_endpoint,
+    polygon_endpoint,
+    teacher_uri,
+    registry_filepath,
+    min_stake,
+    http_port,
+    allow_origins,
+    dry_run,
+    eager,
+):
     """Start Porter's Web controller."""
     emitter = setup_emitter(general_config, banner=BANNER)
 
-    # HTTP/HTTPS
-    if not eth_provider_uri:
-        raise click.BadOptionUsage(option_name='--eth-provider',
-                                   message=click.style("--eth-provider is required for decentralized porter.", fg="red"))
-    if not network:
-        # should never happen - network defaults to 'mainnet' if not specified
-        raise click.BadOptionUsage(option_name='--network',
-                                   message=click.style("--network is required for decentralized porter.", "red"))
-
-    registry = get_registry(network=network, registry_filepath=registry_filepath)
+    domain = domains.get_domain(domain)
+    registry = get_registry(domain=domain, registry_filepath=registry_filepath)
     teacher = None
     if teacher_uri:
-        teacher = Ursula.from_teacher_uri(teacher_uri=teacher_uri,
-                                          min_stake=min_stake,
-                                          registry=registry)
+        teacher = Ursula.from_teacher_uri(
+            teacher_uri=teacher_uri,
+            min_stake=min_stake,
+            registry=registry,
+            eth_endpoint=eth_endpoint,
+        )
 
-    PORTER = Porter(domain=network,
-                    known_nodes={teacher} if teacher else None,
-                    registry=registry,
-                    start_learning_now=eager,
-                    eth_provider_uri=eth_provider_uri)
+    PORTER = Porter(
+        domain=domain,
+        known_nodes={teacher} if teacher else None,
+        registry=registry,
+        start_learning_now=eager,
+        eth_endpoint=eth_endpoint,
+        polygon_endpoint=polygon_endpoint,
+    )
 
-    emitter.message(f"Network: {PORTER.domain.capitalize()}", color='green')
-    emitter.message(f"ETH Provider URI: {eth_provider_uri}", color='green')
+    emitter.message(f"TACo Domain: {str(PORTER.domain).capitalize()}", color="green")
+    emitter.message(f"ETH Endpoint URI: {eth_endpoint}", color="green")
+    emitter.message(f"Polygon Endpoint URI: {polygon_endpoint}", color="green")
 
     # firm up falsy status (i.e. change specified empty string to None)
     allow_origins = allow_origins if allow_origins else None
@@ -89,8 +113,9 @@ def run(general_config,
         allow_origins_list = allow_origins.split(",")  # split into list of origins to allow
         emitter.message(PORTER_CORS_ALLOWED_ORIGINS.format(allow_origins=allow_origins_list), color='green')
 
-    controller = PORTER.make_web_controller(crash_on_error=False,
-                                            cors_allow_origins_list=allow_origins_list)
+    controller = PORTER.make_web_controller(
+        crash_on_error=False, cors_allow_origins_list=allow_origins_list
+    )
     message = PORTER_RUN_MESSAGE.format(http_port=http_port)
     emitter.message(message, color='green', bold=True)
     return controller.start(port=http_port,

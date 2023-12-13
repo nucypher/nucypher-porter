@@ -9,12 +9,13 @@ import maya
 from flask import Flask, Response
 from hendrix.deploy.base import HendrixDeploy
 from hendrix.deploy.tls import HendrixDeployTLS
-
 from nucypher.config.constants import MAX_UPLOAD_CONTENT_LENGTH
 from nucypher.network.resources import get_static_resources
 from nucypher.utilities.concurrency import WorkerPoolException
 from nucypher.utilities.emitters import StdoutEmitter
-from nucypher.utilities.logging import Logger, GlobalLoggerSettings
+from nucypher.utilities.logging import GlobalLoggerSettings, Logger
+
+from porter import interfaces
 from porter.emitters import WebEmitter
 
 
@@ -273,10 +274,7 @@ class PorterCLIController(CLIController):
 
     _emitter_class = StdoutEmitter
 
-    def __init__(self,
-                 interface: 'PorterInterface',
-                 *args,
-                 **kwargs):
+    def __init__(self, interface: "interfaces.PorterInterface", *args, **kwargs):
         super().__init__(interface=interface, *args, **kwargs)
 
     def _perform_action(self, *args, **kwargs) -> dict:

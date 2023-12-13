@@ -1,6 +1,6 @@
 import click
+from nucypher.config.constants import DEFAULT_CONFIG_ROOT, USER_LOG_DIR
 
-from nucypher.config.constants import USER_LOG_DIR, DEFAULT_CONFIG_ROOT
 from porter.main import BANNER
 
 

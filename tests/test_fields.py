@@ -1,16 +1,39 @@
 import json
+import os
 from base64 import b64encode
 
 import pytest
 from eth_utils import to_canonical_address
-from nucypher_core import RetrievalKit as RetrievalKitClass, Address, MessageKit
+from marshmallow import fields as marshmallow_fields
+from nucypher_core import (
+    Address,
+    EncryptedThresholdDecryptionRequest,
+    EncryptedThresholdDecryptionResponse,
+    MessageKit,
+)
+from nucypher_core import RetrievalKit as RetrievalKitClass
+from nucypher_core import (
+    SessionStaticSecret,
+    ThresholdDecryptionRequest,
+    ThresholdDecryptionResponse,
+)
+from nucypher_core.ferveo import FerveoVariant
 from nucypher_core.umbral import SecretKey
 
-from porter.fields.base import PositiveInteger, String, Base64BytesRepresentation, JSON
-from porter.fields.base import StringList
+from porter.fields.base import (
+    JSON,
+    Base64BytesRepresentation,
+    PositiveInteger,
+    String,
+    StringList,
+)
 from porter.fields.exceptions import InvalidInputData
-from porter.fields.key import Key
 from porter.fields.retrieve import RetrievalKit
+from porter.fields.taco import (
+    EncryptedThresholdDecryptionRequestField,
+    EncryptedThresholdDecryptionResponseField,
+)
+from porter.fields.umbralkey import UmbralKey
 from porter.fields.ursula import UrsulaChecksumAddress
 
 
@@ -25,9 +48,19 @@ def test_ursula_checksum_address_field(get_random_checksum_address):
     assert serialized == ursula_checksum
     assert serialized != other_address
 
+    # test letter case of address
+    serialized = field._serialize(value=ursula_checksum.lower(), attr=None, obj=None)
+    assert serialized == ursula_checksum
+    assert serialized != ursula_checksum.lower()
+    serialized = field._serialize(value=ursula_checksum.upper(), attr=None, obj=None)
+    assert serialized == ursula_checksum
+    assert serialized != ursula_checksum.lower()
+
+    with pytest.raises(InvalidInputData):
+        field._serialize(value="0xdeadbeef", attr=None, obj=None)
+
     deserialized = field._deserialize(value=serialized, attr=None, data=None)
     assert deserialized == ursula_checksum
-    assert deserialized != other_address
 
     field._deserialize(value=ursula_checksum, attr=None, data=None)
     field._deserialize(value=ursula_checksum.lower(), attr=None, data=None)
@@ -104,15 +137,15 @@ def test_retrieval_kit_field(get_random_checksum_address):
         field._deserialize(value=b64encode(b"invalid_retrieval_kit_bytes").decode(), attr=None, data=None)
 
 
-def test_key():
-    field = Key()
+def test_umbral_key():
+    field = UmbralKey()
 
     umbral_pub_key = SecretKey.random().public_key()
     other_umbral_pub_key = SecretKey.random().public_key()
 
     serialized = field._serialize(value=umbral_pub_key, attr=None, obj=None)
-    assert serialized == bytes(umbral_pub_key).hex()
-    assert serialized != bytes(other_umbral_pub_key).hex()
+    assert serialized == umbral_pub_key.to_compressed_bytes().hex()
+    assert serialized != other_umbral_pub_key.to_compressed_bytes().hex()
 
     deserialized = field._deserialize(value=serialized, attr=None, data=None)
     assert deserialized == umbral_pub_key
@@ -224,3 +257,130 @@ def test_json_field():
                 with pytest.raises(InvalidInputData):
                     # attempt to deserialize invalid data
                     field._deserialize(value=json.dumps(d), attr=None, data=None)
+
+
+def test_taco_dict_field(get_random_checksum_address):
+    # test data
+    original_data = {}
+    expected_serialized_result = {}
+    num_decryption_requests = 5
+    for i in range(0, num_decryption_requests):
+        ursula_checksum_address = get_random_checksum_address()
+        encrypted_decryption_request = os.urandom(32)
+        original_data[ursula_checksum_address] = encrypted_decryption_request
+        expected_serialized_result[ursula_checksum_address] = b64encode(
+            encrypted_decryption_request
+        ).decode()
+
+    # mimic usage for TACo fields
+    field = marshmallow_fields.Dict(
+        keys=UrsulaChecksumAddress(), values=Base64BytesRepresentation()
+    )
+    serialized = field._serialize(value=original_data, attr=None, obj=None)
+    assert serialized == expected_serialized_result
+
+    deserialized = field._deserialize(value=serialized, attr=None, data=None)
+    assert deserialized == original_data
+
+    with pytest.raises(InvalidInputData):
+        # attempt to deserialize invalid key; must be checksum address
+        json_to_deserialize = {"a": b64encode(os.urandom(32)).decode()}
+        field._deserialize(value=json_to_deserialize, attr=None, data=None)
+
+    with pytest.raises(InvalidInputData):
+        # attempt to deserialize invalid value; must be base64 string
+        json_to_deserialize = {
+            get_random_checksum_address(): "✨ not a valid base64 ✨"
+        }
+        field._deserialize(value=json_to_deserialize, attr=None, data=None)
+
+
+def test_encrypted_threshold_decryption_request(dkg_setup, dkg_encrypted_data):
+    ritual_id, _, _, _ = dkg_setup
+    threshold_message_kit, expected_plaintext = dkg_encrypted_data
+
+    decryption_request = ThresholdDecryptionRequest(
+        ritual_id=ritual_id,
+        variant=FerveoVariant.Simple,
+        ciphertext_header=threshold_message_kit.ciphertext_header,
+        acp=threshold_message_kit.acp,
+    )
+
+    field = EncryptedThresholdDecryptionRequestField()
+
+    ursula_public_key = SessionStaticSecret.random().public_key()
+    requester_secret_key = SessionStaticSecret.random()
+
+    shared_secret = requester_secret_key.derive_shared_secret(ursula_public_key)
+    encrypted_request = decryption_request.encrypt(
+        shared_secret=shared_secret,
+        requester_public_key=requester_secret_key.public_key(),
+    )
+
+    serialized_data = field._serialize(value=encrypted_request, attr=None, obj=None)
+    assert serialized_data == b64encode(bytes(encrypted_request)).decode()
+
+    deserialized_encrypted_request = field._deserialize(
+        value=serialized_data, attr=None, data=None
+    )
+    assert isinstance(
+        deserialized_encrypted_request, EncryptedThresholdDecryptionRequest
+    )
+    assert deserialized_encrypted_request.ritual_id == ritual_id
+    assert (
+        deserialized_encrypted_request.requester_public_key
+        == requester_secret_key.public_key()
+    )
+    assert bytes(deserialized_encrypted_request) == bytes(encrypted_request)
+
+    deserialized_request = deserialized_encrypted_request.decrypt(
+        shared_secret=shared_secret
+    )
+    assert bytes(deserialized_request) == bytes(decryption_request)
+
+    with pytest.raises(InvalidInputData):
+        field._serialize(
+            value="EncryptedThresholdDecryptionRequestString", attr=None, obj=None
+        )
+
+    with pytest.raises(InvalidInputData):
+        field._deserialize(value=os.urandom(32), attr=None, data=None)
+
+
+def test_encrypted_threshold_decryption_response():
+    ritual_id = 123
+    decryption_share = os.urandom(32)
+    decryption_response = ThresholdDecryptionResponse(
+        ritual_id=ritual_id, decryption_share=decryption_share
+    )
+
+    field = EncryptedThresholdDecryptionResponseField()
+
+    requester_public_key = SessionStaticSecret.random().public_key()
+    ursula_secret_key = SessionStaticSecret.random()
+    shared_secret = ursula_secret_key.derive_shared_secret(requester_public_key)
+
+    encrypted_response = decryption_response.encrypt(shared_secret=shared_secret)
+
+    serialized_data = field._serialize(value=encrypted_response, attr=None, obj=None)
+    assert serialized_data == b64encode(bytes(encrypted_response)).decode()
+
+    deserialized_encrypted_response = field._deserialize(
+        value=serialized_data, attr=None, data=None
+    )
+    assert isinstance(
+        deserialized_encrypted_response, EncryptedThresholdDecryptionResponse
+    )
+    assert bytes(deserialized_encrypted_response) == bytes(encrypted_response)
+    assert deserialized_encrypted_response.ritual_id == ritual_id
+
+    deserialized_response = deserialized_encrypted_response.decrypt(
+        shared_secret=shared_secret
+    )
+    assert bytes(deserialized_response) == bytes(decryption_response)
+
+    with pytest.raises(InvalidInputData):
+        field._serialize(value=[1, 2, 3, 4, 5], attr=None, obj=None)
+
+    with pytest.raises(InvalidInputData):
+        field._deserialize(value=os.urandom(32), attr=None, data=None)

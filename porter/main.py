@@ -1,34 +1,36 @@
+import os
 from pathlib import Path
-from typing import Dict, List, NamedTuple, Optional, Sequence
+from typing import Dict, List, NamedTuple, Optional, Sequence, Union
 
-from constant_sorrow.constants import (
-    NO_BLOCKCHAIN_CONNECTION,
-    NO_CONTROL_PROTOCOL
-)
+from constant_sorrow.constants import NO_CONTROL_PROTOCOL
 from eth_typing import ChecksumAddress
 from eth_utils import to_checksum_address
 from flask import Response, request
-from nucypher_core import RetrievalKit, TreasureMap
-from nucypher_core.umbral import PublicKey
-
-from nucypher.blockchain.eth.agents import ContractAgency, PREApplicationAgent
-from nucypher.blockchain.eth.interfaces import BlockchainInterfaceFactory
-from nucypher.blockchain.eth.registry import (
-    BaseContractRegistry,
-    InMemoryContractRegistry,
+from nucypher.blockchain.eth.agents import (
+    ContractAgency,
+    TACoChildApplicationAgent,
 )
+from nucypher.blockchain.eth.domains import DEFAULT_DOMAIN, TACoDomain
+from nucypher.blockchain.eth.interfaces import BlockchainInterfaceFactory
+from nucypher.blockchain.eth.registry import ContractRegistry
 from nucypher.characters.lawful import Ursula
 from nucypher.crypto.powers import DecryptingPower
+from nucypher.network.decryption import ThresholdDecryptionClient
 from nucypher.network.nodes import Learner
-from nucypher.network.retrieval import RetrievalClient
-from nucypher.policy.reservoir import (
-    PrefetchStrategy,
-    make_staking_provider_reservoir,
-)
+from nucypher.network.retrieval import PRERetrievalClient
+from nucypher.policy.reservoir import PrefetchStrategy, make_staking_provider_reservoir
 from nucypher.utilities.concurrency import WorkerPool
 from nucypher.utilities.logging import Logger
-from porter.controllers import PorterCLIController
-from porter.controllers import WebController
+from nucypher_core import (
+    EncryptedThresholdDecryptionRequest,
+    EncryptedThresholdDecryptionResponse,
+    RetrievalKit,
+    TreasureMap,
+)
+from nucypher_core.umbral import PublicKey
+from prometheus_flask_exporter import PrometheusMetrics
+
+from porter.controllers import PorterCLIController, WebController
 from porter.interfaces import PorterInterface
 
 BANNER = r"""
@@ -40,7 +42,7 @@ BANNER = r"""
 | |   | |_| | |   | |_( (/ /| |
 |_|    \___/|_|    \___)____)_|
 
-the Pipe for PRE Application network operations
+the Pipe for TACo Application operations
 """
 
 
@@ -52,9 +54,13 @@ class Porter(Learner):
     _LONG_LEARNING_DELAY = 30
     _ROUNDS_WITHOUT_NODES_AFTER_WHICH_TO_SLOW_DOWN = 25
 
-    DEFAULT_EXECUTION_TIMEOUT = 15  # 15s
-
     DEFAULT_PORT = 9155
+
+    MAX_GET_URSULAS_TIMEOUT = os.getenv("PORTER_MAX_GET_URSULAS_TIMEOUT", default=15)
+    MAX_DECRYPTION_TIMEOUT = os.getenv(
+        "PORTER_MAX_DECRYPTION_TIMEOUT",
+        default=ThresholdDecryptionClient.DEFAULT_DECRYPTION_TIMEOUT,
+    )
 
     _interface_class = PorterInterface
 
@@ -64,7 +70,7 @@ class Porter(Learner):
         uri: str
         encrypting_key: PublicKey
 
-    class RetrievalOutcome(NamedTuple):
+    class PRERetrievalOutcome(NamedTuple):
         """
         Simple object that stores the results and errors of re-encryption operations across
         one or more Ursulas.
@@ -73,27 +79,50 @@ class Porter(Learner):
         cfrags: Dict
         errors: Dict
 
-    def __init__(self,
-                 domain: str = None,
-                 registry: BaseContractRegistry = None,
-                 controller: bool = True,
-                 node_class: object = Ursula,
-                 eth_provider_uri: str = None,
-                 execution_timeout: int = DEFAULT_EXECUTION_TIMEOUT,
-                 *args, **kwargs):
-        if not eth_provider_uri:
-            raise ValueError('ETH Provider URI is required for decentralized Porter.')
+    class DecryptOutcome(NamedTuple):
+        """
+        Simple object that stores the results and errors of TACo decrypt operations across
+        one or more Ursulas.
+        """
 
-        if not BlockchainInterfaceFactory.is_interface_initialized(eth_provider_uri=eth_provider_uri):
-            BlockchainInterfaceFactory.initialize_interface(eth_provider_uri=eth_provider_uri)
+        encrypted_decryption_responses: Dict[
+            ChecksumAddress, EncryptedThresholdDecryptionResponse
+        ]
+        errors: Dict[ChecksumAddress, str]
 
-        self.registry = registry or InMemoryContractRegistry.from_latest_publication(network=domain)
-        self.application_agent = ContractAgency.get_agent(PREApplicationAgent, registry=self.registry)
+    def __init__(
+        self,
+        eth_endpoint: str,
+        polygon_endpoint: str,
+        domain: TACoDomain = DEFAULT_DOMAIN,
+        registry: ContractRegistry = None,
+        controller: bool = True,
+        node_class: object = Ursula,
+        *args,
+        **kwargs,
+    ):
+        if not domain:
+            raise ValueError("TACo Domain must be provided.")
+        if not eth_endpoint:
+            raise ValueError("ETH Provider URI must be provided.")
+        if not polygon_endpoint:
+            raise ValueError("Polygon Provider URI must be provided.")
+
+        self._initialize_endpoints(eth_endpoint, polygon_endpoint)
+        self.eth_endpoint, self.polygon_endpoint = eth_endpoint, polygon_endpoint
+
+        self.registry = registry or ContractRegistry.from_latest_publication(
+            domain=domain
+        )
+        self.taco_child_application_agent = ContractAgency.get_agent(
+            TACoChildApplicationAgent,
+            registry=self.registry,
+            blockchain_endpoint=self.polygon_endpoint,
+        )
 
         super().__init__(save_metadata=True, domain=domain, node_class=node_class, *args, **kwargs)
 
         self.log = Logger(self.__class__.__name__)
-        self.execution_timeout = execution_timeout
 
         # Controller Interface
         self.interface = self._interface_class(porter=self)
@@ -104,11 +133,36 @@ class Porter(Learner):
 
         self.log.info(BANNER)
 
-    def get_ursulas(self,
-                    quantity: int,
-                    exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
-                    include_ursulas: Optional[Sequence[ChecksumAddress]] = None) -> List[UrsulaInfo]:
+    @staticmethod
+    def _initialize_endpoints(eth_endpoint: str, polygon_endpoint: str):
+        if not BlockchainInterfaceFactory.is_interface_initialized(
+            endpoint=eth_endpoint
+        ):
+            BlockchainInterfaceFactory.initialize_interface(endpoint=eth_endpoint)
+
+        if not BlockchainInterfaceFactory.is_interface_initialized(
+            endpoint=polygon_endpoint
+        ):
+            BlockchainInterfaceFactory.initialize_interface(endpoint=polygon_endpoint)
+
+    def get_ursulas(
+        self,
+        quantity: int,
+        exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
+        include_ursulas: Optional[Sequence[ChecksumAddress]] = None,
+        timeout: Optional[int] = None,
+    ) -> List[UrsulaInfo]:
+        timeout = self._configure_timeout(
+            "sampling", timeout, self.MAX_GET_URSULAS_TIMEOUT
+        )
+
         reservoir = self._make_reservoir(exclude_ursulas, include_ursulas)
+        available_nodes_to_sample = len(reservoir.values) + len(reservoir.reservoir)
+        if available_nodes_to_sample < quantity:
+            raise ValueError(
+                f"Insufficient nodes ({available_nodes_to_sample}) from which to sample {quantity}"
+            )
+
         value_factory = PrefetchStrategy(reservoir, quantity)
 
         def get_ursula_info(ursula_address) -> Porter.UrsulaInfo:
@@ -127,16 +181,17 @@ class Porter(Learner):
                 self.log.debug(f"Ursula ({ursula_address}) is unreachable: {str(e)}")
                 raise
 
-        self.block_until_number_of_known_nodes_is(quantity,
-                                                  timeout=self.execution_timeout,
-                                                  learn_on_this_thread=True,
-                                                  eager=True)
+        self.block_until_number_of_known_nodes_is(
+            quantity, timeout=timeout, learn_on_this_thread=True, eager=True
+        )
 
-        worker_pool = WorkerPool(worker=get_ursula_info,
-                                 value_factory=value_factory,
-                                 target_successes=quantity,
-                                 timeout=self.execution_timeout,
-                                 stagger_timeout=1)
+        worker_pool = WorkerPool(
+            worker=get_ursula_info,
+            value_factory=value_factory,
+            target_successes=quantity,
+            timeout=timeout,
+            stagger_timeout=1,
+        )
         worker_pool.start()
         try:
             successes = worker_pool.block_until_target_successes()
@@ -147,14 +202,16 @@ class Porter(Learner):
         ursulas_info = successes.values()
         return list(ursulas_info)
 
-    def retrieve_cfrags(self,
-                        treasure_map: TreasureMap,
-                        retrieval_kits: Sequence[RetrievalKit],
-                        alice_verifying_key: PublicKey,
-                        bob_encrypting_key: PublicKey,
-                        bob_verifying_key: PublicKey,
-                        context: Optional[Dict] = None) -> List[RetrievalOutcome]:
-        client = RetrievalClient(self)
+    def retrieve_cfrags(
+        self,
+        treasure_map: TreasureMap,
+        retrieval_kits: Sequence[RetrievalKit],
+        alice_verifying_key: PublicKey,
+        bob_encrypting_key: PublicKey,
+        bob_verifying_key: PublicKey,
+        context: Optional[Dict] = None,
+    ) -> List[PRERetrievalOutcome]:
+        client = PRERetrievalClient(self)
         context = context or dict()  # must not be None
         results, errors = client.retrieve_cfrags(
             treasure_map,
@@ -162,22 +219,64 @@ class Porter(Learner):
             alice_verifying_key,
             bob_encrypting_key,
             bob_verifying_key,
-            **context,
+            context,
         )
         result_outcomes = []
         for result, error in zip(results, errors):
-            result_outcome = Porter.RetrievalOutcome(
+            result_outcome = Porter.PRERetrievalOutcome(
                 cfrags=result.cfrags, errors=error.errors
             )
             result_outcomes.append(result_outcome)
         return result_outcomes
 
-    def _make_reservoir(self,
-                        exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
-                        include_ursulas: Optional[Sequence[ChecksumAddress]] = None):
-        return make_staking_provider_reservoir(application_agent=self.application_agent,
-                                               exclude_addresses=exclude_ursulas,
-                                               include_addresses=include_ursulas)
+    def decrypt(
+        self,
+        threshold: int,
+        encrypted_decryption_requests: Dict[
+            ChecksumAddress, EncryptedThresholdDecryptionRequest
+        ],
+        timeout: Optional[int] = None,
+    ) -> DecryptOutcome:
+        decryption_client = ThresholdDecryptionClient(self)
+        timeout = self._configure_timeout(
+            "decryption", timeout, self.MAX_DECRYPTION_TIMEOUT
+        )
+
+        successes, failures = decryption_client.gather_encrypted_decryption_shares(
+            encrypted_requests=encrypted_decryption_requests,
+            threshold=threshold,
+            timeout=timeout,
+        )
+
+        decrypt_outcome = Porter.DecryptOutcome(
+            encrypted_decryption_responses=successes, errors=failures
+        )
+        return decrypt_outcome
+
+    def _configure_timeout(
+        self, operation: str, timeout: Union[int, None], max_timeout: int
+    ):
+        if timeout and timeout > max_timeout:
+            self.log.warn(
+                f"Provided {operation} timeout ({timeout}s) exceeds "
+                f"maximum ({max_timeout}s); "
+                f"using {max_timeout}s instead"
+            )
+            timeout = max_timeout
+        else:
+            timeout = timeout or max_timeout
+        return timeout
+
+    def _make_reservoir(
+        self,
+        exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
+        include_ursulas: Optional[Sequence[ChecksumAddress]] = None,
+    ):
+        return make_staking_provider_reservoir(
+            application_agent=self.taco_child_application_agent,
+            exclude_addresses=exclude_ursulas,
+            include_addresses=include_ursulas,
+        )
 
     def make_cli_controller(self, crash_on_error: bool = False):
         controller = PorterCLIController(app_name=self.APP_NAME,
@@ -185,6 +284,9 @@ class Porter(Learner):
                                          interface=self.interface)
         self.controller = controller
         return controller
+
+    def _setup_prometheus(self, app):
+        self.controller.metrics = PrometheusMetrics(app)
 
     def make_web_controller(self,
                             crash_on_error: bool = False,
@@ -197,6 +299,16 @@ class Porter(Learner):
 
         # Register Flask Decorator
         porter_flask_control = controller.make_control_transport()
+        self._setup_prometheus(porter_flask_control)
+
+        # static information as metric
+
+        self.controller.metrics.info("app_info", "Application info", version="1.0.3")
+        by_path_counter = controller.metrics.counter(
+            "by_path_counter",
+            "Request count by request paths",
+            labels={"path": lambda: request.path},
+        )
 
         # CORS origins
         if cors_allow_origins_list:
@@ -224,21 +336,31 @@ class Porter(Learner):
         # Porter Control HTTP Endpoints
         #
         @porter_flask_control.route('/get_ursulas', methods=['GET'])
+        @by_path_counter
         def get_ursulas() -> Response:
             """Porter control endpoint for sampling Ursulas on behalf of Alice."""
             response = controller(method_name='get_ursulas', control_request=request)
             return response
 
         @porter_flask_control.route("/revoke", methods=['POST'])
+        @by_path_counter
         def revoke():
             """Porter control endpoint for off-chain revocation of a policy on behalf of Alice."""
             response = controller(method_name='revoke', control_request=request)
             return response
 
         @porter_flask_control.route("/retrieve_cfrags", methods=['POST'])
+        @by_path_counter
         def retrieve_cfrags() -> Response:
             """Porter control endpoint for executing a PRE work order on behalf of Bob."""
             response = controller(method_name='retrieve_cfrags', control_request=request)
+            return response
+
+        @porter_flask_control.route("/decrypt", methods=["POST"])
+        @by_path_counter
+        def decrypt() -> Response:
+            """Porter control endpoint for executing a TACo decryption request."""
+            response = controller(method_name="decrypt", control_request=request)
             return response
 
         return controller

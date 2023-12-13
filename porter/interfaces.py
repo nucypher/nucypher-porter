@@ -5,7 +5,7 @@ from eth_typing import ChecksumAddress
 from nucypher_core import RetrievalKit, TreasureMap
 from nucypher_core.umbral import PublicKey
 
-from porter import schema
+from porter import main, schema
 
 
 def attach_schema(schema):
@@ -29,27 +29,28 @@ class ControlInterface:
 
 
 class PorterInterface(ControlInterface):
-    def __init__(self, porter: 'Porter' = None, *args, **kwargs):
+    def __init__(self, porter: "main.Porter" = None, *args, **kwargs):
         super().__init__(implementer=porter, *args, **kwargs)
 
-    #
-    # Alice Endpoints
-    #
-    @attach_schema(schema.AliceGetUrsulas)
-    def get_ursulas(self,
-                    quantity: int,
-                    exclude_ursulas: Optional[List[ChecksumAddress]] = None,
-                    include_ursulas: Optional[List[ChecksumAddress]] = None) -> Dict:
+    @attach_schema(schema.GetUrsulas)
+    def get_ursulas(
+        self,
+        quantity: int,
+        exclude_ursulas: Optional[List[ChecksumAddress]] = None,
+        include_ursulas: Optional[List[ChecksumAddress]] = None,
+        timeout: Optional[int] = None,
+    ) -> Dict:
         ursulas_info = self.implementer.get_ursulas(
             quantity=quantity,
             exclude_ursulas=exclude_ursulas,
             include_ursulas=include_ursulas,
+            timeout=timeout,
         )
 
         response_data = {"ursulas": ursulas_info}  # list of UrsulaInfo objects
         return response_data
 
-    @attach_schema(schema.AliceRevoke)
+    @attach_schema(schema.PRERevoke)
     def revoke(self) -> dict:
         # Steps (analogous to nucypher.character.control.interfaces):
         # 1. creation of objects / setup
@@ -57,7 +58,7 @@ class PorterInterface(ControlInterface):
         # 3. create response
         pass
 
-    @attach_schema(schema.BobRetrieveCFrags)
+    @attach_schema(schema.PRERetrieveCFrags)
     def retrieve_cfrags(self,
                         treasure_map: TreasureMap,
                         retrieval_kits: List[RetrievalKit],
@@ -76,4 +77,19 @@ class PorterInterface(ControlInterface):
         response_data = {
             "retrieval_results": retrieval_outcomes
         }  # list of RetrievalOutcome objects
+        return response_data
+
+    @attach_schema(schema.Decrypt)
+    def decrypt(
+        self,
+        threshold: int,
+        encrypted_decryption_requests: Dict[ChecksumAddress, bytes],
+        timeout: Optional[int] = None,
+    ):
+        decrypt_outcome = self.implementer.decrypt(
+            threshold=threshold,
+            encrypted_decryption_requests=encrypted_decryption_requests,
+            timeout=timeout,
+        )
+        response_data = {"decryption_results": decrypt_outcome}
         return response_data

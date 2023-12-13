@@ -1,16 +1,17 @@
 import click
-from marshmallow import fields as marshmallow_fields, Schema, INCLUDE
-from marshmallow import validates_schema
-from marshmallow.fields import String, Dict
-from marshmallow.fields import URL
+from marshmallow import INCLUDE, Schema, validates_schema
+from marshmallow import fields as marshmallow_fields
 
 from porter.cli.types import EIP55_CHECKSUM_ADDRESS
-from porter.fields.base import StringList, PositiveInteger, JSON
-from porter.fields.exceptions import InvalidArgumentCombo
-from porter.fields.exceptions import InvalidInputData
-from porter.fields.key import Key
-from porter.fields.retrieve import RetrievalKit, CapsuleFrag
+from porter.fields.base import JSON, PositiveInteger, StringList
+from porter.fields.exceptions import InvalidArgumentCombo, InvalidInputData
+from porter.fields.retrieve import CapsuleFrag, RetrievalKit
+from porter.fields.taco import (
+    EncryptedThresholdDecryptionRequestField,
+    EncryptedThresholdDecryptionResponseField,
+)
 from porter.fields.treasuremap import TreasureMap
+from porter.fields.umbralkey import UmbralKey
 from porter.fields.ursula import UrsulaChecksumAddress
 
 
@@ -44,8 +45,8 @@ def option_bob_encrypting_key():
 class UrsulaInfoSchema(BaseSchema):
     """Schema for the result of sampling of Ursulas."""
     checksum_address = UrsulaChecksumAddress()
-    uri = URL()
-    encrypting_key = Key()
+    uri = marshmallow_fields.URL()
+    encrypting_key = UmbralKey()
 
     # maintain field declaration ordering
     class Meta:
@@ -53,11 +54,11 @@ class UrsulaInfoSchema(BaseSchema):
 
 
 #
-# Alice Endpoints
+# Common Endpoints
 #
 
 
-class AliceGetUrsulas(BaseSchema):
+class GetUrsulas(BaseSchema):
     quantity = PositiveInteger(
         required=True,
         load_only=True,
@@ -94,6 +95,18 @@ class AliceGetUrsulas(BaseSchema):
         required=False,
         load_only=True)
 
+    timeout = PositiveInteger(
+        required=False,
+        load_only=True,
+        click=click.option(
+            "--timeout",
+            "-t",
+            help="Timeout for getting the required quantity of ursulas",
+            type=click.INT,
+            required=False,
+        ),
+    )
+
     # output
     ursulas = marshmallow_fields.List(marshmallow_fields.Nested(UrsulaInfoSchema), dump_only=True)
 
@@ -101,9 +114,11 @@ class AliceGetUrsulas(BaseSchema):
     def check_valid_quantity_and_include_ursulas(self, data, **kwargs):
         # TODO does this make sense - perhaps having extra ursulas could be a good thing if some are down or can't
         #  be contacted at that time
-        ursulas_to_include = data.get('include_ursulas')
-        if ursulas_to_include and len(ursulas_to_include) > data['quantity']:
-            raise InvalidArgumentCombo(f"Ursulas to include is greater than quantity requested")
+        ursulas_to_include = data.get("include_ursulas")
+        if ursulas_to_include and len(ursulas_to_include) > data["quantity"]:
+            raise InvalidArgumentCombo(
+                "Ursulas to include is greater than quantity requested"
+            )
 
     @validates_schema
     def check_include_and_exclude_are_mutually_exclusive(self, data, **kwargs):
@@ -115,26 +130,29 @@ class AliceGetUrsulas(BaseSchema):
                                        f"common entries {common_ursulas}")
 
 
-class AliceRevoke(BaseSchema):
+#
+# PRE Endpoints
+#
+
+
+class PRERevoke(BaseSchema):
     pass  # TODO need to understand revoke process better
 
 
-class RetrievalOutcomeSchema(BaseSchema):
+class PRERetrievalOutcomeSchema(BaseSchema):
     """Schema for the result of /retrieve_cfrags endpoint."""
-    cfrags = Dict(keys=UrsulaChecksumAddress(), values=CapsuleFrag())
-    errors = Dict(keys=UrsulaChecksumAddress(), values=String())
+
+    cfrags = marshmallow_fields.Dict(keys=UrsulaChecksumAddress(), values=CapsuleFrag())
+    errors = marshmallow_fields.Dict(
+        keys=UrsulaChecksumAddress(), values=marshmallow_fields.String()
+    )
 
     # maintain field declaration ordering
     class Meta:
         ordered = True
 
 
-#
-# Bob Endpoints
-#
-
-
-class BobRetrieveCFrags(BaseSchema):
+class PRERetrieveCFrags(BaseSchema):
     treasure_map = TreasureMap(
         required=True,
         load_only=True,
@@ -156,7 +174,7 @@ class BobRetrieveCFrags(BaseSchema):
             default=[]),
         required=True,
         load_only=True)
-    alice_verifying_key = Key(
+    alice_verifying_key = UmbralKey(
         required=True,
         load_only=True,
         click=click.option(
@@ -165,11 +183,11 @@ class BobRetrieveCFrags(BaseSchema):
             help="Alice's verifying key as a hexadecimal string",
             type=click.STRING,
             required=True))
-    bob_encrypting_key = Key(
+    bob_encrypting_key = UmbralKey(
         required=True,
         load_only=True,
         click=option_bob_encrypting_key())
-    bob_verifying_key = Key(
+    bob_verifying_key = UmbralKey(
         required=True,
         load_only=True,
         click=click.option(
@@ -195,6 +213,75 @@ class BobRetrieveCFrags(BaseSchema):
 
     # output
     retrieval_results = marshmallow_fields.List(
-        marshmallow_fields.Nested(RetrievalOutcomeSchema), dump_only=True
+        marshmallow_fields.Nested(PRERetrievalOutcomeSchema), dump_only=True
     )
 
+#
+# TACo Endpoints
+#
+
+
+class DecryptOutcomeSchema(BaseSchema):
+    """Schema for the result of /retrieve_cfrags endpoint."""
+
+    encrypted_decryption_responses = marshmallow_fields.Dict(
+        keys=UrsulaChecksumAddress(), values=EncryptedThresholdDecryptionResponseField()
+    )
+    errors = marshmallow_fields.Dict(
+        keys=UrsulaChecksumAddress(), values=marshmallow_fields.String()
+    )
+
+    # maintain field declaration ordering
+    class Meta:
+        ordered = True
+
+
+class Decrypt(BaseSchema):
+    threshold = PositiveInteger(
+        required=True,
+        load_only=True,
+        click=click.option(
+            "--decryption-threshold",
+            "-d",
+            help="Threshold of decryption responses required",
+            type=click.INT,
+            required=True,
+        ),
+    )
+    encrypted_decryption_requests = marshmallow_fields.Dict(
+        keys=UrsulaChecksumAddress(),
+        values=EncryptedThresholdDecryptionRequestField(),
+        required=True,
+        load_only=True,
+        click=click.option(
+            "--encrypted-decryption-requests",
+            "-e",
+            help="Encrypted decryption requests dictionary keyed by ursula checksum address",
+            type=click.STRING,
+            required=True,
+        ),
+    )
+    timeout = PositiveInteger(
+        required=False,
+        load_only=True,
+        click=click.option(
+            "--timeout",
+            "-t",
+            help="Timeout for decryption operation",
+            type=click.INT,
+            required=False,
+        ),
+    )
+
+    # output
+    decryption_results = marshmallow_fields.Nested(DecryptOutcomeSchema, dump_only=True)
+
+    @validates_schema
+    def check_valid_threshold_and_requests(self, data, **kwargs):
+        # TODO is this check a good thing? What about re-requests after failures?
+        threshold = data.get("threshold")
+        encrypted_decryption_requests = data.get("encrypted_decryption_requests")
+        if len(encrypted_decryption_requests) < threshold:
+            raise InvalidArgumentCombo(
+                "Number of provided requests must be >= the expected threshold"
+            )
