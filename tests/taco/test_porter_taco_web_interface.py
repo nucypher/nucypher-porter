@@ -54,10 +54,10 @@ def test_taco_decrypt(
             shared_secret=shared_secret,
             requester_public_key=requester_secret_key.public_key(),
         )
-        encrypted_decryption_requests[
-            ursula.checksum_address
-        ] = encrypted_request_field._serialize(
-            value=encrypted_decryption_request, attr=None, obj=None
+        encrypted_decryption_requests[ursula.checksum_address] = (
+            encrypted_request_field._serialize(
+                value=encrypted_decryption_request, attr=None, obj=None
+            )
         )
         shared_secrets[ursula.checksum_address] = shared_secret
 

@@ -49,7 +49,7 @@ pytest_plugins = [
 
 
 def pytest_addhooks(pluginmanager):
-    pluginmanager.set_blocked('ape_test')
+    pluginmanager.set_blocked("ape_test")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -68,6 +68,7 @@ def pytest_collection_modifyitems(config, items):
 @pytest.fixture(scope='session')
 def monkeysession():
     from _pytest.monkeypatch import MonkeyPatch
+
     mpatch = MonkeyPatch()
     yield mpatch
     mpatch.undo()
@@ -118,7 +119,7 @@ def mock_condition_blockchains(module_mocker):
     )
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def test_registry(module_mocker):
     with mock_registry_sources(mocker=module_mocker):
         mock_source = MockRegistrySource(domain=TEMPORARY_DOMAIN)
@@ -137,7 +138,7 @@ def staking_providers(testerchain, test_registry, monkeymodule):
     return testerchain.stake_providers_accounts
 
 
-@pytest.fixture(scope='module', autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def mock_contract_agency():
     from tests.mock.agents import MockContractAgency
 
@@ -145,7 +146,9 @@ def mock_contract_agency():
     get_agent = ContractAgency.get_agent
     get_agent_by_name = ContractAgency.get_agent_by_contract_name
     ContractAgency.get_agent = MockContractAgency.get_agent
-    ContractAgency.get_agent_by_contract_name = MockContractAgency.get_agent_by_contract_name
+    ContractAgency.get_agent_by_contract_name = (
+        MockContractAgency.get_agent_by_contract_name
+    )
 
     # Test
     yield MockContractAgency()
@@ -188,7 +191,7 @@ def mock_sample_reservoir(testerchain, mock_contract_agency):
 
 @pytest.fixture(scope="module", autouse=True)
 def mock_substantiate_stamp(module_mocker, monkeymodule):
-    fake_signature = b'\xb1W5?\x9b\xbaix>\'\xfe`\x1b\x9f\xeb*9l\xc0\xa7\xb9V\x9a\x83\x84\x04\x97\x0c\xad\x99\x86\x81W\x93l\xc3\xbde\x03\xcd"Y\xce\xcb\xf7\x02z\xf6\x9c\xac\x84\x05R\x9a\x9f\x97\xf7\xa02\xb2\xda\xa1Gv\x01'
+    fake_signature = b"\xb1W5?\x9b\xbaix>'\xfe`\x1b\x9f\xeb*9l\xc0\xa7\xb9V\x9a\x83\x84\x04\x97\x0c\xad\x99\x86\x81W\x93l\xc3\xbde\x03\xcd\"Y\xce\xcb\xf7\x02z\xf6\x9c\xac\x84\x05R\x9a\x9f\x97\xf7\xa02\xb2\xda\xa1Gv\x01"
     module_mocker.patch.object(Ursula, "_substantiate_stamp", autospec=True)
     module_mocker.patch.object(Ursula, "operator_signature", fake_signature)
     module_mocker.patch.object(Teacher, "validate_operator")
@@ -251,7 +254,9 @@ def random_treasure_map_data(alice, bob, ursulas):
 def porter_web_controller(porter, monkeymodule):
     def _setup_prometheus(_porter, app):
         _porter.controller.metrics = PrometheusMetrics(app)
-        _porter.controller.metrics.registry = prometheus_client.CollectorRegistry(auto_describe=True)
+        _porter.controller.metrics.registry = prometheus_client.CollectorRegistry(
+            auto_describe=True
+        )
 
     Porter._setup_prometheus = _setup_prometheus
     web_controller = porter.make_web_controller(crash_on_error=False)

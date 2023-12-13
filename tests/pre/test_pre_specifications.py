@@ -161,9 +161,9 @@ def test_bob_retrieve_cfrags(
         specific_kit_errors = dict()
         for j in range(i):
             # different number of errors for each kit; 1 error for kit 1, 2 errors for kit 2 etc.
-            specific_kit_errors[
-                get_random_checksum_address()
-            ] = error_message_template.format(i, j)
+            specific_kit_errors[get_random_checksum_address()] = (
+                error_message_template.format(i, j)
+            )
         new_retrieval_outcomes_with_errors.append(
             Porter.PRERetrievalOutcome(
                 cfrags=retrieval_outcomes[i].cfrags, errors=specific_kit_errors
@@ -251,7 +251,9 @@ def test_key_validation(bob):
         # lets just take a couple bytes off (less bytes than required)
         BobKeyInputRequirer().load(
             {
-                "bobkey": "02f0cb3f3a33f16255d9b2586e6c56570aa07bbeb1157e169f1fb114ffb40037"
+                "bobkey": (
+                    "02f0cb3f3a33f16255d9b2586e6c56570aa07bbeb1157e169f1fb114ffb40037"
+                )
             }
         )
     assert "Could not convert input for bobkey to an Umbral Key" in str(e)

@@ -28,10 +28,10 @@ def test_taco_decrypt_schema(dkg_setup, dkg_encrypted_data):
         checksum_address,
         encrypted_decryption_request,
     ) in encrypted_decryption_requests.items():
-        encrypted_decryption_requests[
-            checksum_address
-        ] = encrypted_request_field._serialize(
-            value=encrypted_decryption_request, attr=None, obj=None
+        encrypted_decryption_requests[checksum_address] = (
+            encrypted_request_field._serialize(
+                value=encrypted_decryption_request, attr=None, obj=None
+            )
         )
 
     # no args
@@ -115,8 +115,9 @@ def test_taco_decrypt_schema(dkg_setup, dkg_encrypted_data):
     # invalid param combination
     with pytest.raises(InvalidArgumentCombo):
         request_data = {
-            "threshold": len(encrypted_decryption_requests)
-            + 1,  # threshold larger than number of requests
+            "threshold": (
+                len(encrypted_decryption_requests) + 1
+            ),  # threshold larger than number of requests
             "encrypted_decryption_requests": encrypted_decryption_requests,
         }
         decrypt_schema.load(request_data)
@@ -237,8 +238,8 @@ def _generate_encrypted_requests(
             shared_secret=shared_secret,
             requester_public_key=requester_secret_key.public_key(),
         )
-        encrypted_decryption_requests[
-            ursula.checksum_address
-        ] = encrypted_decryption_request
+        encrypted_decryption_requests[ursula.checksum_address] = (
+            encrypted_decryption_request
+        )
 
     return encrypted_decryption_requests

@@ -30,11 +30,11 @@ def test_taco_decryption_success(porter, dkg_setup, dkg_encrypted_data, timeout)
         shared_secret = requester_secret_key.derive_shared_secret(
             ursula_decryption_request_static_key
         )
-        encrypted_decryption_requests[
-            ursula.checksum_address
-        ] = decryption_request.encrypt(
-            shared_secret=shared_secret,
-            requester_public_key=requester_secret_key.public_key(),
+        encrypted_decryption_requests[ursula.checksum_address] = (
+            decryption_request.encrypt(
+                shared_secret=shared_secret,
+                requester_public_key=requester_secret_key.public_key(),
+            )
         )
         shared_secrets[ursula.checksum_address] = shared_secret
 
@@ -93,11 +93,11 @@ def test_taco_decryption_failure(porter, dkg_setup, dkg_encrypted_data, timeout)
     shared_secret = requester_secret_key.derive_shared_secret(random_public_key)
     encrypted_decryption_requests = {}
     for ursula in cohort:
-        encrypted_decryption_requests[
-            ursula.checksum_address
-        ] = decryption_request.encrypt(
-            shared_secret=shared_secret,
-            requester_public_key=requester_secret_key.public_key(),
+        encrypted_decryption_requests[ursula.checksum_address] = (
+            decryption_request.encrypt(
+                shared_secret=shared_secret,
+                requester_public_key=requester_secret_key.public_key(),
+            )
         )
 
     decrypt_outcome = porter.decrypt(
