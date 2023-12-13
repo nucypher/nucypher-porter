@@ -134,6 +134,7 @@ class GetUrsulas(BaseSchema):
 # PRE Endpoints
 #
 
+
 class PRERevoke(BaseSchema):
     pass  # TODO need to understand revoke process better
 
@@ -244,8 +245,8 @@ class Decrypt(BaseSchema):
             "-d",
             help="Threshold of decryption responses required",
             type=click.INT,
-            required=True
-        )
+            required=True,
+        ),
     )
     encrypted_decryption_requests = marshmallow_fields.Dict(
         keys=UrsulaChecksumAddress(),

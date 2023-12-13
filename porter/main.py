@@ -303,10 +303,11 @@ class Porter(Learner):
 
         # static information as metric
 
-        self.controller.metrics.info('app_info', 'Application info', version='1.0.3')
+        self.controller.metrics.info("app_info", "Application info", version="1.0.3")
         by_path_counter = controller.metrics.counter(
-            'by_path_counter', 'Request count by request paths',
-            labels={'path': lambda: request.path}
+            "by_path_counter",
+            "Request count by request paths",
+            labels={"path": lambda: request.path},
         )
 
         # CORS origins

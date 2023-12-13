@@ -91,9 +91,15 @@ def retrieval_params_decode_from_rest(retrieval_params: Dict) -> Dict:
             decode_bytes(RetrievalKitField, kit)
             for kit in retrieval_params["retrieval_kits"]
         ],
-        alice_verifying_key=decode_bytes(UmbralKey, retrieval_params["alice_verifying_key"]),
-        bob_encrypting_key=decode_bytes(UmbralKey, retrieval_params["bob_encrypting_key"]),
-        bob_verifying_key=decode_bytes(UmbralKey, retrieval_params["bob_verifying_key"]),
+        alice_verifying_key=decode_bytes(
+            UmbralKey, retrieval_params["alice_verifying_key"]
+        ),
+        bob_encrypting_key=decode_bytes(
+            UmbralKey, retrieval_params["bob_encrypting_key"]
+        ),
+        bob_verifying_key=decode_bytes(
+            UmbralKey, retrieval_params["bob_verifying_key"]
+        ),
     )
     # context is optional
     if "context" in retrieval_params:
