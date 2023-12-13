@@ -4,7 +4,7 @@ from porter.main import Porter
 
 
 @pytest.mark.parametrize(
-    "timeout_scenarios",
+    "provided_timeout,max_timeout,expected_timeout",
     [
         (None, 10, 10),
         (1, 10, 1),
@@ -36,8 +36,9 @@ from porter.main import Porter
         ),
     ],
 )
-def test_porter_configure_timeout_defined_results(porter, timeout_scenarios):
-    provided_timeout, max_timeout, expected_timeout = timeout_scenarios
+def test_porter_configure_timeout(
+    porter, provided_timeout, max_timeout, expected_timeout
+):
     resultant_timeout = porter._configure_timeout(
         operation="test", timeout=provided_timeout, max_timeout=max_timeout
     )
