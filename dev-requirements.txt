@@ -81,7 +81,7 @@ msgspec==0.18.5 ; python_version >= '3.8'
 multidict==6.0.4 ; python_version >= '3.7'
 mypy-extensions==1.0.0 ; python_version >= '3.5'
 nodeenv==1.8.0 ; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6'
-git+https://github.com/nucypher/nucypher.git@bd68f5c6b545cbacc6afed326509fcc5385ea133#egg=nucypher
+git+https://github.com/nucypher/nucypher.git@c0a59d48d7412697b75ce3ddf20b66f44e0caa93#egg=nucypher
 nucypher-core==0.13.0
 numpy==1.26.2 ; python_version >= '3.9'
 packaging==23.2 ; python_version >= '3.7'
@@ -138,7 +138,7 @@ rlp==3.0.0
 rpds-py==0.15.2 ; python_version >= '3.8'
 safe-pysha3==1.0.4
 semantic-version==2.10.0 ; python_version >= '2.7'
-sentry-sdk==1.39.1
+sentry-sdk==1.39.2
 service-identity==23.1.0 ; python_version >= '3.8'
 setuptools==69.0.2 ; python_version >= '3.8'
 six==1.16.0 ; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2'
