@@ -49,7 +49,7 @@ mnemonic==0.20 ; python_version >= '3.5'
 msgpack==1.0.7 ; python_version >= '3.8'
 msgpack-python==0.5.6
 multidict==6.0.4 ; python_version >= '3.7'
-git+https://github.com/nucypher/nucypher.git@bd68f5c6b545cbacc6afed326509fcc5385ea133#egg=nucypher
+git+https://github.com/nucypher/nucypher.git@c0a59d48d7412697b75ce3ddf20b66f44e0caa93#egg=nucypher
 nucypher-core==0.13.0
 packaging==23.2 ; python_version >= '3.7'
 parsimonious==0.9.0
