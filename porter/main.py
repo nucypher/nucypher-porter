@@ -1,6 +1,9 @@
 import os
+
+from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, NamedTuple, Optional, Sequence, Union
+from random import Random
+from typing import Dict, List, NamedTuple, Optional, Sequence, Tuple, Union
 
 from constant_sorrow.constants import NO_CONTROL_PROTOCOL
 from eth_typing import ChecksumAddress
@@ -10,7 +13,7 @@ from nucypher.blockchain.eth.agents import (
     ContractAgency,
     TACoChildApplicationAgent,
 )
-from nucypher.blockchain.eth.domains import DEFAULT_DOMAIN, TACoDomain
+from nucypher.blockchain.eth.domains import DEFAULT_DOMAIN, MAINNET, TACoDomain
 from nucypher.blockchain.eth.interfaces import BlockchainInterfaceFactory
 from nucypher.blockchain.eth.registry import ContractRegistry
 from nucypher.characters.lawful import Ursula
@@ -278,6 +281,130 @@ class Porter(Learner):
             include_addresses=include_ursulas,
         )
 
+    def bucket_sampling(
+        self,
+        quantity: int,
+        random_seed: Optional[int] = None,
+        exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
+        timeout: Optional[int] = None,
+    ) -> Tuple[List[UrsulaInfo], int]:
+        timeout = self._configure_timeout(
+            "sampling", timeout, self.MAX_GET_URSULAS_TIMEOUT
+        )
+
+        if self.domain != MAINNET:
+            raise ValueError("Bucket sampling is only for TACo Mainnet")
+
+        class BucketStakingProvidersReservoir:
+            def __init__(
+                self,
+                staking_provider_map: Dict[ChecksumAddress, int],
+                seed: Optional[int] = None
+            ):
+                self._providers = list(staking_provider_map.keys())
+                self._rng = Random(seed)
+
+            def __len__(self):
+                return len(self._providers)
+
+            def draw(self, _quantity):
+                if _quantity > len(self._providers):
+                    raise ValueError(
+                        f"Cannot sample {_quantity} out of {len(self._providers)} total staking providers"
+                    )
+                return self._rng.sample(self._providers, k=_quantity)
+
+            def __call__(self) -> Optional[ChecksumAddress]:
+                if len(self._providers) > 0:
+                    return self.draw(1)[0]
+                else:
+                    return None
+
+        block_number = self.taco_child_application_agent.blockchain.client.block_number
+        _, sp_map = self.taco_child_application_agent.get_all_active_staking_providers()
+        for e in exclude_ursulas or []:
+            if e in sp_map:
+                del sp_map[e]
+
+        if len(sp_map) < quantity:
+            raise ValueError(
+                f"Insufficient nodes ({len(sp_map)}) from which to sample {quantity}"
+            )
+
+        reservoir = BucketStakingProvidersReservoir(sp_map, random_seed)
+
+        class BucketPrefetchStrategy:
+            BUCKET_CAP = 2
+
+            def __init__(self, _reservoir, need_successes: int):
+                self.reservoir = _reservoir
+                self.need_successes = need_successes
+                self.predefined_buckets = {}
+                self.bucketed_nodes = defaultdict(list)
+
+            def find_bucket(self, node):
+                for bucket_name, bucket in self.predefined_buckets.items():
+                    if node in bucket:
+                        return bucket_name
+                return None
+
+            def __call__(self, _successes: int) -> Optional[List[ChecksumAddress]]:
+                batch = []
+                batch_size = self.need_successes - _successes
+                while len(batch) < batch_size:
+                    selected = self.reservoir()
+                    if selected is None:
+                        break
+                    bucket = self.find_bucket(selected)
+                    if bucket:
+                        if len(self.bucketed_nodes[bucket]) >= self.BUCKET_CAP:
+                            continue
+                        self.bucketed_nodes[bucket].append(selected)
+                    batch.append(selected)
+                if not batch:
+                    return None
+                return batch
+
+        value_factory = BucketPrefetchStrategy(reservoir, quantity)
+
+        # TODO: same function that in get_ursulas
+        def get_ursula_info(ursula_address) -> Porter.UrsulaInfo:
+            if to_checksum_address(ursula_address) not in self.known_nodes:
+                raise ValueError(f"{ursula_address} is not known")
+
+            ursula_address = to_checksum_address(ursula_address)
+            ursula = self.known_nodes[ursula_address]
+            try:
+                # ensure node is up and reachable
+                self.network_middleware.ping(ursula)
+                return Porter.UrsulaInfo(checksum_address=ursula_address,
+                                         uri=f"{ursula.rest_interface.formal_uri}",
+                                         encrypting_key=ursula.public_keys(DecryptingPower))
+            except Exception as e:
+                self.log.debug(f"Ursula ({ursula_address}) is unreachable: {str(e)}")
+                raise
+
+        self.block_until_number_of_known_nodes_is(
+            quantity, timeout=timeout, learn_on_this_thread=True, eager=True
+        )
+
+        worker_pool = WorkerPool(
+            worker=get_ursula_info,
+            value_factory=value_factory,
+            target_successes=quantity,
+            timeout=timeout,
+            stagger_timeout=1,
+        )
+        worker_pool.start()
+        try:
+            successes = worker_pool.block_until_target_successes()
+        finally:
+            worker_pool.cancel()
+            # don't wait for it to stop by "joining" - too slow...
+
+        ursulas_info = successes.values()
+        return list(ursulas_info), block_number
+
     def make_cli_controller(self, crash_on_error: bool = False):
         controller = PorterCLIController(app_name=self.APP_NAME,
                                          crash_on_error=crash_on_error,
@@ -361,6 +488,13 @@ class Porter(Learner):
         def decrypt() -> Response:
             """Porter control endpoint for executing a TACo decryption request."""
             response = controller(method_name="decrypt", control_request=request)
+            return response
+
+        @porter_flask_control.route('/bucket_sampling', methods=['GET'])
+        @by_path_counter
+        def bucket_sampling() -> Response:
+            """Porter control endpoint for sampling Ursulas with provider caps (a.k.a. bucket sampling)"""
+            response = controller(method_name='bucket_sampling', control_request=request)
             return response
 
         return controller
