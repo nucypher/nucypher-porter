@@ -367,8 +367,7 @@ class Porter(Learner):
 
         value_factory = BucketPrefetchStrategy(reservoir, quantity)
 
-        # TODO: same function that in get_ursulas
-        def get_ursula_info(ursula_address) -> Porter.UrsulaInfo:
+        def make_sure_ursula_is_online(ursula_address) -> ChecksumAddress:
             if to_checksum_address(ursula_address) not in self.known_nodes:
                 raise ValueError(f"{ursula_address} is not known")
 
@@ -377,11 +376,10 @@ class Porter(Learner):
             try:
                 # ensure node is up and reachable
                 self.network_middleware.ping(ursula)
-                return Porter.UrsulaInfo(checksum_address=ursula_address,
-                                         uri=f"{ursula.rest_interface.formal_uri}",
-                                         encrypting_key=ursula.public_keys(DecryptingPower))
+                return ursula_address
             except Exception as e:
-                self.log.debug(f"Ursula ({ursula_address}) is unreachable: {str(e)}")
+                message = f"Ursula ({ursula_address}) is unreachable: {str(e)}"
+                self.log.debug(message)
                 raise
 
         self.block_until_number_of_known_nodes_is(
@@ -389,7 +387,7 @@ class Porter(Learner):
         )
 
         worker_pool = WorkerPool(
-            worker=get_ursula_info,
+            worker=make_sure_ursula_is_online,
             value_factory=value_factory,
             target_successes=quantity,
             timeout=timeout,
@@ -402,8 +400,8 @@ class Porter(Learner):
             worker_pool.cancel()
             # don't wait for it to stop by "joining" - too slow...
 
-        ursulas_info = successes.values()
-        return list(ursulas_info), block_number
+        provider_addresses = list(sorted(successes.values(), key=lambda x: x.lower()))
+        return provider_addresses, block_number
 
     def make_cli_controller(self, crash_on_error: bool = False):
         controller = PorterCLIController(app_name=self.APP_NAME,
