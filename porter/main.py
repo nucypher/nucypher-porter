@@ -298,11 +298,12 @@ class Porter(Learner):
         class BucketStakingProvidersReservoir:
             def __init__(
                 self,
-                staking_provider_map: Dict[ChecksumAddress, int],
+                staking_providers: Sequence[ChecksumAddress],
                 seed: Optional[int] = None
             ):
-                self._providers = list(staking_provider_map.keys())
-                self._rng = Random(seed)
+                self._providers = list(staking_providers)
+                rng = Random(seed)
+                rng.shuffle(self._providers)
 
             def __len__(self):
                 return len(self._providers)
@@ -312,7 +313,8 @@ class Porter(Learner):
                     raise ValueError(
                         f"Cannot sample {_quantity} out of {len(self._providers)} total staking providers"
                     )
-                return self._rng.sample(self._providers, k=_quantity)
+                sampled, self._providers = self._providers[:_quantity], self._providers[_quantity:],
+                return sampled
 
             def __call__(self) -> Optional[ChecksumAddress]:
                 if len(self._providers) > 0:
@@ -331,7 +333,7 @@ class Porter(Learner):
                 f"Insufficient nodes ({len(sp_map)}) from which to sample {quantity}"
             )
 
-        reservoir = BucketStakingProvidersReservoir(sp_map, random_seed)
+        reservoir = BucketStakingProvidersReservoir(list(sp_map), random_seed)
 
         class BucketPrefetchStrategy:
             BUCKET_CAP = 2
