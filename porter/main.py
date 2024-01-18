@@ -415,7 +415,7 @@ class Porter(Learner):
             value_factory=value_factory,
             target_successes=quantity,
             timeout=timeout,
-            stagger_timeout=1,
+            stagger_timeout=10,  # TODO: Reduce it when we have a timeout for pings
         )
         worker_pool.start()
         try:
