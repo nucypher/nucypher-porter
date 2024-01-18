@@ -1,10 +1,12 @@
 import os
-
+import time
 from collections import defaultdict
+from json import loads, JSONDecodeError
 from pathlib import Path
 from random import Random
 from typing import Dict, List, NamedTuple, Optional, Sequence, Tuple, Union
 
+import requests
 from constant_sorrow.constants import NO_CONTROL_PROTOCOL
 from eth_typing import ChecksumAddress
 from eth_utils import to_checksum_address
@@ -337,12 +339,32 @@ class Porter(Learner):
 
         class BucketPrefetchStrategy:
             BUCKET_CAP = 2
+            BUCKETS_URL = (
+                "https://raw.githubusercontent.com/threshold-network/trust/main/taco-self-disclosed-buckets.json"
+            )
 
             def __init__(self, _reservoir, need_successes: int):
                 self.reservoir = _reservoir
                 self.need_successes = need_successes
-                self.predefined_buckets = {}
+                self.predefined_buckets = self.read_buckets()
                 self.bucketed_nodes = defaultdict(list)
+
+            def read_buckets(self) -> Dict:
+                try:
+                    response = requests.get(self.BUCKETS_URL)
+                except requests.exceptions.ConnectionError as ex:
+                    error = f"Failed to fetch buckets JSON file from {self.BUCKETS_URL}: {str(ex)}"
+                    raise RuntimeError(error)
+
+                if response.status_code != 200:
+                    error = f"Failed to fetch buckets JSON file from {self.BUCKETS_URL} with status code {response.status_code}"
+                    raise RuntimeError(error)
+
+                try:
+                    buckets = response.json()
+                except JSONDecodeError:
+                    raise RuntimeError(f"Invalid buckets JSON file at '{self.BUCKETS_URL}'.")
+                return buckets
 
             def find_bucket(self, node):
                 for bucket_name, bucket in self.predefined_buckets.items():
