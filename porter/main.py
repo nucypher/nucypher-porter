@@ -1,7 +1,6 @@
 import os
-import time
 from collections import defaultdict
-from json import loads, JSONDecodeError
+from json import JSONDecodeError
 from pathlib import Path
 from random import Random
 from typing import Dict, List, NamedTuple, Optional, Sequence, Tuple, Union
@@ -301,7 +300,7 @@ class Porter(Learner):
             def __init__(
                 self,
                 staking_providers: Sequence[ChecksumAddress],
-                seed: Optional[int] = None
+                seed: Optional[int] = None,
             ):
                 self._providers = list(staking_providers)
                 rng = Random(seed)
@@ -315,7 +314,10 @@ class Porter(Learner):
                     raise ValueError(
                         f"Cannot sample {_quantity} out of {len(self._providers)} total staking providers"
                     )
-                sampled, self._providers = self._providers[:_quantity], self._providers[_quantity:],
+                sampled, self._providers = (
+                    self._providers[:_quantity],
+                    self._providers[_quantity:],
+                )
                 return sampled
 
             def __call__(self) -> Optional[ChecksumAddress]:
@@ -340,7 +342,8 @@ class Porter(Learner):
         class BucketPrefetchStrategy:
             BUCKET_CAP = 2
             BUCKETS_URL = (
-                "https://raw.githubusercontent.com/threshold-network/trust/main/taco-self-disclosed-buckets.json"
+                "https://raw.githubusercontent.com/"
+                "threshold-network/trust/main/taco-self-disclosed-buckets.json"
             )
 
             def __init__(self, _reservoir, need_successes: int):
@@ -363,7 +366,9 @@ class Porter(Learner):
                 try:
                     buckets = response.json()
                 except JSONDecodeError:
-                    raise RuntimeError(f"Invalid buckets JSON file at '{self.BUCKETS_URL}'.")
+                    raise RuntimeError(
+                        f"Invalid buckets JSON file at '{self.BUCKETS_URL}'."
+                    )
                 return buckets
 
             def find_bucket(self, node):
@@ -484,25 +489,27 @@ class Porter(Learner):
         #
         # Porter Control HTTP Endpoints
         #
-        @porter_flask_control.route('/get_ursulas', methods=['GET'])
+        @porter_flask_control.route("/get_ursulas", methods=["GET"])
         @by_path_counter
         def get_ursulas() -> Response:
             """Porter control endpoint for sampling Ursulas on behalf of Alice."""
-            response = controller(method_name='get_ursulas', control_request=request)
+            response = controller(method_name="get_ursulas", control_request=request)
             return response
 
-        @porter_flask_control.route("/revoke", methods=['POST'])
+        @porter_flask_control.route("/revoke", methods=["POST"])
         @by_path_counter
         def revoke():
             """Porter control endpoint for off-chain revocation of a policy on behalf of Alice."""
-            response = controller(method_name='revoke', control_request=request)
+            response = controller(method_name="revoke", control_request=request)
             return response
 
-        @porter_flask_control.route("/retrieve_cfrags", methods=['POST'])
+        @porter_flask_control.route("/retrieve_cfrags", methods=["POST"])
         @by_path_counter
         def retrieve_cfrags() -> Response:
             """Porter control endpoint for executing a PRE work order on behalf of Bob."""
-            response = controller(method_name='retrieve_cfrags', control_request=request)
+            response = controller(
+                method_name="retrieve_cfrags", control_request=request
+            )
             return response
 
         @porter_flask_control.route("/decrypt", methods=["POST"])
@@ -512,11 +519,13 @@ class Porter(Learner):
             response = controller(method_name="decrypt", control_request=request)
             return response
 
-        @porter_flask_control.route('/bucket_sampling', methods=['GET'])
+        @porter_flask_control.route("/bucket_sampling", methods=["GET"])
         @by_path_counter
         def bucket_sampling() -> Response:
             """Porter control endpoint for sampling Ursulas with provider caps (a.k.a. bucket sampling)"""
-            response = controller(method_name='bucket_sampling', control_request=request)
+            response = controller(
+                method_name="bucket_sampling", control_request=request
+            )
             return response
 
         return controller

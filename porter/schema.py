@@ -3,7 +3,7 @@ from marshmallow import INCLUDE, Schema, validates_schema
 from marshmallow import fields as marshmallow_fields
 
 from porter.cli.types import EIP55_CHECKSUM_ADDRESS
-from porter.fields.base import Integer, JSON, PositiveInteger, StringList
+from porter.fields.base import JSON, Integer, PositiveInteger, StringList
 from porter.fields.exceptions import InvalidArgumentCombo, InvalidInputData
 from porter.fields.retrieve import CapsuleFrag, RetrievalKit
 from porter.fields.taco import (
@@ -292,10 +292,13 @@ class BucketSampling(BaseSchema):
         required=True,
         load_only=True,
         click=click.option(
-            '--quantity',
-            '-n',
+            "--quantity",
+            "-n",
             help="Total number of Ursulas needed",
-            type=click.INT, required=True))
+            type=click.INT,
+            required=True,
+        )
+    )
 
     # optional
     random_seed = Integer(
@@ -312,15 +315,17 @@ class BucketSampling(BaseSchema):
     exclude_ursulas = StringList(
         UrsulaChecksumAddress(),
         click=click.option(
-            '--exclude-ursula',
-            '-e',
+            "--exclude-ursula",
+            "-e",
             help="Ursula checksum address to exclude from sample",
             multiple=True,
             type=EIP55_CHECKSUM_ADDRESS,
             required=False,
-            default=[]),
+            default=[],
+        ),
         required=False,
-        load_only=True)
+        load_only=True,
+    )
 
     timeout = PositiveInteger(
         required=False,
