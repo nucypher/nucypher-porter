@@ -295,7 +295,7 @@ class Porter(Learner):
         if self.domain != MAINNET:
             raise ValueError("Bucket sampling is only for TACo Mainnet")
 
-        class BucketStakingProvidersReservoir:
+        class RandomizedStakingProvidersReservoir:
             def __init__(
                 self,
                 staking_providers: Sequence[ChecksumAddress],
@@ -333,7 +333,7 @@ class Porter(Learner):
                 f"Insufficient nodes ({len(sp_map)}) from which to sample {quantity}"
             )
 
-        reservoir = BucketStakingProvidersReservoir(list(sp_map), random_seed)
+        reservoir = RandomizedStakingProvidersReservoir(list(sp_map), random_seed)
 
         class BucketPrefetchStrategy:
             BUCKET_CAP = 2
