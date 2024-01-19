@@ -341,4 +341,4 @@ class BucketSampling(BaseSchema):
 
     # output
     ursulas = marshmallow_fields.List(UrsulaChecksumAddress, dump_only=True)
-    block_number = marshmallow_fields.Int()
+    block_number = marshmallow_fields.Int(dump_only=True)
