@@ -93,3 +93,21 @@ class PorterInterface(ControlInterface):
         )
         response_data = {"decryption_results": decrypt_outcome}
         return response_data
+
+    @attach_schema(schema.BucketSampling)
+    def bucket_sampling(
+        self,
+        quantity: int,
+        random_seed: Optional[int] = None,
+        exclude_ursulas: Optional[List[ChecksumAddress]] = None,
+        timeout: Optional[int] = None,
+    ) -> Dict:
+        ursulas, block_number = self.implementer.bucket_sampling(
+            quantity=quantity,
+            random_seed=random_seed,
+            exclude_ursulas=exclude_ursulas,
+            timeout=timeout,
+        )
+
+        response_data = {"ursulas": ursulas, "block_number": block_number}
+        return response_data
