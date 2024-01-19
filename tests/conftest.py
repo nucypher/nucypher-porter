@@ -359,6 +359,13 @@ def dkg_setup(
     )
     coordinator_agent.is_encryption_authorized.return_value = True
 
+    def mock_get_provider_public_key(provider, ritual_id):
+        for ursula in ursulas:
+            if ursula.checksum_address == provider:
+                return ursula.public_keys(RitualisticPower)
+
+    coordinator_agent.get_provider_public_key = mock_get_provider_public_key
+
     return ritual_id, public_key, cohort, threshold
 
 
