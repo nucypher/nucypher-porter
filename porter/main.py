@@ -58,6 +58,8 @@ class Porter(Learner):
     _LONG_LEARNING_DELAY = 30
     _ROUNDS_WITHOUT_NODES_AFTER_WHICH_TO_SLOW_DOWN = 25
 
+    _ALLOWED_DOMAINS_FOR_BUCKET_SAMPLING = (MAINNET, )
+
     DEFAULT_PORT = 9155
 
     MAX_GET_URSULAS_TIMEOUT = os.getenv("PORTER_MAX_GET_URSULAS_TIMEOUT", default=15)
@@ -293,7 +295,7 @@ class Porter(Learner):
             "sampling", timeout, self.MAX_GET_URSULAS_TIMEOUT
         )
 
-        if self.domain != MAINNET:
+        if self.domain not in self._ALLOWED_DOMAINS_FOR_BUCKET_SAMPLING:
             raise ValueError("Bucket sampling is only for TACo Mainnet")
 
         class RandomizedStakingProvidersReservoir:
