@@ -297,7 +297,7 @@ class BucketSampling(BaseSchema):
             help="Total number of Ursulas needed",
             type=click.INT,
             required=True,
-        )
+        ),
     )
 
     # optional
