@@ -3,7 +3,7 @@ from marshmallow import INCLUDE, Schema, validates_schema
 from marshmallow import fields as marshmallow_fields
 
 from porter.cli.types import EIP55_CHECKSUM_ADDRESS
-from porter.fields.base import JSON, PositiveInteger, StringList
+from porter.fields.base import JSON, Integer, PositiveInteger, StringList
 from porter.fields.exceptions import InvalidArgumentCombo, InvalidInputData
 from porter.fields.retrieve import CapsuleFrag, RetrievalKit
 from porter.fields.taco import (
@@ -285,3 +285,60 @@ class Decrypt(BaseSchema):
             raise InvalidArgumentCombo(
                 "Number of provided requests must be >= the expected threshold"
             )
+
+
+class BucketSampling(BaseSchema):
+    quantity = PositiveInteger(
+        required=True,
+        load_only=True,
+        click=click.option(
+            "--quantity",
+            "-n",
+            help="Total number of Ursulas needed",
+            type=click.INT,
+            required=True,
+        ),
+    )
+
+    # optional
+    random_seed = Integer(
+        required=False,
+        load_only=True,
+        click=click.option(
+            "--seed",
+            help="Random seed for sampling",
+            type=click.INT,
+            required=False,
+        ),
+    )
+
+    exclude_ursulas = StringList(
+        UrsulaChecksumAddress(),
+        click=click.option(
+            "--exclude-ursula",
+            "-e",
+            help="Ursula checksum address to exclude from sample",
+            multiple=True,
+            type=EIP55_CHECKSUM_ADDRESS,
+            required=False,
+            default=[],
+        ),
+        required=False,
+        load_only=True,
+    )
+
+    timeout = PositiveInteger(
+        required=False,
+        load_only=True,
+        click=click.option(
+            "--timeout",
+            "-t",
+            help="Timeout for getting the required quantity of ursulas",
+            type=click.INT,
+            required=False,
+        ),
+    )
+
+    # output
+    ursulas = marshmallow_fields.List(UrsulaChecksumAddress, dump_only=True)
+    block_number = marshmallow_fields.Int(dump_only=True)
