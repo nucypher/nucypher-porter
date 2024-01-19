@@ -19,7 +19,7 @@ __pycache__
 .env
 .python-version
 *.log
-
+.build
 # Coverage
 .coverage
 coverage.*
