@@ -34,6 +34,7 @@ from nucypher_core import (
 from nucypher_core.umbral import PublicKey
 from prometheus_flask_exporter import PrometheusMetrics
 
+import porter
 from porter.controllers import PorterCLIController, WebController
 from porter.interfaces import PorterInterface
 
@@ -458,8 +459,9 @@ class Porter(Learner):
         self._setup_prometheus(porter_flask_control)
 
         # static information as metric
-
-        self.controller.metrics.info("app_info", "Application info", version="1.0.3")
+        self.controller.metrics.info(
+            "app_info", "Porter Application info", version=porter.__version__
+        )
         by_path_counter = controller.metrics.counter(
             "by_path_counter",
             "Request count by request paths",
