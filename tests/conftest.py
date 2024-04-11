@@ -16,6 +16,7 @@ from nucypher.blockchain.eth.agents import (
     TACoChildApplicationAgent,
 )
 from nucypher.blockchain.eth.interfaces import BlockchainInterfaceFactory
+from nucypher.blockchain.eth.models import Coordinator, Ferveo
 from nucypher.blockchain.eth.registry import ContractRegistry
 from nucypher.blockchain.eth.signers.software import Web3Signer
 from nucypher.characters.lawful import Enrico, Ursula
@@ -35,7 +36,6 @@ from tests.constants import (
     TEMPORARY_DOMAIN,
     TESTERCHAIN_CHAIN_ID,
 )
-from tests.mock.agents import MockContractAgent
 from tests.mock.interfaces import MockBlockchain
 from tests.utils.registry import MockRegistrySource, mock_registry_sources
 
@@ -159,7 +159,7 @@ def mock_contract_agency():
 
 
 @pytest.fixture(scope="module")
-def coordinator_agent(mock_contract_agency) -> MockContractAgent:
+def coordinator_agent(mock_contract_agency):
     coordinator_agent = mock_contract_agency.get_agent(
         CoordinatorAgent, registry=None, provider_uri=None  # parameters don't matter
     )
@@ -307,10 +307,6 @@ def dkg_setup(
         )
         transcripts.append(transcript)
 
-        cohort[i].dkg_storage.store_transcript(
-            ritual_id=ritual_id, transcript=transcript
-        )
-
     aggregated_transcript, public_key = dkg.aggregate_transcripts(
         ritual_id=ritual_id,
         me=validators[0],
@@ -319,14 +315,9 @@ def dkg_setup(
         transcripts=list(zip(validators, transcripts)),
     )
 
-    for ursula in cohort:
-        ursula.dkg_storage.store_aggregated_transcript(
-            ritual_id=ritual_id, aggregated_transcript=aggregated_transcript
-        )
-        ursula.dkg_storage.store_public_key(ritual_id=ritual_id, public_key=public_key)
-
     now = maya.now()
-    ritual = CoordinatorAgent.Ritual(
+    ritual = Coordinator.Ritual(
+        id=ritual_id,
         initiator=get_random_checksum_address(),
         authority=get_random_checksum_address(),
         access_controller=get_random_checksum_address(),
@@ -336,11 +327,11 @@ def dkg_setup(
         threshold=threshold,
         total_transcripts=num_shares,
         total_aggregations=num_shares,
-        public_key=CoordinatorAgent.Ritual.G1Point.from_dkg_public_key(public_key),
+        public_key=Ferveo.G1Point.from_dkg_public_key(public_key),
         aggregation_mismatch=False,
         aggregated_transcript=bytes(aggregated_transcript),
         participants=[
-            CoordinatorAgent.Ritual.Participant(
+            Coordinator.Participant(
                 provider=ursula.checksum_address,
                 aggregated=True,
                 transcript=bytes(transcripts[i]),
@@ -352,11 +343,13 @@ def dkg_setup(
         ],
     )
 
+    for ursula in cohort:
+        ursula.dkg_storage.store_validators(ritual_id, validators)
+        ursula.dkg_storage.store_active_ritual(ritual)
+
     # Configure CoordinatorAgent
-    coordinator_agent.get_ritual.return_value = ritual
-    coordinator_agent.get_ritual_status.return_value = (
-        CoordinatorAgent.Ritual.Status.ACTIVE
-    )
+    coordinator_agent.__rituals.return_value = ritual
+    coordinator_agent.get_ritual_status.return_value = Coordinator.RitualStatus.ACTIVE
     coordinator_agent.is_encryption_authorized.return_value = True
 
     def mock_get_provider_public_key(provider, ritual_id):
