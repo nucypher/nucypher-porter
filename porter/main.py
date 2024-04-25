@@ -158,12 +158,14 @@ class Porter(Learner):
         exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
         include_ursulas: Optional[Sequence[ChecksumAddress]] = None,
         timeout: Optional[int] = None,
+        duration: Optional[int] = None,
     ) -> List[UrsulaInfo]:
         timeout = self._configure_timeout(
             "sampling", timeout, self.MAX_GET_URSULAS_TIMEOUT
         )
+        duration = duration or 0
 
-        reservoir = self._make_reservoir(exclude_ursulas, include_ursulas)
+        reservoir = self._make_reservoir(exclude_ursulas, include_ursulas, duration)
         available_nodes_to_sample = len(reservoir.values) + len(reservoir.reservoir)
         if available_nodes_to_sample < quantity:
             raise ValueError(
@@ -278,11 +280,13 @@ class Porter(Learner):
         self,
         exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
         include_ursulas: Optional[Sequence[ChecksumAddress]] = None,
+        duration: Optional[int] = 0,
     ):
         return make_staking_provider_reservoir(
             application_agent=self.taco_child_application_agent,
             exclude_addresses=exclude_ursulas,
             include_addresses=include_ursulas,
+            duration=duration,
         )
 
     def bucket_sampling(

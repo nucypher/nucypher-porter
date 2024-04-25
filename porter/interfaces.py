@@ -39,12 +39,14 @@ class PorterInterface(ControlInterface):
         exclude_ursulas: Optional[List[ChecksumAddress]] = None,
         include_ursulas: Optional[List[ChecksumAddress]] = None,
         timeout: Optional[int] = None,
+        duration: Optional[int] = None,
     ) -> Dict:
         ursulas_info = self.implementer.get_ursulas(
             quantity=quantity,
             exclude_ursulas=exclude_ursulas,
             include_ursulas=include_ursulas,
             timeout=timeout,
+            duration=duration,
         )
 
         response_data = {"ursulas": ursulas_info}  # list of UrsulaInfo objects
