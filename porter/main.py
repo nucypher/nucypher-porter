@@ -295,10 +295,12 @@ class Porter(Learner):
         random_seed: Optional[int] = None,
         exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
         timeout: Optional[int] = None,
-    ) -> Tuple[List[UrsulaInfo], int]:
+        duration: Optional[int] = None,
+    ) -> Tuple[List[ChecksumAddress], int]:
         timeout = self._configure_timeout(
             "sampling", timeout, self.MAX_GET_URSULAS_TIMEOUT
         )
+        duration = duration or 0
 
         if self.domain not in self._ALLOWED_DOMAINS_FOR_BUCKET_SAMPLING:
             raise ValueError("Bucket sampling is only for TACo Mainnet")
@@ -334,7 +336,9 @@ class Porter(Learner):
                     return None
 
         block_number = self.taco_child_application_agent.blockchain.client.block_number
-        _, sp_map = self.taco_child_application_agent.get_all_active_staking_providers()
+        _, sp_map = self.taco_child_application_agent.get_all_active_staking_providers(
+            duration=duration
+        )
         for e in exclude_ursulas or []:
             if e in sp_map:
                 del sp_map[e]

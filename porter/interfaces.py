@@ -103,12 +103,14 @@ class PorterInterface(ControlInterface):
         random_seed: Optional[int] = None,
         exclude_ursulas: Optional[List[ChecksumAddress]] = None,
         timeout: Optional[int] = None,
+        duration: Optional[int] = None,
     ) -> Dict:
         ursulas, block_number = self.implementer.bucket_sampling(
             quantity=quantity,
             random_seed=random_seed,
             exclude_ursulas=exclude_ursulas,
             timeout=timeout,
+            duration=duration,
         )
 
         response_data = {"ursulas": ursulas, "block_number": block_number}

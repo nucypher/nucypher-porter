@@ -357,6 +357,18 @@ class BucketSampling(BaseSchema):
         ),
     )
 
+    duration = NonNegativeInteger(
+        required=False,
+        load_only=True,
+        click=click.option(
+            "--duration",
+            "-d",
+            help="Minimum duration, in seconds, for which the node should be actively staking",
+            type=click.INT,
+            required=False,
+        ),
+    )
+
     # output
     ursulas = marshmallow_fields.List(UrsulaChecksumAddress, dump_only=True)
     block_number = marshmallow_fields.Int(dump_only=True)
