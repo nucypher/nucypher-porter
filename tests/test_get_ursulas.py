@@ -32,6 +32,17 @@ def test_get_ursulas_schema(get_random_checksum_address):
 
     # optional components
 
+    # only duration
+    updated_data = dict(required_data)
+    updated_data["duration"] = 0
+    GetUrsulas().load(updated_data)
+
+    updated_data["duration"] = 60 * 60 * 24
+    GetUrsulas().load(updated_data)
+
+    updated_data["duration"] = 60 * 60 * 365
+    GetUrsulas().load(updated_data)
+
     # only exclude
     updated_data = dict(required_data)
     exclude_ursulas = []
@@ -146,6 +157,20 @@ def test_get_ursulas_schema(get_random_checksum_address):
         updated_data["timeout"] = -1
         GetUrsulas().load(updated_data)
 
+    # invalid duration value
+    with pytest.raises(InvalidInputData):
+        updated_data = dict(required_data)
+        updated_data["exclude_ursulas"] = exclude_ursulas
+        updated_data["duration"] = "some number"
+        GetUrsulas().load(updated_data)
+
+    with pytest.raises(InvalidInputData):
+        updated_data = dict(required_data)
+        updated_data["exclude_ursulas"] = exclude_ursulas
+        updated_data["include_ursulas"] = include_ursulas
+        updated_data["duration"] = -1
+        GetUrsulas().load(updated_data)
+
     #
     # Output i.e. dump
     #
@@ -172,6 +197,14 @@ def test_get_ursulas_python_interface(porter, ursulas, timeout):
     # simple
     quantity = 4
     ursulas_info = porter.get_ursulas(quantity=quantity)
+    returned_ursula_addresses = {
+        ursula_info.checksum_address for ursula_info in ursulas_info
+    }
+    assert len(returned_ursula_addresses) == quantity  # ensure no repeats
+
+    # simple with duration
+    quantity = 4
+    ursulas_info = porter.get_ursulas(quantity=quantity, duration=60 * 60 * 24)
     returned_ursula_addresses = {
         ursula_info.checksum_address for ursula_info in ursulas_info
     }
@@ -261,6 +294,7 @@ def test_get_ursulas_web_interface(porter_web_controller, ursulas, timeout):
         "quantity": quantity,
         "include_ursulas": include_ursulas,
         "exclude_ursulas": exclude_ursulas,
+        "duration": 60 * 60 * 24 * 365,
     }
 
     if timeout:
@@ -292,6 +326,7 @@ def test_get_ursulas_web_interface(porter_web_controller, ursulas, timeout):
         f"/get_ursulas?quantity={quantity}"
         f'&include_ursulas={",".join(include_ursulas)}'
         f'&exclude_ursulas={",".join(exclude_ursulas)}'
+        f"&duration={60*60*24}"
     )
     if timeout:
         query_params += f"&timeout={timeout}"
