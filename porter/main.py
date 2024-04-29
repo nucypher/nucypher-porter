@@ -64,6 +64,9 @@ class Porter(Learner):
     DEFAULT_PORT = 9155
 
     MAX_GET_URSULAS_TIMEOUT = os.getenv("PORTER_MAX_GET_URSULAS_TIMEOUT", default=15)
+    MAX_BUCKET_SAMPLING_TIMEOUT = os.getenv(
+        "PORTER_MAX_BUCKET_SAMPLING_TIMEOUT", default=25
+    )
     MAX_DECRYPTION_TIMEOUT = os.getenv(
         "PORTER_MAX_DECRYPTION_TIMEOUT",
         default=ThresholdDecryptionClient.DEFAULT_DECRYPTION_TIMEOUT,
@@ -298,7 +301,7 @@ class Porter(Learner):
         duration: Optional[int] = None,
     ) -> Tuple[List[ChecksumAddress], int]:
         timeout = self._configure_timeout(
-            "sampling", timeout, self.MAX_GET_URSULAS_TIMEOUT
+            "bucket_sampling", timeout, self.MAX_BUCKET_SAMPLING_TIMEOUT
         )
         duration = duration or 0
 
@@ -431,7 +434,7 @@ class Porter(Learner):
             value_factory=value_factory,
             target_successes=quantity,
             timeout=timeout,
-            stagger_timeout=10,  # TODO: Reduce it when we have a timeout for pings
+            stagger_timeout=4,  # default connection timeout for middleware calls (incl. pings) is 3s
         )
         worker_pool.start()
         try:
