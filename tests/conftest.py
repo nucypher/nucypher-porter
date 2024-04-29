@@ -128,14 +128,14 @@ def test_registry(module_mocker):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def staking_providers(testerchain, test_registry, monkeymodule):
+def staking_providers(accounts, test_registry, monkeymodule):
     def faked(self, *args, **kwargs):
-        return testerchain.stake_providers_accounts[
-            testerchain.ursulas_accounts.index(self.transacting_power.account)
-        ]
+        return accounts.staking_provider_account(
+            accounts.ursulas_accounts.index(self.transacting_power.account)
+        )
 
     Operator.get_staking_provider_address = faked
-    return testerchain.stake_providers_accounts
+    return accounts.staking_providers_accounts
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -174,13 +174,13 @@ def mock_condition_provider_configuration(module_mocker, testerchain):
 
 
 @pytest.fixture(scope="module")
-def excluded_staker_address_for_duration_greater_than_0(testerchain):
-    yield testerchain.stake_providers_accounts[0]
+def excluded_staker_address_for_duration_greater_than_0(accounts):
+    yield accounts.staking_provider_account(0)
 
 
 @pytest.fixture(scope="module", autouse=True)
 def mock_sample_reservoir(
-    testerchain,
+    accounts,
     mock_contract_agency,
     excluded_staker_address_for_duration_greater_than_0,
 ):
@@ -191,7 +191,7 @@ def mock_sample_reservoir(
         **kwargs
     ):
         addresses = dict()
-        for address in testerchain.stake_providers_accounts:
+        for address in accounts.staking_providers_accounts:
             if address in without:
                 continue
             if (
@@ -209,13 +209,13 @@ def mock_sample_reservoir(
 
 @pytest.fixture(scope="module", autouse=True)
 def mock_get_all_active_staking_providers(
-    testerchain,
+    accounts,
     mock_contract_agency,
     excluded_staker_address_for_duration_greater_than_0,
 ):
     def get_all_active_staking_providers(duration):
         addresses = dict()
-        for address in testerchain.stake_providers_accounts:
+        for address in accounts.staking_providers_accounts:
             if (
                 duration > 0
                 and address == excluded_staker_address_for_duration_greater_than_0

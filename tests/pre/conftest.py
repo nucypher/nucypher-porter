@@ -9,13 +9,13 @@ from nucypher.blockchain.eth.agents import (
 
 
 @pytest.fixture(scope="module", autouse=True)
-def mock_sample_reservoir(testerchain, mock_contract_agency):
+def mock_sample_reservoir(accounts, mock_contract_agency):
     def mock_reservoir(
         without: Optional[Iterable[ChecksumAddress]] = None, *args, **kwargs
     ):
         addresses = {
             address: 1
-            for address in testerchain.stake_providers_accounts
+            for address in accounts.staking_providers_accounts
             if address not in without
         }
         return StakingProvidersReservoir(addresses)

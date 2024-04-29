@@ -149,7 +149,7 @@ def test_bucket_sampling_schema(get_random_checksum_address):
 
 
 def test_bucket_sampling_python_interface(
-    porter, ursulas, testerchain, excluded_staker_address_for_duration_greater_than_0
+    porter, ursulas, excluded_staker_address_for_duration_greater_than_0
 ):
     porter._ALLOWED_DOMAINS_FOR_BUCKET_SAMPLING = (TEMPORARY_DOMAIN,)
 
