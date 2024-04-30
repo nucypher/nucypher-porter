@@ -64,6 +64,9 @@ class Porter(Learner):
     DEFAULT_PORT = 9155
 
     MAX_GET_URSULAS_TIMEOUT = os.getenv("PORTER_MAX_GET_URSULAS_TIMEOUT", default=15)
+    MAX_BUCKET_SAMPLING_TIMEOUT = os.getenv(
+        "PORTER_MAX_BUCKET_SAMPLING_TIMEOUT", default=25
+    )
     MAX_DECRYPTION_TIMEOUT = os.getenv(
         "PORTER_MAX_DECRYPTION_TIMEOUT",
         default=ThresholdDecryptionClient.DEFAULT_DECRYPTION_TIMEOUT,
@@ -158,12 +161,14 @@ class Porter(Learner):
         exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
         include_ursulas: Optional[Sequence[ChecksumAddress]] = None,
         timeout: Optional[int] = None,
+        duration: Optional[int] = None,
     ) -> List[UrsulaInfo]:
         timeout = self._configure_timeout(
             "sampling", timeout, self.MAX_GET_URSULAS_TIMEOUT
         )
+        duration = duration or 0
 
-        reservoir = self._make_reservoir(exclude_ursulas, include_ursulas)
+        reservoir = self._make_reservoir(exclude_ursulas, include_ursulas, duration)
         available_nodes_to_sample = len(reservoir.values) + len(reservoir.reservoir)
         if available_nodes_to_sample < quantity:
             raise ValueError(
@@ -278,11 +283,13 @@ class Porter(Learner):
         self,
         exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
         include_ursulas: Optional[Sequence[ChecksumAddress]] = None,
+        duration: Optional[int] = 0,
     ):
         return make_staking_provider_reservoir(
             application_agent=self.taco_child_application_agent,
             exclude_addresses=exclude_ursulas,
             include_addresses=include_ursulas,
+            duration=duration,
         )
 
     def bucket_sampling(
@@ -291,10 +298,12 @@ class Porter(Learner):
         random_seed: Optional[int] = None,
         exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
         timeout: Optional[int] = None,
-    ) -> Tuple[List[UrsulaInfo], int]:
+        duration: Optional[int] = None,
+    ) -> Tuple[List[ChecksumAddress], int]:
         timeout = self._configure_timeout(
-            "sampling", timeout, self.MAX_GET_URSULAS_TIMEOUT
+            "bucket_sampling", timeout, self.MAX_BUCKET_SAMPLING_TIMEOUT
         )
+        duration = duration or 0
 
         if self.domain not in self._ALLOWED_DOMAINS_FOR_BUCKET_SAMPLING:
             raise ValueError("Bucket sampling is only for TACo Mainnet")
@@ -330,7 +339,9 @@ class Porter(Learner):
                     return None
 
         block_number = self.taco_child_application_agent.blockchain.client.block_number
-        _, sp_map = self.taco_child_application_agent.get_all_active_staking_providers()
+        _, sp_map = self.taco_child_application_agent.get_all_active_staking_providers(
+            duration=duration
+        )
         for e in exclude_ursulas or []:
             if e in sp_map:
                 del sp_map[e]
@@ -423,7 +434,7 @@ class Porter(Learner):
             value_factory=value_factory,
             target_successes=quantity,
             timeout=timeout,
-            stagger_timeout=10,  # TODO: Reduce it when we have a timeout for pings
+            stagger_timeout=4,  # default connection timeout for middleware calls (incl. pings) is 3s
         )
         worker_pool.start()
         try:

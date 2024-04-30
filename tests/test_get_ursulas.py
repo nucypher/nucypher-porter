@@ -32,6 +32,17 @@ def test_get_ursulas_schema(get_random_checksum_address):
 
     # optional components
 
+    # only duration
+    updated_data = dict(required_data)
+    updated_data["duration"] = 0
+    GetUrsulas().load(updated_data)
+
+    updated_data["duration"] = 60 * 60 * 24
+    GetUrsulas().load(updated_data)
+
+    updated_data["duration"] = 60 * 60 * 365
+    GetUrsulas().load(updated_data)
+
     # only exclude
     updated_data = dict(required_data)
     exclude_ursulas = []
@@ -146,6 +157,20 @@ def test_get_ursulas_schema(get_random_checksum_address):
         updated_data["timeout"] = -1
         GetUrsulas().load(updated_data)
 
+    # invalid duration value
+    with pytest.raises(InvalidInputData):
+        updated_data = dict(required_data)
+        updated_data["exclude_ursulas"] = exclude_ursulas
+        updated_data["duration"] = "some number"
+        GetUrsulas().load(updated_data)
+
+    with pytest.raises(InvalidInputData):
+        updated_data = dict(required_data)
+        updated_data["exclude_ursulas"] = exclude_ursulas
+        updated_data["include_ursulas"] = include_ursulas
+        updated_data["duration"] = -1
+        GetUrsulas().load(updated_data)
+
     #
     # Output i.e. dump
     #
@@ -168,7 +193,14 @@ def test_get_ursulas_schema(get_random_checksum_address):
 
 
 @pytest.mark.parametrize("timeout", [None, 15, 20])
-def test_get_ursulas_python_interface(porter, ursulas, timeout):
+@pytest.mark.parametrize("duration", [None, 0, 60 * 60 * 24, 60 * 60 * 24 * 365])
+def test_get_ursulas_python_interface(
+    porter,
+    ursulas,
+    timeout,
+    duration,
+    excluded_staker_address_for_duration_greater_than_0,
+):
     # simple
     quantity = 4
     ursulas_info = porter.get_ursulas(quantity=quantity)
@@ -177,12 +209,25 @@ def test_get_ursulas_python_interface(porter, ursulas, timeout):
     }
     assert len(returned_ursula_addresses) == quantity  # ensure no repeats
 
+    # simple with duration
+    quantity = 4
+    ursulas_info = porter.get_ursulas(quantity=quantity, duration=duration)
+    returned_ursula_addresses = {
+        ursula_info.checksum_address for ursula_info in ursulas_info
+    }
+    assert len(returned_ursula_addresses) == quantity  # ensure no repeats
+    if duration is not None and duration > 0:
+        assert (
+            excluded_staker_address_for_duration_greater_than_0
+            not in returned_ursula_addresses
+        )
+
     ursulas_list = list(ursulas)
 
     # include specific ursulas
     include_ursulas = [
-        ursulas_list[0].checksum_address,
         ursulas_list[1].checksum_address,
+        ursulas_list[2].checksum_address,
     ]
     ursulas_info = porter.get_ursulas(
         quantity=quantity, include_ursulas=include_ursulas, timeout=timeout
@@ -211,12 +256,12 @@ def test_get_ursulas_python_interface(porter, ursulas, timeout):
 
     # include and exclude
     include_ursulas = [
-        ursulas_list[0].checksum_address,
         ursulas_list[1].checksum_address,
+        ursulas_list[2].checksum_address,
     ]
     exclude_ursulas = [
-        ursulas_list[2].checksum_address,
         ursulas_list[3].checksum_address,
+        ursulas_list[4].checksum_address,
     ]
     ursulas_info = porter.get_ursulas(
         quantity=quantity,
@@ -239,7 +284,14 @@ def test_get_ursulas_python_interface(porter, ursulas, timeout):
 
 
 @pytest.mark.parametrize("timeout", [None, 10, 20])
-def test_get_ursulas_web_interface(porter_web_controller, ursulas, timeout):
+@pytest.mark.parametrize("duration", [None, 0, 60 * 60 * 24, 60 * 60 * 24 * 365])
+def test_get_ursulas_web_interface(
+    porter_web_controller,
+    ursulas,
+    timeout,
+    duration,
+    excluded_staker_address_for_duration_greater_than_0,
+):
     # Send bad data to assert error return
     response = porter_web_controller.get(
         "/get_ursulas", data=json.dumps({"bad": "input"})
@@ -249,22 +301,26 @@ def test_get_ursulas_web_interface(porter_web_controller, ursulas, timeout):
     quantity = 4
     ursulas_list = list(ursulas)
     include_ursulas = [
-        ursulas_list[0].checksum_address,
         ursulas_list[1].checksum_address,
+        ursulas_list[2].checksum_address,
     ]
     exclude_ursulas = [
-        ursulas_list[2].checksum_address,
         ursulas_list[3].checksum_address,
+        ursulas_list[4].checksum_address,
     ]
 
     get_ursulas_params = {
         "quantity": quantity,
         "include_ursulas": include_ursulas,
         "exclude_ursulas": exclude_ursulas,
+        "duration": 60 * 60 * 24 * 365,
     }
 
     if timeout:
         get_ursulas_params["timeout"] = timeout
+
+    if duration:
+        get_ursulas_params["duration"] = duration
 
     #
     # Success
@@ -284,6 +340,11 @@ def test_get_ursulas_web_interface(porter_web_controller, ursulas, timeout):
         assert address in returned_ursula_addresses
     for address in exclude_ursulas:
         assert address not in returned_ursula_addresses
+    if duration and duration > 0:
+        assert (
+            excluded_staker_address_for_duration_greater_than_0
+            not in returned_ursula_addresses
+        )
 
     #
     # Test Query parameters
@@ -295,6 +356,9 @@ def test_get_ursulas_web_interface(porter_web_controller, ursulas, timeout):
     )
     if timeout:
         query_params += f"&timeout={timeout}"
+
+    if duration:
+        query_params += f"&duration={duration}"
 
     response = porter_web_controller.get(query_params)
     assert response.status_code == 200
@@ -308,6 +372,11 @@ def test_get_ursulas_web_interface(porter_web_controller, ursulas, timeout):
         assert address in returned_ursula_addresses
     for address in exclude_ursulas:
         assert address not in returned_ursula_addresses
+    if duration and duration > 0:
+        assert (
+            excluded_staker_address_for_duration_greater_than_0
+            not in returned_ursula_addresses
+        )
 
     #
     # Failure case: too many ursulas requested

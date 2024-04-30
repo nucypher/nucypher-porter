@@ -3,7 +3,13 @@ from marshmallow import INCLUDE, Schema, validates_schema
 from marshmallow import fields as marshmallow_fields
 
 from porter.cli.types import EIP55_CHECKSUM_ADDRESS
-from porter.fields.base import JSON, Integer, PositiveInteger, StringList
+from porter.fields.base import (
+    JSON,
+    Integer,
+    NonNegativeInteger,
+    PositiveInteger,
+    StringList,
+)
 from porter.fields.exceptions import InvalidArgumentCombo, InvalidInputData
 from porter.fields.retrieve import CapsuleFrag, RetrievalKit
 from porter.fields.taco import (
@@ -102,6 +108,18 @@ class GetUrsulas(BaseSchema):
             "--timeout",
             "-t",
             help="Timeout for getting the required quantity of ursulas",
+            type=click.INT,
+            required=False,
+        ),
+    )
+
+    duration = NonNegativeInteger(
+        required=False,
+        load_only=True,
+        click=click.option(
+            "--duration",
+            "-d",
+            help="Minimum duration, in seconds, for which the node should be actively staking",
             type=click.INT,
             required=False,
         ),
@@ -334,6 +352,18 @@ class BucketSampling(BaseSchema):
             "--timeout",
             "-t",
             help="Timeout for getting the required quantity of ursulas",
+            type=click.INT,
+            required=False,
+        ),
+    )
+
+    duration = NonNegativeInteger(
+        required=False,
+        load_only=True,
+        click=click.option(
+            "--duration",
+            "-d",
+            help="Minimum duration, in seconds, for which the node should be actively staking",
             type=click.INT,
             required=False,
         ),
