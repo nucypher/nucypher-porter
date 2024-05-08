@@ -53,6 +53,12 @@ class PositiveInteger(Integer):
             raise InvalidInputData(f"{self.name} must be a positive integer.")
 
 
+class NonNegativeInteger(Integer):
+    def _validate(self, value):
+        if value < 0:
+            raise InvalidInputData(f"{self.name} must be a non-negative integer.")
+
+
 class Base64BytesRepresentation(BaseField, fields.Field):
     """Serializes/Deserializes any object's byte representation to/from bae64."""
     def _serialize(self, value, attr, obj, **kwargs):

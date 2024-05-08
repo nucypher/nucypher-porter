@@ -10,19 +10,18 @@ from nucypher_core import (
     EncryptedThresholdDecryptionRequest,
     EncryptedThresholdDecryptionResponse,
     MessageKit,
-)
-from nucypher_core import RetrievalKit as RetrievalKitClass
-from nucypher_core import (
     SessionStaticSecret,
     ThresholdDecryptionRequest,
     ThresholdDecryptionResponse,
 )
+from nucypher_core import RetrievalKit as RetrievalKitClass
 from nucypher_core.ferveo import FerveoVariant
 from nucypher_core.umbral import SecretKey
 
 from porter.fields.base import (
     JSON,
     Base64BytesRepresentation,
+    NonNegativeInteger,
     PositiveInteger,
     String,
     StringList,
@@ -164,6 +163,22 @@ def test_positive_integer_field():
     field._validate(value=22)
 
     invalid_values = [0, -1, -2, -10, -1000000, -12312311]
+    for invalid_value in invalid_values:
+        with pytest.raises(InvalidInputData):
+            field._validate(value=invalid_value)
+
+
+def test_non_negative_integer_field():
+    field = NonNegativeInteger()
+
+    field._validate(value=0)
+    field._validate(value=1)
+    field._validate(value=60 * 60)
+    field._validate(value=60 * 60 * 24)
+    field._validate(value=60 * 60 * 24 * 182)
+    field._validate(value=60 * 60 * 24 * 365)
+
+    invalid_values = [-1, -2, -10, -1000000, -12312311]
     for invalid_value in invalid_values:
         with pytest.raises(InvalidInputData):
             field._validate(value=invalid_value)

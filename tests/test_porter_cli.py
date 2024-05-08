@@ -13,10 +13,11 @@ def teacher_uri(mocker, ursulas):
     teacher = list(ursulas)[0]
     teacher_uri = teacher.seed_node_metadata(as_teacher_uri=True)
     mocker.patch.object(Ursula, 'from_teacher_uri', return_value=teacher)
+    mocker.patch.object(teacher, "verify_node", return_value=True)
     yield teacher_uri
 
 
-def test_porter_cli_run_simple(click_runner, teacher_uri):
+def test_porter_cli_run_simple_default_port(click_runner, teacher_uri):
     porter_run_command = (
         "run",
         "--dry-run",
@@ -34,6 +35,9 @@ def test_porter_cli_run_simple(click_runner, teacher_uri):
     output = result.output
     assert f"Domain: {TEMPORARY_DOMAIN_NAME}" in output
     assert PORTER_RUN_MESSAGE.format(http_port=Porter.DEFAULT_PORT) in output
+
+
+def test_porter_cli_run_simple_non_default_port(click_runner, teacher_uri):
 
     # Non-default port
     non_default_port = select_test_port()
