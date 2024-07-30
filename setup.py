@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 from pathlib import Path
 from typing import Dict
 from urllib.parse import urlparse
 
-import sys
 from setuptools import find_packages, setup
 from setuptools.command.develop import develop
 from setuptools.command.install import install
@@ -28,6 +28,7 @@ PYPI_CLASSIFIERS = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Security",
 ]
 
