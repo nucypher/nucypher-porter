@@ -1,5 +1,3 @@
-version: '3'
-
 services:
   porter-http:
     restart: on-failure
