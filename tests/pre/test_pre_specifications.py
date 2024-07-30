@@ -3,6 +3,7 @@ import random
 
 import pytest
 from nucypher.crypto.powers import DecryptingPower
+from nucypher.policy.conditions.context import USER_ADDRESS_CONTEXT
 from nucypher_core import TreasureMap as TreasureMapClass
 from nucypher_core.umbral import PublicKey
 
@@ -30,7 +31,7 @@ def test_bob_retrieve_cfrags(
     enacted_policy,
     bob,
     alice,
-    valid_user_address_context,
+    valid_eip4361_auth_message,
     get_random_checksum_address,
 ):
     bob_retrieve_cfrags_schema = PRERetrieveCFrags()
@@ -45,13 +46,15 @@ def test_bob_retrieve_cfrags(
     )
     bob_retrieve_cfrags_schema.load(retrieval_args)
 
+    context = {USER_ADDRESS_CONTEXT: valid_eip4361_auth_message}
+
     # simple schema load w/ optional context
     retrieval_args, _ = retrieval_request_setup(
         enacted_policy,
         bob,
         alice,
         encode_for_rest=True,
-        context=valid_user_address_context,
+        context=context,
     )
     bob_retrieve_cfrags_schema.load(retrieval_args)
 
@@ -84,7 +87,7 @@ def test_bob_retrieve_cfrags(
         bob,
         alice,
         encode_for_rest=False,
-        context=valid_user_address_context,
+        context=context,
     )
     retrieval_outcomes = porter.retrieve_cfrags(**non_encoded_retrieval_args)
     expected_retrieval_results_json = []
@@ -134,7 +137,7 @@ def test_bob_retrieve_cfrags(
         bob,
         alice,
         encode_for_rest=False,
-        context=valid_user_address_context,
+        context=context,
         num_random_messages=num_retrieval_kits,
     )
     retrieval_outcomes = porter.retrieve_cfrags(**non_encoded_retrieval_args)
