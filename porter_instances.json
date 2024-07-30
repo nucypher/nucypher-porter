@@ -1,0 +1,5 @@
+{
+  "mainnet": ["https://porter.nucypher.community"],
+  "tapir": ["https://porter-tapir.nucypher.community"],
+  "lynx": ["https://porter-lynx.nucypher.community"]
+}
