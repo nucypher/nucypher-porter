@@ -13,7 +13,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.9"
+          python-version: "3.12"
 
       - name: Install dependencies
         run: |
@@ -22,4 +22,4 @@ jobs:
           pip install .
 
       - name: Lint with Ruff
-        run: ruff --output-format=github porter
+        run: ruff check --output-format=github porter
