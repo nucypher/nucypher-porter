@@ -1,5 +1,6 @@
 import json
 from base64 import b64decode, b64encode
+import re
 
 import click
 from marshmallow import fields
@@ -108,3 +109,20 @@ class JSON(BaseField, fields.Field):
                     f"Unexpected object type, {type(result)}; expected {self.expected_type}")
 
             return result
+
+
+class VersionString(String):
+
+    def _serialize(self, value, attr, obj, **kwargs) -> str:
+        if (type(value) is not list or len(value) == 0 or len(value) > 3):
+            raise InvalidInputData(
+                f"Unexpected object type, {type(value)}; expected list[3]")
+
+        return ".".join(value)
+
+    def _deserialize(self, value, attr, data, **kwargs) -> list:
+        pattern = r'(\d+\.)?(\d+\.)?(\d+)'
+        match = re.findall(pattern, value)
+        if len(match) != 1:
+            raise InvalidInputData("Minimum version must have x.x.x format")
+        return match[0]

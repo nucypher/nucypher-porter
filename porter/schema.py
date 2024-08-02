@@ -8,6 +8,7 @@ from porter.fields.base import (
     Integer,
     NonNegativeInteger,
     PositiveInteger,
+    VersionString,
     StringList,
 )
 from porter.fields.exceptions import InvalidArgumentCombo, InvalidInputData
@@ -121,6 +122,18 @@ class GetUrsulas(BaseSchema):
             "-d",
             help="Minimum duration, in seconds, for which the node should be actively staking",
             type=click.INT,
+            required=False,
+        ),
+    )
+
+    min_version = VersionString(
+        required=False,
+        load_only=True,
+        click=click.option(
+            "--min-version",
+            "-mv",
+            help="Minimum acceptable version of Ursula",
+            type=click.STRING,
             required=False,
         ),
     )
@@ -365,6 +378,18 @@ class BucketSampling(BaseSchema):
             "-d",
             help="Minimum duration, in seconds, for which the node should be actively staking",
             type=click.INT,
+            required=False,
+        ),
+    )
+
+    min_version = VersionString(
+        required=False,
+        load_only=True,
+        click=click.option(
+            "--min-version",
+            "-mv",
+            help="Minimum acceptable version of Ursula",
+            type=click.STRING,
             required=False,
         ),
     )

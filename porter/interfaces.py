@@ -40,6 +40,7 @@ class PorterInterface(ControlInterface):
         include_ursulas: Optional[List[ChecksumAddress]] = None,
         timeout: Optional[int] = None,
         duration: Optional[int] = None,
+        min_version: Optional[str] = None,
     ) -> Dict:
         ursulas_info = self.implementer.get_ursulas(
             quantity=quantity,
@@ -47,6 +48,7 @@ class PorterInterface(ControlInterface):
             include_ursulas=include_ursulas,
             timeout=timeout,
             duration=duration,
+            min_version=min_version,
         )
 
         response_data = {"ursulas": ursulas_info}  # list of UrsulaInfo objects
@@ -104,6 +106,7 @@ class PorterInterface(ControlInterface):
         exclude_ursulas: Optional[List[ChecksumAddress]] = None,
         timeout: Optional[int] = None,
         duration: Optional[int] = None,
+        min_version: Optional[str] = None,
     ) -> Dict:
         ursulas, block_number = self.implementer.bucket_sampling(
             quantity=quantity,
@@ -111,6 +114,7 @@ class PorterInterface(ControlInterface):
             exclude_ursulas=exclude_ursulas,
             timeout=timeout,
             duration=duration,
+            min_version=min_version,
         )
 
         response_data = {"ursulas": ursulas, "block_number": block_number}
