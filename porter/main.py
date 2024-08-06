@@ -158,13 +158,13 @@ class Porter(Learner):
 
     @staticmethod
     def _is_version_greater_or_equal(min_version: str, version: str) -> bool:
-        return parse(version) >= parse(min_version)
+        return parse(version) >= min_version
 
     def _get_ursula_version(self, ursula: Ursula) -> str:
         response = self.network_middleware.client.get(
             node_or_sprout=ursula, path="status", params={"json": "true"}
         )
-        return response["version"]
+        return response.json()["version"]
 
     def get_ursulas(
         self,
