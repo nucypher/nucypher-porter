@@ -195,15 +195,12 @@ def test_get_ursulas_schema(get_random_checksum_address):
 @pytest.mark.parametrize("timeout", [None, 15, 20])
 @pytest.mark.parametrize("duration", [None, 0, 60 * 60 * 24, 60 * 60 * 24 * 365])
 def test_get_ursulas_python_interface(
-    mocker,
     porter,
     ursulas,
     timeout,
     duration,
     excluded_staker_address_for_duration_greater_than_0,
 ):
-    mocker.patch.object(porter, "_get_ursula_version", return_value="7.4.0")
-
     # simple
     quantity = 4
     ursulas_info = porter.get_ursulas(quantity=quantity)
@@ -289,16 +286,12 @@ def test_get_ursulas_python_interface(
 @pytest.mark.parametrize("timeout", [None, 10, 20])
 @pytest.mark.parametrize("duration", [None, 0, 60 * 60 * 24, 60 * 60 * 24 * 365])
 def test_get_ursulas_web_interface(
-    mocker,
-    porter,
     porter_web_controller,
     ursulas,
     timeout,
     duration,
     excluded_staker_address_for_duration_greater_than_0,
 ):
-    mocker.patch.object(porter, "_get_ursula_version", return_value="7.4.0")
-
     # Send bad data to assert error return
     response = porter_web_controller.get(
         "/get_ursulas", data=json.dumps({"bad": "input"})

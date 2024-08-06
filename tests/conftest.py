@@ -247,7 +247,7 @@ def mock_signer(get_random_checksum_address):
 
 @pytest.fixture(scope="module")
 @pytest.mark.usefixtures('testerchain', 'agency')
-def porter(ursulas, mock_rest_middleware, test_registry):
+def porter(ursulas, mock_rest_middleware, test_registry, module_mocker):
     porter = Porter(
         domain=TEMPORARY_DOMAIN,
         eth_endpoint=MOCK_ETH_PROVIDER_URI,
@@ -259,6 +259,7 @@ def porter(ursulas, mock_rest_middleware, test_registry):
         verify_node_bonding=False,
         network_middleware=mock_rest_middleware,
     )
+    module_mocker.patch.object(porter, "_get_ursula_version", return_value="7.4.0")
     yield porter
     porter.stop_learning_loop()
 
