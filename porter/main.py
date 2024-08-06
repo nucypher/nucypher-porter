@@ -32,6 +32,7 @@ from nucypher_core import (
     TreasureMap,
 )
 from nucypher_core.umbral import PublicKey
+from packaging.version import parse
 from prometheus_flask_exporter import PrometheusMetrics
 
 import porter
@@ -156,24 +157,14 @@ class Porter(Learner):
             BlockchainInterfaceFactory.initialize_interface(endpoint=polygon_endpoint)
 
     @staticmethod
-    def _parse_version(version: Optional[str] = None) -> list:
-        if not version:
-            return [0, 0, 0]
-        parsed = version.split("\.")
-        if len(parsed) <= 1:
-            raise InvalidInputData("Minimum version must have x.x.x format")
-        return parsed
-    
-    @staticmethod
-    def _is_version_greater_or_equal(min_version: list, version: list) -> bool:
-        for i in version:
-            if (version[i] < min_version[i]):
-                return False
-        return True
-    
-    def _get_ursula_version(self, ursula: Ursula) -> list:
-        response = self.network_middleware.client.get(node_or_sprout=ursula, path="status/?json=true")
-        return self._parse_version(response["version"])
+    def _is_version_greater_or_equal(min_version: str, version: str) -> bool:
+        return parse(version) >= parse(min_version)
+
+    def _get_ursula_version(self, ursula: Ursula) -> str:
+        response = self.network_middleware.client.get(
+            node_or_sprout=ursula, path="status", params={"json": "true"}
+        )
+        return response["version"]
 
     def get_ursulas(
         self,
@@ -188,7 +179,6 @@ class Porter(Learner):
             "sampling", timeout, self.MAX_GET_URSULAS_TIMEOUT
         )
         duration = duration or 0
-        min_version_parsed = self._parse_version(min_version)
 
         reservoir = self._make_reservoir(exclude_ursulas, include_ursulas, duration)
         available_nodes_to_sample = len(reservoir.values) + len(reservoir.reservoir)
@@ -206,15 +196,20 @@ class Porter(Learner):
             ursula_address = to_checksum_address(ursula_address)
             ursula = self.known_nodes[ursula_address]
             try:
-                # ensure node is up and reachable
-                # self.network_middleware.ping(ursula)
+                # ensure node is up and reachable and check version
                 version = self._get_ursula_version(ursula)
-                if not self._is_version_greater_or_equal(min_version_parsed, version):
-                    raise ValueError(f"Ursula ({ursula_address}) has too old version ({version})")
-                
-                return Porter.UrsulaInfo(checksum_address=ursula_address,
-                                         uri=f"{ursula.rest_interface.formal_uri}",
-                                         encrypting_key=ursula.public_keys(DecryptingPower))
+                if min_version and not self._is_version_greater_or_equal(
+                    min_version, version
+                ):
+                    raise ValueError(
+                        f"Ursula ({ursula_address}) has too old version ({version})"
+                    )
+
+                return Porter.UrsulaInfo(
+                    checksum_address=ursula_address,
+                    uri=f"{ursula.rest_interface.formal_uri}",
+                    encrypting_key=ursula.public_keys(DecryptingPower),
+                )
             except Exception as e:
                 self.log.debug(f"Ursula ({ursula_address}) is unreachable: {str(e)}")
                 raise
@@ -331,7 +326,6 @@ class Porter(Learner):
             "bucket_sampling", timeout, self.MAX_BUCKET_SAMPLING_TIMEOUT
         )
         duration = duration or 0
-        min_version_parsed = self._parse_version(min_version)
 
         if self.domain not in self._ALLOWED_DOMAINS_FOR_BUCKET_SAMPLING:
             raise ValueError("Bucket sampling is only for TACo Mainnet")
@@ -448,9 +442,13 @@ class Porter(Learner):
                 # ensure node is up and reachable
                 # self.network_middleware.ping(ursula)
                 version = self._get_ursula_version(ursula)
-                if not self._is_version_greater_or_equal(min_version_parsed, version):
-                    raise ValueError(f"Ursula ({ursula_address}) has too old version ({version})")
-                
+                if min_version and not self._is_version_greater_or_equal(
+                    min_version, version
+                ):
+                    raise ValueError(
+                        f"Ursula ({ursula_address}) has too old version ({version})"
+                    )
+
                 return ursula_address
             except Exception as e:
                 message = f"Ursula ({ursula_address}) is unreachable: {str(e)}"
