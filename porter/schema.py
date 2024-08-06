@@ -8,8 +8,8 @@ from porter.fields.base import (
     Integer,
     NonNegativeInteger,
     PositiveInteger,
-    VersionString,
     StringList,
+    VersionString,
 )
 from porter.fields.exceptions import InvalidArgumentCombo, InvalidInputData
 from porter.fields.retrieve import CapsuleFrag, RetrievalKit

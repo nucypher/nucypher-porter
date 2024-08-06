@@ -1,9 +1,9 @@
 import json
 from base64 import b64decode, b64encode
-import re
 
 import click
 from marshmallow import fields
+from packaging.version import Version, parse
 
 from porter.fields.exceptions import InvalidInputData
 
@@ -114,15 +114,11 @@ class JSON(BaseField, fields.Field):
 class VersionString(String):
 
     def _serialize(self, value, attr, obj, **kwargs) -> str:
-        if (type(value) is not list or len(value) == 0 or len(value) > 3):
+        if type(value) is not Version:
             raise InvalidInputData(
-                f"Unexpected object type, {type(value)}; expected list[3]")
-
-        return ".".join(value)
+                f"Unexpected object type, {type(value)}; expected Version"
+            )
+        return str(value)
 
     def _deserialize(self, value, attr, data, **kwargs) -> list:
-        pattern = r'(\d+\.)?(\d+\.)?(\d+)'
-        match = re.findall(pattern, value)
-        if len(match) != 1:
-            raise InvalidInputData("Minimum version must have x.x.x format")
-        return match[0]
+        return parse(value)
