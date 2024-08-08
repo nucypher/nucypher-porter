@@ -23,6 +23,18 @@ def mock_bucket_request(mocker, ursulas):
     mocker.patch("requests.get", return_value=MockRequestResponse())
 
 
+@pytest.fixture(autouse=True)
+def mock_worker_pool_sleep():
+
+    original = WorkerPool._sleep
+
+    def _sleep(worker_pool, timeout):
+        original(worker_pool, 0.01)
+        pass
+
+    WorkerPool._sleep = _sleep
+
+
 def test_bucket_sampling_schema(get_random_checksum_address):
     #
     # Input i.e. load
@@ -81,6 +93,11 @@ def test_bucket_sampling_schema(get_random_checksum_address):
     updated_data["timeout"] = 20
     BucketSampling().load(updated_data)
 
+    # min version
+    updated_data = dict(required_data)
+    updated_data["min_version"] = "1.1.1"
+    BucketSampling().load(updated_data)
+
     # list input formatted as ',' separated strings
     updated_data = dict(required_data)
     updated_data["exclude_ursulas"] = ",".join(exclude_ursulas)
@@ -131,6 +148,18 @@ def test_bucket_sampling_schema(get_random_checksum_address):
     with pytest.raises(InvalidInputData):
         updated_data = dict(required_data)
         updated_data["duration"] = -1
+        BucketSampling().load(updated_data)
+
+    # invalid min version
+    with pytest.raises(InvalidInputData):
+        updated_data = dict(required_data)
+        updated_data["min_version"] = "v1x1.1"
+        BucketSampling().load(updated_data)
+
+    # invalid min version
+    with pytest.raises(InvalidInputData):
+        updated_data = dict(required_data)
+        updated_data["min_version"] = "1-1-1"
         BucketSampling().load(updated_data)
 
     #
@@ -210,11 +239,22 @@ def test_bucket_sampling_python_interface(
     with pytest.raises(WorkerPool.OutOfValues):
         _, _ = porter.bucket_sampling(quantity=5)
 
+    # no nodes with specified version
+    with pytest.raises(WorkerPool.OutOfValues):
+        _, _ = porter.bucket_sampling(quantity=1, timeout=30, min_version="2.2.2")
+    porter.network_middleware.set_ursulas_versions({sampled_ursulas[0]: "3.0.0"})
+    ursulas_info, _ = porter.bucket_sampling(quantity=1, min_version="2.2.2")
+    assert ursulas_info[0] == sampled_ursulas[0]
+    with pytest.raises(WorkerPool.OutOfValues):
+        porter.bucket_sampling(quantity=2, min_version="2.2.2")
+    porter.network_middleware.clean_ursulas_versions()
+
 
 @pytest.mark.parametrize("timeout", [None, 10])
 @pytest.mark.parametrize("random_seed", [None, 42])
 @pytest.mark.parametrize("duration", [None, 0, 60 * 60 * 24, 60 * 60 * 24 * 365])
 def test_bucket_sampling_web_interface(
+    porter,
     porter_web_controller,
     ursulas,
     timeout,
@@ -310,3 +350,30 @@ def test_bucket_sampling_web_interface(
     )
     assert response.status_code == 400
     assert "Insufficient nodes" in response.text
+
+    #
+    # Failure case: no nodes with specified version
+    #
+    failed_ursula_params = dict(get_ursulas_params)
+    failed_ursula_params["quantity"] = 1
+    failed_ursula_params["min_version"] = "2.0.0"
+    response = porter_web_controller.get(
+        "/bucket_sampling", data=json.dumps(failed_ursula_params)
+    )
+    assert "has too old version (1.1.1)" in response.text
+
+    porter.network_middleware.set_ursulas_versions({sampled_ursulas[0]: "3.0.0"})
+    response = porter_web_controller.get(
+        "/bucket_sampling", data=json.dumps(failed_ursula_params)
+    )
+    assert response.status_code == 200
+    response_data = json.loads(response.data)
+    ursulas_info = response_data["result"]["ursulas"]
+    assert ursulas_info[0] == sampled_ursulas[0]
+
+    failed_ursula_params["quantity"] = 2
+    response = porter_web_controller.get(
+        "/bucket_sampling", data=json.dumps(failed_ursula_params)
+    )
+    assert "has too old version (1.1.1)" in response.text
+    porter.network_middleware.clean_ursulas_versions()
