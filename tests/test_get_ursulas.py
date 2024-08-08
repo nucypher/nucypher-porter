@@ -10,15 +10,13 @@ from porter.schema import GetUrsulas, UrsulaInfoSchema
 
 
 @pytest.fixture(autouse=True)
-def mock_worker_pool_sleep():
-
+def mock_worker_pool_sleep(monkeypatch):
     original = WorkerPool._sleep
 
     def _sleep(worker_pool, timeout):
         original(worker_pool, 0.01)
-        pass
 
-    WorkerPool._sleep = _sleep
+    monkeypatch.setattr(WorkerPool, "_sleep", _sleep)
 
 
 def test_get_ursulas_schema(get_random_checksum_address):
