@@ -440,7 +440,10 @@ def test_get_ursulas_web_interface(
     response = porter_web_controller.get(
         "/get_ursulas", data=json.dumps(failed_ursula_params)
     )
-    assert "has too old version (1.1.1)" in response.text
+    assert (
+        f"version is too old (1.1.1 < {failed_ursula_params['min_version']})"
+        in response.text
+    )
 
     porter.network_middleware.set_ursulas_versions({include_ursulas[0]: "3.0.0"})
     response = porter_web_controller.get(
@@ -455,5 +458,8 @@ def test_get_ursulas_web_interface(
     response = porter_web_controller.get(
         "/get_ursulas", data=json.dumps(failed_ursula_params)
     )
-    assert "has too old version (1.1.1)" in response.text
+    assert (
+        f"version is too old (1.1.1 < {failed_ursula_params['min_version']})"
+        in response.text
+    )
     porter.network_middleware.clean_ursulas_versions()

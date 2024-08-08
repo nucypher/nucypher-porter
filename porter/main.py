@@ -101,6 +101,12 @@ class Porter(Learner):
         ]
         errors: Dict[ChecksumAddress, str]
 
+    class UrsulaVersionTooOld(Exception):
+        def __init__(self, ursula_address: str, version: str, min_version: str):
+            super().__init__(
+                f"Ursula ({ursula_address}) version is too old ({version} < {min_version})"
+            )
+
     def __init__(
         self,
         eth_endpoint: str,
@@ -197,14 +203,12 @@ class Porter(Learner):
             ursula_address = to_checksum_address(ursula_address)
             ursula = self.known_nodes[ursula_address]
             try:
-                # ensure node is up and reachable and check version
+                # ensure node is up and reachable and possibly check version
                 version = self._get_ursula_version(ursula)
                 if parse_min_version and not self._is_version_greater_or_equal(
                     parse_min_version, version
                 ):
-                    raise ValueError(
-                        f"Ursula ({ursula_address}) has too old version ({version})"
-                    )
+                    raise self.UrsulaVersionTooOld(ursula_address, version, min_version)
 
                 return Porter.UrsulaInfo(
                     checksum_address=ursula_address,
@@ -447,15 +451,12 @@ class Porter(Learner):
             ursula_address = to_checksum_address(ursula_address)
             ursula = self.known_nodes[ursula_address]
             try:
-                # ensure node is up and reachable
-                # self.network_middleware.ping(ursula)
+                # ensure node is up and reachable and possibly check version
                 version = self._get_ursula_version(ursula)
                 if parse_min_version and not self._is_version_greater_or_equal(
                     parse_min_version, version
                 ):
-                    raise ValueError(
-                        f"Ursula ({ursula_address}) has too old version ({version})"
-                    )
+                    raise self.UrsulaVersionTooOld(ursula_address, version, min_version)
 
                 return ursula_address
             except Exception as e:

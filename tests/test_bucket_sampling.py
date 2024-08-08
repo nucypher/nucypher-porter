@@ -358,7 +358,10 @@ def test_bucket_sampling_web_interface(
     response = porter_web_controller.get(
         "/bucket_sampling", data=json.dumps(failed_ursula_params)
     )
-    assert "has too old version (1.1.1)" in response.text
+    assert (
+        f"version is too old (1.1.1 < {failed_ursula_params['min_version']})"
+        in response.text
+    )
 
     porter.network_middleware.set_ursulas_versions({sampled_ursulas[0]: "3.0.0"})
     response = porter_web_controller.get(
@@ -373,5 +376,8 @@ def test_bucket_sampling_web_interface(
     response = porter_web_controller.get(
         "/bucket_sampling", data=json.dumps(failed_ursula_params)
     )
-    assert "has too old version (1.1.1)" in response.text
+    assert (
+        f"version is too old (1.1.1 < {failed_ursula_params['min_version']})"
+        in response.text
+    )
     porter.network_middleware.clean_ursulas_versions()
