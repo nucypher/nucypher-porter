@@ -280,7 +280,7 @@ class _MockRestMiddleware(MockRestMiddleware):
         self.client = _MockMiddlewareClient(eth_endpoint=TEST_ETH_PROVIDER_URI)
 
     def set_ursulas_versions(self, ursulas_versions: dict):
-        self.client.ursulas_versions = ursulas_versions
+        self.client.ursulas_versions = dict(ursulas_versions)
 
     def clean_ursulas_versions(self):
         self.client.ursulas_versions = {}
