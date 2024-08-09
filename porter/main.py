@@ -392,8 +392,10 @@ class Porter(Learner):
                 self.reservoir = _reservoir
                 self.need_successes = need_successes
                 self.predefined_buckets = self.read_buckets()
-                self.bucketed_nodes = defaultdict(list)
-                self.selected_nodes = dict()
+                self.bucketed_nodes = defaultdict(
+                    list
+                )  # <bucket> -> <list of checksum addresses>
+                self.selected_nodes = dict()  # <checksum address> -> <bucket>
 
             def read_buckets(self) -> Dict:
                 try:
@@ -420,9 +422,10 @@ class Porter(Learner):
                         return bucket_name
                 return None
 
-            def mark_as_not_successful(self, failure: ChecksumAddress):
-                bucket = self.selected_nodes[failure]
-                self.bucketed_nodes[bucket].remove(failure)
+            def mark_as_not_successful(self, unsuccessful_node: ChecksumAddress):
+                bucket = self.selected_nodes.get(unsuccessful_node)
+                if bucket:
+                    self.bucketed_nodes[bucket].remove(unsuccessful_node)
 
             def __call__(self, _successes: int) -> Optional[List[ChecksumAddress]]:
                 batch = []
