@@ -353,7 +353,7 @@ def porter_web_controller(porter, monkeymodule):
 def dkg_setup(
     get_random_checksum_address, ursulas, coordinator_agent
 ) -> Tuple[int, DkgPublicKey, List[Ursula], int]:
-    ritual_id = 0
+    r_id = 0
     num_shares = 8
     threshold = 5
     cohort = ursulas[:num_shares]
@@ -375,7 +375,7 @@ def dkg_setup(
     transcripts = []
     for i, validator in enumerate(validators):
         transcript = dkg.generate_transcript(
-            ritual_id=ritual_id,
+            ritual_id=r_id,
             me=validator,
             shares=num_shares,
             threshold=threshold,
@@ -384,7 +384,7 @@ def dkg_setup(
         transcripts.append(transcript)
 
     aggregated_transcript, public_key = dkg.aggregate_transcripts(
-        ritual_id=ritual_id,
+        ritual_id=r_id,
         me=validators[0],
         shares=num_shares,
         threshold=threshold,
@@ -393,7 +393,7 @@ def dkg_setup(
 
     now = maya.now()
     ritual = Coordinator.Ritual(
-        id=ritual_id,
+        id=r_id,
         initiator=get_random_checksum_address(),
         authority=get_random_checksum_address(),
         access_controller=get_random_checksum_address(),
@@ -412,7 +412,7 @@ def dkg_setup(
                 aggregated=True,
                 transcript=bytes(transcripts[i]),
                 decryption_request_static_key=ursula.threshold_request_power.get_pubkey_from_ritual_id(
-                    ritual_id
+                    r_id
                 ),
             )
             for i, ursula in enumerate(cohort)
@@ -420,13 +420,19 @@ def dkg_setup(
     )
 
     for ursula in cohort:
-        ursula.dkg_storage.store_validators(ritual_id, validators)
+        ursula.dkg_storage.store_validators(r_id, validators)
         ursula.dkg_storage.store_active_ritual(ritual)
 
     # Configure CoordinatorAgent
     coordinator_agent.__rituals.return_value = ritual
     coordinator_agent.get_ritual_status.return_value = Coordinator.RitualStatus.ACTIVE
+    coordinator_agent.is_ritual_active.return_value = True
     coordinator_agent.is_encryption_authorized.return_value = True
+    cohort_checksum_addresses = [ursula.checksum_address for ursula in cohort]
+    coordinator_agent.is_participant = (
+        lambda ritual_id, provider: ritual_id == r_id
+        and provider in cohort_checksum_addresses
+    )
 
     def mock_get_provider_public_key(provider, ritual_id):
         for ursula in ursulas:
@@ -435,7 +441,7 @@ def dkg_setup(
 
     coordinator_agent.get_provider_public_key = mock_get_provider_public_key
 
-    return ritual_id, public_key, cohort, threshold
+    return r_id, public_key, cohort, threshold
 
 
 PLAINTEXT = "peace at dawn"
