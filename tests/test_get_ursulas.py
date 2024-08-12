@@ -1,11 +1,22 @@
 import json
 
 import pytest
+from nucypher.utilities.concurrency import WorkerPool
 from nucypher_core.umbral import SecretKey
 
 from porter.fields.exceptions import InvalidArgumentCombo, InvalidInputData
 from porter.main import Porter
 from porter.schema import GetUrsulas, UrsulaInfoSchema
+
+
+@pytest.fixture(autouse=True)
+def mock_worker_pool_sleep(monkeypatch):
+    original = WorkerPool._sleep
+
+    def _sleep(worker_pool, timeout):
+        original(worker_pool, 0.01)
+
+    monkeypatch.setattr(WorkerPool, "_sleep", _sleep)
 
 
 def test_get_ursulas_schema(get_random_checksum_address):
@@ -88,6 +99,11 @@ def test_get_ursulas_schema(get_random_checksum_address):
     assert data["exclude_ursulas"] == [exclude_ursulas[0]]
     assert data["include_ursulas"] == [include_ursulas[0]]
 
+    # min version
+    updated_data = dict(required_data)
+    updated_data["min_version"] = "1.1.1"
+    GetUrsulas().load(updated_data)
+
     # invalid include entry
     updated_data = dict(required_data)
     updated_data["exclude_ursulas"] = exclude_ursulas
@@ -169,6 +185,18 @@ def test_get_ursulas_schema(get_random_checksum_address):
         updated_data["exclude_ursulas"] = exclude_ursulas
         updated_data["include_ursulas"] = include_ursulas
         updated_data["duration"] = -1
+        GetUrsulas().load(updated_data)
+
+    # invalid min version
+    with pytest.raises(InvalidInputData):
+        updated_data = dict(required_data)
+        updated_data["min_version"] = "v1x1.1"
+        GetUrsulas().load(updated_data)
+
+    # invalid min version
+    with pytest.raises(InvalidInputData):
+        updated_data = dict(required_data)
+        updated_data["min_version"] = "1-1-1"
         GetUrsulas().load(updated_data)
 
     #
@@ -282,10 +310,23 @@ def test_get_ursulas_python_interface(
     with pytest.raises(ValueError, match="Insufficient nodes"):
         porter.get_ursulas(quantity=len(ursulas) + 1)
 
+    # no nodes with specified version
+    with pytest.raises(WorkerPool.OutOfValues):
+        porter.get_ursulas(quantity=1, min_version="2.2.2")
+    porter.network_middleware.set_ursulas_versions(
+        {ursulas[0].checksum_address: "3.0.0"}
+    )
+    ursulas_info = porter.get_ursulas(quantity=1, min_version="2.2.2")
+    assert ursulas[0].checksum_address == ursulas_info[0].checksum_address
+    with pytest.raises(WorkerPool.OutOfValues):
+        porter.get_ursulas(quantity=2, min_version="2.2.2")
+    porter.network_middleware.clean_ursulas_versions()
+
 
 @pytest.mark.parametrize("timeout", [None, 10, 20])
 @pytest.mark.parametrize("duration", [None, 0, 60 * 60 * 24, 60 * 60 * 24 * 365])
 def test_get_ursulas_web_interface(
+    porter,
     porter_web_controller,
     ursulas,
     timeout,
@@ -388,3 +429,37 @@ def test_get_ursulas_web_interface(
     )
     assert response.status_code == 400
     assert "Insufficient nodes" in response.text
+
+    #
+    # Failure case: no nodes with specified version
+    #
+    failed_ursula_params = dict(get_ursulas_params)
+    failed_ursula_params["quantity"] = 1
+    failed_ursula_params["min_version"] = "2.0.0"
+    del failed_ursula_params["include_ursulas"]
+    response = porter_web_controller.get(
+        "/get_ursulas", data=json.dumps(failed_ursula_params)
+    )
+    assert (
+        f"version is too old (1.1.1 < {failed_ursula_params['min_version']})"
+        in response.text
+    )
+
+    porter.network_middleware.set_ursulas_versions({include_ursulas[0]: "3.0.0"})
+    response = porter_web_controller.get(
+        "/get_ursulas", data=json.dumps(failed_ursula_params)
+    )
+    assert response.status_code == 200
+    response_data = json.loads(response.data)
+    ursulas_info = response_data["result"]["ursulas"]
+    assert ursulas_info[0]["checksum_address"] == include_ursulas[0]
+
+    failed_ursula_params["quantity"] = 2
+    response = porter_web_controller.get(
+        "/get_ursulas", data=json.dumps(failed_ursula_params)
+    )
+    assert (
+        f"version is too old (1.1.1 < {failed_ursula_params['min_version']})"
+        in response.text
+    )
+    porter.network_middleware.clean_ursulas_versions()

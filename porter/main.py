@@ -32,6 +32,7 @@ from nucypher_core import (
     TreasureMap,
 )
 from nucypher_core.umbral import PublicKey
+from packaging.version import Version, parse
 from prometheus_flask_exporter import PrometheusMetrics
 
 import porter
@@ -100,6 +101,12 @@ class Porter(Learner):
         ]
         errors: Dict[ChecksumAddress, str]
 
+    class UrsulaVersionTooOld(Exception):
+        def __init__(self, ursula_address: str, version: str, min_version: str):
+            super().__init__(
+                f"Ursula ({ursula_address}) version is too old ({version} < {min_version})"
+            )
+
     def __init__(
         self,
         eth_endpoint: str,
@@ -155,6 +162,16 @@ class Porter(Learner):
         ):
             BlockchainInterfaceFactory.initialize_interface(endpoint=polygon_endpoint)
 
+    @staticmethod
+    def _is_version_greater_or_equal(min_version: Version, version: str) -> bool:
+        return parse(version) >= min_version
+
+    def _get_ursula_version(self, ursula: Ursula) -> str:
+        response = self.network_middleware.client.get(
+            node_or_sprout=ursula, path="status", params={"json": "true"}
+        )
+        return response.json()["version"]
+
     def get_ursulas(
         self,
         quantity: int,
@@ -162,11 +179,13 @@ class Porter(Learner):
         include_ursulas: Optional[Sequence[ChecksumAddress]] = None,
         timeout: Optional[int] = None,
         duration: Optional[int] = None,
+        min_version: Optional[str] = None,
     ) -> List[UrsulaInfo]:
         timeout = self._configure_timeout(
             "sampling", timeout, self.MAX_GET_URSULAS_TIMEOUT
         )
         duration = duration or 0
+        parse_min_version = parse(min_version) if min_version else None
 
         reservoir = self._make_reservoir(exclude_ursulas, include_ursulas, duration)
         available_nodes_to_sample = len(reservoir.values) + len(reservoir.reservoir)
@@ -184,11 +203,18 @@ class Porter(Learner):
             ursula_address = to_checksum_address(ursula_address)
             ursula = self.known_nodes[ursula_address]
             try:
-                # ensure node is up and reachable
-                self.network_middleware.ping(ursula)
-                return Porter.UrsulaInfo(checksum_address=ursula_address,
-                                         uri=f"{ursula.rest_interface.formal_uri}",
-                                         encrypting_key=ursula.public_keys(DecryptingPower))
+                # ensure node is up and reachable and possibly check version
+                version = self._get_ursula_version(ursula)
+                if parse_min_version and not self._is_version_greater_or_equal(
+                    parse_min_version, version
+                ):
+                    raise self.UrsulaVersionTooOld(ursula_address, version, min_version)
+
+                return Porter.UrsulaInfo(
+                    checksum_address=ursula_address,
+                    uri=f"{ursula.rest_interface.formal_uri}",
+                    encrypting_key=ursula.public_keys(DecryptingPower),
+                )
             except Exception as e:
                 self.log.debug(f"Ursula ({ursula_address}) is unreachable: {str(e)}")
                 raise
@@ -299,11 +325,13 @@ class Porter(Learner):
         exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
         timeout: Optional[int] = None,
         duration: Optional[int] = None,
+        min_version: Optional[str] = None,
     ) -> Tuple[List[ChecksumAddress], int]:
         timeout = self._configure_timeout(
             "bucket_sampling", timeout, self.MAX_BUCKET_SAMPLING_TIMEOUT
         )
         duration = duration or 0
+        parse_min_version = parse(min_version) if min_version else None
 
         if self.domain not in self._ALLOWED_DOMAINS_FOR_BUCKET_SAMPLING:
             raise ValueError("Bucket sampling is only for TACo Mainnet")
@@ -364,7 +392,10 @@ class Porter(Learner):
                 self.reservoir = _reservoir
                 self.need_successes = need_successes
                 self.predefined_buckets = self.read_buckets()
-                self.bucketed_nodes = defaultdict(list)
+                self.bucketed_nodes = defaultdict(
+                    list
+                )  # <bucket> -> <list of checksum addresses>
+                self.selected_nodes = dict()  # <checksum address> -> <bucket>
 
             def read_buckets(self) -> Dict:
                 try:
@@ -391,6 +422,11 @@ class Porter(Learner):
                         return bucket_name
                 return None
 
+            def mark_as_not_successful(self, unsuccessful_node: ChecksumAddress):
+                bucket = self.selected_nodes.get(unsuccessful_node)
+                if bucket:
+                    self.bucketed_nodes[bucket].remove(unsuccessful_node)
+
             def __call__(self, _successes: int) -> Optional[List[ChecksumAddress]]:
                 batch = []
                 batch_size = self.need_successes - _successes
@@ -403,6 +439,7 @@ class Porter(Learner):
                         if len(self.bucketed_nodes[bucket]) >= self.BUCKET_CAP:
                             continue
                         self.bucketed_nodes[bucket].append(selected)
+                        self.selected_nodes[selected] = bucket
                     batch.append(selected)
                 if not batch:
                     return None
@@ -417,12 +454,18 @@ class Porter(Learner):
             ursula_address = to_checksum_address(ursula_address)
             ursula = self.known_nodes[ursula_address]
             try:
-                # ensure node is up and reachable
-                self.network_middleware.ping(ursula)
+                # ensure node is up and reachable and possibly check version
+                version = self._get_ursula_version(ursula)
+                if parse_min_version and not self._is_version_greater_or_equal(
+                    parse_min_version, version
+                ):
+                    raise self.UrsulaVersionTooOld(ursula_address, version, min_version)
+
                 return ursula_address
             except Exception as e:
                 message = f"Ursula ({ursula_address}) is unreachable: {str(e)}"
                 self.log.debug(message)
+                value_factory.mark_as_not_successful(ursula_address)
                 raise
 
         self.block_until_number_of_known_nodes_is(

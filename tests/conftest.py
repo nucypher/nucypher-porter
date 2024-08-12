@@ -34,9 +34,11 @@ from porter.main import Porter
 from tests.constants import (
     MOCK_ETH_PROVIDER_URI,
     TEMPORARY_DOMAIN,
+    TEST_ETH_PROVIDER_URI,
     TESTERCHAIN_CHAIN_ID,
 )
 from tests.mock.interfaces import MockBlockchain
+from tests.utils.middleware import MockRestMiddleware, _TestMiddlewareClient
 from tests.utils.registry import MockRegistrySource, mock_registry_sources
 
 # Crash on server error by default
@@ -243,6 +245,50 @@ def mock_signer(get_random_checksum_address):
     signer.sign_message.return_value = os.urandom(32)
     signer.accounts = [get_random_checksum_address()]
     return signer
+
+
+class _MockMiddlewareClient(_TestMiddlewareClient):
+    class MockResponse:
+        def __init__(self, json_data, status_code):
+            self.json_data = json_data
+            self.status_code = status_code
+
+        def json(self):
+            return self.json_data
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ursulas_versions = {}
+
+    def get(self, *args, **kwargs):
+        if kwargs.get("path") == "status" and kwargs.get("params")["json"]:
+            node_address = kwargs.get("node_or_sprout").checksum_address
+            version = self.ursulas_versions.get(node_address, "1.1.1")
+            return _MockMiddlewareClient.MockResponse({"version": version}, 200)
+
+        real_get = super(_TestMiddlewareClient, self).__getattr__("get")
+        return real_get(*args, **kwargs)
+
+
+class _MockRestMiddleware(MockRestMiddleware):
+    """
+    Modified middleware to emulate returning status with version.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.client = _MockMiddlewareClient(eth_endpoint=TEST_ETH_PROVIDER_URI)
+
+    def set_ursulas_versions(self, ursulas_versions: dict):
+        self.client.ursulas_versions = dict(ursulas_versions)
+
+    def clean_ursulas_versions(self):
+        self.client.ursulas_versions = {}
+
+
+@pytest.fixture(scope="module")
+def mock_rest_middleware():
+    return _MockRestMiddleware(eth_endpoint=TEST_ETH_PROVIDER_URI)
 
 
 @pytest.fixture(scope="module")
