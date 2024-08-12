@@ -472,12 +472,15 @@ class Porter(Learner):
             quantity, timeout=timeout, learn_on_this_thread=True, eager=True
         )
 
+        # TODO determine "best" value here without env var or parameterize
+        stagger_timeout = os.getenv("PORTER_STAGGER_TIMEOUT", default=1)
+
         worker_pool = WorkerPool(
             worker=make_sure_ursula_is_online,
             value_factory=value_factory,
             target_successes=quantity,
             timeout=timeout,
-            stagger_timeout=4,  # default connection timeout for middleware calls (incl. pings) is 3s
+            stagger_timeout=stagger_timeout,
         )
         worker_pool.start()
         try:
