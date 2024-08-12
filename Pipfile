@@ -7,13 +7,13 @@ name = "pypi"
 python_version = "3"
 
 [packages]
-nucypher = {git = "https://github.com/nucypher/nucypher.git", ref = "v7.4.x"}
+nucypher = {git = "https://github.com/nucypher/nucypher.git", ref = "v7.4.0"}
 nucypher-core = "==0.13.0"  # must be the same as nucypher
 flask-cors = "*"
 prometheus-flask-exporter = "*"
 
 [dev-packages]
-nucypher = {git = "https://github.com/nucypher/nucypher.git", editable = true, ref = "v7.4.x", extras = ["dev"]}  # needed for testerchain, and must be editable
+nucypher = {git = "https://github.com/nucypher/nucypher.git", editable = true, ref = "v7.4.0", extras = ["dev"]}  # needed for testerchain, and must be editable
 pytest = "<7"  # match with nucypher/nucypher
 pytest-cov = "*"
 pytest-mock = "*"

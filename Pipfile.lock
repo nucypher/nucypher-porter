@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "f9361ec31984150682f236c84268f45679f3ebbf4d7bb7de5a70dc7e39428fb2"
+            "sha256": "2dc5c29abad0469fcf72ad9c4ec1aa80def4c1f1e10f11939fc02289cb797d83"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -1287,7 +1287,7 @@
         "nucypher": {
             "git": "https://github.com/nucypher/nucypher.git",
             "markers": "python_version >= '3'",
-            "ref": "cbabcc042e61099d2dc7627c838ccf71a7d139aa"
+            "ref": "42c3ac528e15b1932e108b0fbde60fe7f2f1aa7c"
         },
         "nucypher-core": {
             "hashes": [
@@ -4063,7 +4063,7 @@
         "nucypher": {
             "git": "https://github.com/nucypher/nucypher.git",
             "markers": "python_version >= '3'",
-            "ref": "cbabcc042e61099d2dc7627c838ccf71a7d139aa"
+            "ref": "42c3ac528e15b1932e108b0fbde60fe7f2f1aa7c"
         },
         "nucypher-core": {
             "hashes": [
