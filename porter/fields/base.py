@@ -3,6 +3,7 @@ from base64 import b64decode, b64encode
 
 import click
 from marshmallow import fields
+from packaging.version import parse
 
 from porter.fields.exceptions import InvalidInputData
 
@@ -85,7 +86,7 @@ class JSON(BaseField, fields.Field):
         super().__init__(*args, **kwargs)
 
     def _serialize(self, value, attr, obj, **kwargs):
-        if self.expected_type and (type(value) != self.expected_type):
+        if self.expected_type and (type(value) is not self.expected_type):
             raise InvalidInputData(
                 f"Unexpected object type, {type(value)}; expected {self.expected_type}")
 
@@ -103,8 +104,17 @@ class JSON(BaseField, fields.Field):
         except Exception as e:
             raise InvalidInputData(f"Invalid JSON: {e}")
         else:
-            if self.expected_type and (type(result) != self.expected_type):
+            if self.expected_type and (type(result) is not self.expected_type):
                 raise InvalidInputData(
                     f"Unexpected object type, {type(result)}; expected {self.expected_type}")
 
             return result
+
+
+class VersionString(String):
+
+    def _validate(self, value):
+        try:
+            parse(value)
+        except Exception:
+            raise InvalidInputData(f"{self.name} must be a correct version.")

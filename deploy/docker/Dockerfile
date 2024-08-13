@@ -1,13 +1,20 @@
-FROM nucypher/rust-python:3.8.12
+FROM nucypher/rust-python:3.12.0
 
-# Update
-RUN apt-get update -y && apt upgrade -y
-RUN apt-get install patch gcc libffi-dev wget git -y
+# set default user
+USER $USER
 
+# set default in-container workdir
 WORKDIR /code
 COPY . /code
 
-# Porter requirements
-RUN pip3 install .
+# Layer 1: Install dependencies
+COPY requirements.txt /code
+RUN pip3 install --no-cache-dir -r requirements.txt
 
+# Layer 2: Install porter entrypoint
+COPY . /code
+RUN pip3 install . --no-deps
+
+# Layer 3: Set environment variables
+RUN export PATH="$HOME/.local/bin:$PATH"
 CMD ["/bin/bash"]

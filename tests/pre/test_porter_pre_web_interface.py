@@ -3,6 +3,7 @@ from base64 import b64encode
 
 from nucypher.characters.lawful import Enrico
 from nucypher.crypto.powers import DecryptingPower
+from nucypher.policy.conditions.context import USER_ADDRESS_CONTEXT
 from nucypher.policy.kits import PolicyMessageKit, RetrievalResult
 from nucypher_core import RetrievalKit
 
@@ -19,7 +20,7 @@ def test_retrieve_cfrags(
     bob,
     alice,
     random_treasure_map_data,
-    valid_user_address_context,
+    valid_eip4361_auth_message,
 ):
     # Send bad data to assert error return
     response = porter_web_controller.post(
@@ -132,8 +133,9 @@ def test_retrieve_cfrags(
     # Use context
     #
     context_field = JSON()
+    context = {USER_ADDRESS_CONTEXT: valid_eip4361_auth_message}
     multiple_retrieval_kits_params["context"] = context_field._serialize(
-        valid_user_address_context, attr=None, obj=None
+        context, attr=None, obj=None
     )
     response = porter_web_controller.post(
         "/retrieve_cfrags", data=json.dumps(multiple_retrieval_kits_params)

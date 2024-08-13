@@ -339,6 +339,9 @@ Parameters
 |                                  |                  | | are greater than this max default value are  |
 |                                  |                  | | capped at the default value                  |
 +----------------------------------+------------------+------------------------------------------------+
+| ``min_version``                  | *(Optional)*     | | Minimum acceptable version of Ursula.        |
+|                                  | VersionString    | |                                              |
++----------------------------------+------------------+------------------------------------------------+
 
 
 Returns
