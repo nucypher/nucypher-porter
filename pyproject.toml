@@ -1,3 +1,29 @@
+[tool.poetry]
+name = "porter"
+version = "3.7.0"
+authors = ["NuCypher <dev@nucypher.com>"]
+description = "The gateway for TACo application operations on the Threshold Network."
+
+[tool.poetry.dependencies]
+python = ">=3.9,<4"
+nucypher = {git = "https://github.com/nucypher/nucypher.git", branch = "v7.5.x"}
+nucypher-core = "==0.13.0"  # must be the same as nucypher
+flask-cors = "*"
+prometheus-flask-exporter = "*"
+
+
+[tool.poetry.dev-dependencies]
+nucypher = {git = "https://github.com/nucypher/nucypher.git", branch = "v7.5.x", develop = true, extras = ["dev"]}  # needed for testerchain, and must be editable
+pytest = "*"
+pytest-cov = "*"
+pytest-mock = "*"
+# Tools
+pre-commit = "^2.12.1"
+coverage = "^7.3.2"
+maya = "*"
+eth-ape = ">=0.8,<=0.8.12"  # limit due to existing underlying dependency restrictions (simpler than doing them individually)
+
+
 [tool.towncrier]
     package = "nucypher-porter"
     package_dir = "nucypher-porter"
