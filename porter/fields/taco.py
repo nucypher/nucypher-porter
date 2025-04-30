@@ -1,3 +1,6 @@
+# TODO: move this to nucypher_core
+from nucypher.types import ThresholdSignatureRequest as ThresholdSignatureRequestClass
+from nucypher.types import ThresholdSignatureResponse as ThresholdSignatureResponseClass
 from nucypher_core import (
     EncryptedThresholdDecryptionRequest as EncryptedThresholdDecryptionRequestClass,
 )
@@ -7,10 +10,6 @@ from nucypher_core import (
 
 from porter.fields.base import Base64BytesRepresentation
 from porter.fields.exceptions import InvalidInputData
-
-# TODO: move this to nucypher_core
-from nucypher.types import ThresholdSignatureRequest as ThresholdSignatureRequestClass
-from nucypher.types import ThresholdSignatureResponse as ThresholdSignatureResponseClass
 
 
 class EncryptedThresholdDecryptionRequestField(Base64BytesRepresentation):
