@@ -98,6 +98,21 @@ class PorterInterface(ControlInterface):
         response_data = {"decryption_results": decrypt_outcome}
         return response_data
 
+    @attach_schema(schema.Signing)
+    def sign(
+        self,
+        threshold: int,
+        signing_requests: Dict[ChecksumAddress, bytes],
+        timeout: Optional[int] = None,
+    ):
+        signing_outcome = self.implementer.sign(
+            threshold=threshold,
+            signing_requests=signing_requests,
+            timeout=timeout,
+        )
+        response_data = {"results": signing_outcome}
+        return response_data
+
     @attach_schema(schema.BucketSampling)
     def bucket_sampling(
         self,
