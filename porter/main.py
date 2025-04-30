@@ -19,10 +19,11 @@ from nucypher.blockchain.eth.interfaces import BlockchainInterfaceFactory
 from nucypher.blockchain.eth.registry import ContractRegistry
 from nucypher.characters.lawful import Ursula
 from nucypher.crypto.powers import DecryptingPower
-from nucypher.network.decryption import ThresholdDecryptionClient
+from nucypher.network.decryption import ThresholdDecryptionClient, ThresholdSigningClient
 from nucypher.network.nodes import Learner
 from nucypher.network.retrieval import PRERetrievalClient
 from nucypher.policy.reservoir import PrefetchStrategy, make_staking_provider_reservoir
+from nucypher.types import ThresholdSignatureRequest, ThresholdSignatureResponse
 from nucypher.utilities.concurrency import WorkerPool
 from nucypher.utilities.logging import Logger
 from nucypher_core import (
@@ -113,6 +114,15 @@ class Porter(Learner):
         encrypted_decryption_responses: Dict[
             ChecksumAddress, EncryptedThresholdDecryptionResponse
         ]
+        errors: Dict[ChecksumAddress, str]
+
+    class ThresholdSignatureOutcome(NamedTuple):
+        """
+        Simple object that stores the results and errors of TACo sign operations across
+        one or more Ursulas.
+        """
+
+        threshold_signature_responses: Dict[ChecksumAddress, Tuple[ChecksumAddress, ThresholdSignatureResponse]]
         errors: Dict[ChecksumAddress, str]
 
     class UrsulaVersionTooOld(Exception):
@@ -306,6 +316,28 @@ class Porter(Learner):
             encrypted_decryption_responses=successes, errors=failures
         )
         return decrypt_outcome
+
+    def sign(
+        self,
+        threshold: int,
+        threshold_signature_requests: Dict[
+            ChecksumAddress, ThresholdSignatureRequest
+        ],
+        timeout: Optional[int] = None,
+    ) -> Dict[ChecksumAddress, Tuple[ChecksumAddress, ThresholdSignatureResponse]]:
+        signature_client = ThresholdSigningClient(self)
+        timeout = self._configure_timeout(
+            "signing", timeout, self.MAX_DECRYPTION_TIMEOUT
+        )
+        successes, failures = signature_client.gather_signatures(
+            signing_requests=threshold_signature_requests,
+            threshold=threshold,
+            timeout=timeout,
+        )
+        signature_outcome = Porter.ThresholdSignatureOutcome(
+            threshold_signature_responses=successes, errors=failures
+        )
+        return signature_outcome.threshold_signature_responses
 
     def _configure_timeout(
         self, operation: str, timeout: Union[int, None], max_timeout: int

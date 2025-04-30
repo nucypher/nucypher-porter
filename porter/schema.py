@@ -9,13 +9,13 @@ from porter.fields.base import (
     NonNegativeInteger,
     PositiveInteger,
     StringList,
-    VersionString,
+    VersionString, Base64BytesRepresentation,
 )
 from porter.fields.exceptions import InvalidArgumentCombo, InvalidInputData
 from porter.fields.retrieve import CapsuleFrag, RetrievalKit
 from porter.fields.taco import (
     EncryptedThresholdDecryptionRequestField,
-    EncryptedThresholdDecryptionResponseField,
+    EncryptedThresholdDecryptionResponseField, ThresholdSigningRequestField, ThresholdSignatureResponseField,
 )
 from porter.fields.treasuremap import TreasureMap
 from porter.fields.umbralkey import UmbralKey
@@ -252,6 +252,20 @@ class PRERetrieveCFrags(BaseSchema):
 #
 
 
+class ThresholdSignatureOutcomeSchema(BaseSchema):
+
+    signature_responses = marshmallow_fields.Dict(
+        keys=UrsulaChecksumAddress(), values=ThresholdSignatureResponseField()
+    )
+    errors = marshmallow_fields.Dict(
+        keys=UrsulaChecksumAddress(), values=marshmallow_fields.String()
+    )
+
+    # maintain field declaration ordering
+    class Meta:
+        ordered = True
+
+
 class DecryptOutcomeSchema(BaseSchema):
     """Schema for the result of /retrieve_cfrags endpoint."""
 
@@ -397,3 +411,25 @@ class BucketSampling(BaseSchema):
     # output
     ursulas = marshmallow_fields.List(UrsulaChecksumAddress, dump_only=True)
     block_number = marshmallow_fields.Int(dump_only=True)
+
+
+class Signing(BaseSchema):
+
+    #input
+    threshold_signing_request = ThresholdSigningRequestField(
+        required=True,
+        load_only=True,
+        click=click.option(
+            "--data-to-sign",
+            "-d",
+            help="Data to sign",
+            type=click.STRING,
+            required=True,
+        ),
+    )
+
+    #output
+    threshold_signing_results = marshmallow_fields.Nested(
+        ThresholdSignatureOutcomeSchema,
+        dump_only=True,
+    )
