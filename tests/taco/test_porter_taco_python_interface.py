@@ -176,9 +176,7 @@ def test_taco_decryption_request_ordering(
         == expected_ursula_request_order
     )
 
-    value_factory_spy = mocker.spy(
-        ThresholdDecryptionClient.ThresholdDecryptionRequestFactory, "__init__"
-    )
+    value_factory_spy = mocker.spy(ThresholdDecryptionClient.RequestFactory, "__init__")
 
     decrypt_outcome = porter.decrypt(
         threshold=threshold,
