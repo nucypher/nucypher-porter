@@ -9,13 +9,15 @@ from porter.fields.base import (
     NonNegativeInteger,
     PositiveInteger,
     StringList,
-    VersionString, Base64BytesRepresentation,
+    VersionString,
 )
 from porter.fields.exceptions import InvalidArgumentCombo, InvalidInputData
 from porter.fields.retrieve import CapsuleFrag, RetrievalKit
 from porter.fields.taco import (
     EncryptedThresholdDecryptionRequestField,
-    EncryptedThresholdDecryptionResponseField, ThresholdSigningRequestField, ThresholdSignatureResponseField,
+    EncryptedThresholdDecryptionResponseField,
+    ThresholdSignatureResponseField,
+    ThresholdSigningRequestField,
 )
 from porter.fields.treasuremap import TreasureMap
 from porter.fields.umbralkey import UmbralKey

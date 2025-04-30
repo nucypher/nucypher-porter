@@ -19,7 +19,10 @@ from nucypher.blockchain.eth.interfaces import BlockchainInterfaceFactory
 from nucypher.blockchain.eth.registry import ContractRegistry
 from nucypher.characters.lawful import Ursula
 from nucypher.crypto.powers import DecryptingPower
-from nucypher.network.decryption import ThresholdDecryptionClient, ThresholdSigningClient
+from nucypher.network.decryption import (
+    ThresholdDecryptionClient,
+    ThresholdSigningClient,
+)
 from nucypher.network.nodes import Learner
 from nucypher.network.retrieval import PRERetrievalClient
 from nucypher.policy.reservoir import PrefetchStrategy, make_staking_provider_reservoir
