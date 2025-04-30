@@ -417,7 +417,7 @@ class BucketSampling(BaseSchema):
 
 class Signing(BaseSchema):
 
-    #input
+    # input
     threshold_signing_request = ThresholdSigningRequestField(
         required=True,
         load_only=True,
@@ -430,7 +430,7 @@ class Signing(BaseSchema):
         ),
     )
 
-    #output
+    # output
     threshold_signing_results = marshmallow_fields.Nested(
         ThresholdSignatureOutcomeSchema,
         dump_only=True,

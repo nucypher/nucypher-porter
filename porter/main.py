@@ -125,7 +125,9 @@ class Porter(Learner):
         one or more Ursulas.
         """
 
-        threshold_signature_responses: Dict[ChecksumAddress, Tuple[ChecksumAddress, ThresholdSignatureResponse]]
+        threshold_signature_responses: Dict[
+            ChecksumAddress, Tuple[ChecksumAddress, ThresholdSignatureResponse]
+        ]
         errors: Dict[ChecksumAddress, str]
 
     class UrsulaVersionTooOld(Exception):
@@ -323,9 +325,7 @@ class Porter(Learner):
     def sign(
         self,
         threshold: int,
-        threshold_signature_requests: Dict[
-            ChecksumAddress, ThresholdSignatureRequest
-        ],
+        threshold_signature_requests: Dict[ChecksumAddress, ThresholdSignatureRequest],
         timeout: Optional[int] = None,
     ) -> Dict[ChecksumAddress, Tuple[ChecksumAddress, ThresholdSignatureResponse]]:
         signature_client = ThresholdSigningClient(self)
