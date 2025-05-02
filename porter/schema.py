@@ -256,8 +256,11 @@ class PRERetrieveCFrags(BaseSchema):
 
 class ThresholdSignatureOutcomeSchema(BaseSchema):
 
-    signature_responses = marshmallow_fields.Dict(
-        keys=UrsulaChecksumAddress(), values=ThresholdSignatureResponseField()
+    signatures = marshmallow_fields.Dict(
+        keys=UrsulaChecksumAddress(),
+        values=marshmallow_fields.Tuple(
+            (UrsulaChecksumAddress(), ThresholdSignatureResponseField())
+        ),
     )
     errors = marshmallow_fields.Dict(
         keys=UrsulaChecksumAddress(), values=marshmallow_fields.String()
@@ -415,23 +418,48 @@ class BucketSampling(BaseSchema):
     block_number = marshmallow_fields.Int(dump_only=True)
 
 
-class Signing(BaseSchema):
-
+class Sign(BaseSchema):
     # input
-    threshold_signing_request = ThresholdSigningRequestField(
+    signing_requests = marshmallow_fields.Dict(
+        keys=UrsulaChecksumAddress(),
+        values=ThresholdSigningRequestField(),
         required=True,
         load_only=True,
         click=click.option(
-            "--data-to-sign",
-            "-d",
-            help="Data to sign",
+            "--signing-requests",
+            "-e",
+            help="Signing requests",
             type=click.STRING,
             required=True,
         ),
     )
 
+    threshold = PositiveInteger(
+        required=True,
+        load_only=True,
+        click=click.option(
+            "--threshold",
+            "-d",
+            help="Threshold of required signing responses",
+            type=click.INT,
+            required=True,
+        ),
+    )
+
+    timeout = PositiveInteger(
+        required=False,
+        load_only=True,
+        click=click.option(
+            "--timeout",
+            "-t",
+            help="Timeout for getting the required quantity of ursulas",
+            type=click.INT,
+            required=False,
+        ),
+    )
+
     # output
-    threshold_signing_results = marshmallow_fields.Nested(
+    signing_results = marshmallow_fields.Nested(
         ThresholdSignatureOutcomeSchema,
         dump_only=True,
     )

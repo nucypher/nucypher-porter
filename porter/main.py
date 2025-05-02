@@ -87,7 +87,14 @@ class Porter(Learner):
     MAX_DECRYPTION_TIMEOUT = int(
         os.getenv(
             "PORTER_MAX_DECRYPTION_TIMEOUT",
-            default=ThresholdDecryptionClient.DEFAULT_DECRYPTION_TIMEOUT,
+            default=ThresholdDecryptionClient.DEFAULT_TIMEOUT,
+        )
+    )
+
+    MAX_SIGNING_TIMEOUT = int(
+        os.getenv(
+            "PORTER_MAX_DECRYPTION_TIMEOUT",
+            default=ThresholdSigningClient.DEFAULT_TIMEOUT,
         )
     )
 
@@ -125,7 +132,7 @@ class Porter(Learner):
         one or more Ursulas.
         """
 
-        threshold_signature_responses: Dict[
+        signatures: Dict[
             ChecksumAddress, Tuple[ChecksumAddress, ThresholdSignatureResponse]
         ]
         errors: Dict[ChecksumAddress, str]
@@ -324,23 +331,21 @@ class Porter(Learner):
 
     def sign(
         self,
+        signing_requests: Dict[ChecksumAddress, ThresholdSignatureRequest],
         threshold: int,
-        threshold_signature_requests: Dict[ChecksumAddress, ThresholdSignatureRequest],
         timeout: Optional[int] = None,
-    ) -> Dict[ChecksumAddress, Tuple[ChecksumAddress, ThresholdSignatureResponse]]:
+    ) -> ThresholdSignatureOutcome:
         signature_client = ThresholdSigningClient(self)
-        timeout = self._configure_timeout(
-            "signing", timeout, self.MAX_DECRYPTION_TIMEOUT
-        )
+        timeout = self._configure_timeout("signing", timeout, self.MAX_SIGNING_TIMEOUT)
         successes, failures = signature_client.gather_signatures(
-            signing_requests=threshold_signature_requests,
+            signing_requests=signing_requests,
             threshold=threshold,
             timeout=timeout,
         )
         signature_outcome = Porter.ThresholdSignatureOutcome(
-            threshold_signature_responses=successes, errors=failures
+            signatures=successes, errors=failures
         )
-        return signature_outcome.threshold_signature_responses
+        return signature_outcome
 
     def _configure_timeout(
         self, operation: str, timeout: Union[int, None], max_timeout: int
@@ -640,6 +645,13 @@ class Porter(Learner):
             response = controller(
                 method_name="bucket_sampling", control_request=request
             )
+            return response
+
+        @porter_flask_control.route("/sign", methods=["POST"])
+        @by_path_counter
+        def sign() -> Response:
+            """Porter control endpoint for executing a TACo signing request."""
+            response = controller(method_name="sign", control_request=request)
             return response
 
         return controller
