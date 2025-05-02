@@ -93,7 +93,7 @@ class Porter(Learner):
 
     MAX_SIGNING_TIMEOUT = int(
         os.getenv(
-            "PORTER_MAX_DECRYPTION_TIMEOUT",
+            "PORTER_MAX_SIGNING_TIMEOUT",
             default=ThresholdSigningClient.DEFAULT_TIMEOUT,
         )
     )
