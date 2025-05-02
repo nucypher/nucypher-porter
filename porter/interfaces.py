@@ -2,7 +2,8 @@ import functools
 from typing import Dict, List, Optional
 
 from eth_typing import ChecksumAddress
-from nucypher_core import RetrievalKit, TreasureMap
+from nucypher.types import ThresholdSignatureRequest
+from nucypher_core import EncryptedThresholdDecryptionRequest, RetrievalKit, TreasureMap
 from nucypher_core.umbral import PublicKey
 
 from porter import main, schema
@@ -87,7 +88,9 @@ class PorterInterface(ControlInterface):
     def decrypt(
         self,
         threshold: int,
-        encrypted_decryption_requests: Dict[ChecksumAddress, bytes],
+        encrypted_decryption_requests: Dict[
+            ChecksumAddress, EncryptedThresholdDecryptionRequest
+        ],
         timeout: Optional[int] = None,
     ):
         decrypt_outcome = self.implementer.decrypt(
@@ -98,19 +101,19 @@ class PorterInterface(ControlInterface):
         response_data = {"decryption_results": decrypt_outcome}
         return response_data
 
-    @attach_schema(schema.Signing)
+    @attach_schema(schema.Sign)
     def sign(
         self,
+        signing_requests: Dict[ChecksumAddress, ThresholdSignatureRequest],
         threshold: int,
-        signing_requests: Dict[ChecksumAddress, bytes],
         timeout: Optional[int] = None,
     ):
         signing_outcome = self.implementer.sign(
-            threshold=threshold,
             signing_requests=signing_requests,
+            threshold=threshold,
             timeout=timeout,
         )
-        response_data = {"results": signing_outcome}
+        response_data = {"signing_results": signing_outcome}
         return response_data
 
     @attach_schema(schema.BucketSampling)
