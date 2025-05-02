@@ -60,17 +60,31 @@ class Porter(Learner):
     _LONG_LEARNING_DELAY = 30
     _ROUNDS_WITHOUT_NODES_AFTER_WHICH_TO_SLOW_DOWN = 25
 
+    _TRACK_NODE_LATENCY_STATS = True
+
     _ALLOWED_DOMAINS_FOR_BUCKET_SAMPLING = (MAINNET,)
 
     DEFAULT_PORT = 9155
 
-    MAX_GET_URSULAS_TIMEOUT = os.getenv("PORTER_MAX_GET_URSULAS_TIMEOUT", default=15)
-    MAX_BUCKET_SAMPLING_TIMEOUT = os.getenv(
-        "PORTER_MAX_BUCKET_SAMPLING_TIMEOUT", default=25
+    DEFAULT_GET_URSULAS_TIMEOUT = int(
+        os.getenv("PORTER_DEFAULT_GET_URSULAS_TIMEOUT", default=15)
     )
-    MAX_DECRYPTION_TIMEOUT = os.getenv(
-        "PORTER_MAX_DECRYPTION_TIMEOUT",
-        default=ThresholdDecryptionClient.DEFAULT_DECRYPTION_TIMEOUT,
+    MAX_GET_URSULAS_TIMEOUT = int(
+        os.getenv("PORTER_MAX_GET_URSULAS_TIMEOUT", default=30)
+    )
+
+    DEFAULT_BUCKET_SAMPLING_TIMEOUT = int(
+        os.getenv("PORTER_DEFAULT_GET_URSULAS_TIMEOUT", default=25)
+    )
+    MAX_BUCKET_SAMPLING_TIMEOUT = int(
+        os.getenv("PORTER_MAX_BUCKET_SAMPLING_TIMEOUT", default=45)
+    )
+
+    MAX_DECRYPTION_TIMEOUT = int(
+        os.getenv(
+            "PORTER_MAX_DECRYPTION_TIMEOUT",
+            default=ThresholdDecryptionClient.DEFAULT_DECRYPTION_TIMEOUT,
+        )
     )
 
     _interface_class = PorterInterface
@@ -182,7 +196,9 @@ class Porter(Learner):
         min_version: Optional[str] = None,
     ) -> List[UrsulaInfo]:
         timeout = self._configure_timeout(
-            "sampling", timeout, self.MAX_GET_URSULAS_TIMEOUT
+            "sampling",
+            timeout or self.DEFAULT_GET_URSULAS_TIMEOUT,
+            self.MAX_GET_URSULAS_TIMEOUT,
         )
         duration = duration or 0
         parse_min_version = parse(min_version) if min_version else None
@@ -328,7 +344,9 @@ class Porter(Learner):
         min_version: Optional[str] = None,
     ) -> Tuple[List[ChecksumAddress], int]:
         timeout = self._configure_timeout(
-            "bucket_sampling", timeout, self.MAX_BUCKET_SAMPLING_TIMEOUT
+            "bucket_sampling",
+            timeout or self.DEFAULT_BUCKET_SAMPLING_TIMEOUT,
+            self.MAX_BUCKET_SAMPLING_TIMEOUT,
         )
         duration = duration or 0
         parse_min_version = parse(min_version) if min_version else None
@@ -473,7 +491,7 @@ class Porter(Learner):
         )
 
         # TODO determine "best" value here without env var or parameterize
-        stagger_timeout = os.getenv("PORTER_STAGGER_TIMEOUT", default=1)
+        stagger_timeout = int(os.getenv("PORTER_STAGGER_TIMEOUT", default=1))
 
         worker_pool = WorkerPool(
             worker=make_sure_ursula_is_online,

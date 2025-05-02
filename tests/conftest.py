@@ -112,15 +112,6 @@ def testerchain(mock_testerchain, module_mocker) -> MockBlockchain:
     return mock_testerchain
 
 
-@pytest.fixture(scope="module", autouse=True)
-def mock_condition_blockchains(module_mocker):
-    """adds testerchain's chain ID to permitted conditional chains"""
-    module_mocker.patch.dict(
-        "nucypher.policy.conditions.evm._CONDITION_CHAINS",
-        {TESTERCHAIN_CHAIN_ID: "eth-tester/pyevm"},
-    )
-
-
 @pytest.fixture(scope="module")
 def test_registry(module_mocker):
     with mock_registry_sources(mocker=module_mocker):
