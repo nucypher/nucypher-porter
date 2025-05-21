@@ -9,7 +9,7 @@ import maya
 from flask import Flask, Response
 from hendrix.deploy.base import HendrixDeploy
 from hendrix.deploy.tls import HendrixDeployTLS
-# from nucypher.config.constants import MAX_UPLOAD_CONTENT_LENGTH
+from nucypher.config.constants import MAX_UPLOAD_CONTENT_LENGTH
 from nucypher.network.resources import get_static_resources
 from nucypher.utilities.concurrency import WorkerPoolException
 from nucypher.utilities.emitters import StdoutEmitter
@@ -143,7 +143,7 @@ class WebController(InterfaceControlServer):
 
     def make_control_transport(self):
         self._transport = Flask(self.app_name)
-        self._transport.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 # TODO: put back once relocked MAX_UPLOAD_CONTENT_LENGTH
+        self._transport.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_CONTENT_LENGTH
 
         # Return FlaskApp decorator
         return self._transport
