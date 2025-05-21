@@ -6,14 +6,14 @@ description = "The gateway for TACo application operations on the Threshold Netw
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4"
-nucypher = {git = "https://github.com/derekpierre/nucypher.git", branch = "secreto"}
+nucypher = {git = "https://github.com/derekpierre/nucypher.git", branch = "cross-chain"}
 nucypher-core = "==0.13.0"  # must be the same as nucypher
 flask-cors = "*"
 prometheus-flask-exporter = "*"
 
 
 [tool.poetry.group.dev.dependencies]
-nucypher = {git = "https://github.com/derekpierre/nucypher.git", branch = "secreto", develop = true, extras = ["dev"]}  # needed for testerchain, and must be editable
+nucypher = {git = "https://github.com/derekpierre/nucypher.git", branch = "cross-chain", develop = true, extras = ["dev"]}  # needed for testerchain, and must be editable
 pytest = "*"
 pytest-cov = "*"
 pytest-mock = "*"
