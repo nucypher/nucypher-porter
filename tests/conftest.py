@@ -233,7 +233,7 @@ def mock_substantiate_stamp(module_mocker, monkeymodule):
 @pytest.fixture(scope="module")
 def mock_signer(get_random_checksum_address):
     signer = MagicMock(spec=Web3Signer)
-    signer.sign_message.return_value = os.urandom(32)
+    signer.sign_message.return_value = (os.urandom(32), os.urandom(32))
     signer.accounts = [get_random_checksum_address()]
     return signer
 
