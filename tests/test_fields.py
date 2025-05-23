@@ -256,7 +256,7 @@ def test_json_field():
     for expected_type in test_types:
         field = JSON(expected_type=expected_type)
         for d in test_data:
-            if type(d) == expected_type:
+            if type(d) is expected_type:
                 # serialization/deserialization should work
                 serialized = field._serialize(value=d, attr=None, obj=None)
                 assert serialized == json.dumps(d)
