@@ -2716,8 +2716,8 @@ web3 = "^6.15.1"
 [package.source]
 type = "git"
 url = "https://github.com/nucypher/nucypher.git"
-reference = "signing"
-resolved_reference = "371e56ba7057aac988ea57bfcc7e231e56a05212"
+reference = "epic-signing"
+resolved_reference = "da811ec92d5319b1e13b34931d38e8424e346cda"
 
 [[package]]
 name = "nucypher-core"
@@ -5270,4 +5270,4 @@ testing = ["coverage[toml]", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4"
-content-hash = "f3159838812191ef984d58e2a86dac06276de745f945333d234783a31f4814d8"
+content-hash = "112aa18722a1192db66cab8806a5c7d0e502e5e2e665f7616a156cca4ae71e29"
