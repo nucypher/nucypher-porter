@@ -19,14 +19,15 @@ from nucypher.blockchain.eth.interfaces import BlockchainInterfaceFactory
 from nucypher.blockchain.eth.registry import ContractRegistry
 from nucypher.characters.lawful import Ursula
 from nucypher.crypto.powers import DecryptingPower
-from nucypher.network.decryption import (
+from nucypher.network.concurrency import (
+    BaseSignatureRequest,
+    SignatureResponse,
+    SigningRequestClient,
     ThresholdDecryptionClient,
-    ThresholdSigningClient,
 )
 from nucypher.network.nodes import Learner
 from nucypher.network.retrieval import PRERetrievalClient
 from nucypher.policy.reservoir import PrefetchStrategy, make_staking_provider_reservoir
-from nucypher.types import ThresholdSignatureRequest, ThresholdSignatureResponse
 from nucypher.utilities.concurrency import WorkerPool
 from nucypher.utilities.logging import Logger
 from nucypher_core import (
@@ -94,7 +95,7 @@ class Porter(Learner):
     MAX_SIGNING_TIMEOUT = int(
         os.getenv(
             "PORTER_MAX_SIGNING_TIMEOUT",
-            default=ThresholdSigningClient.DEFAULT_TIMEOUT,
+            default=SigningRequestClient.DEFAULT_TIMEOUT,
         )
     )
 
@@ -132,9 +133,7 @@ class Porter(Learner):
         one or more Ursulas.
         """
 
-        signatures: Dict[
-            ChecksumAddress, Tuple[ChecksumAddress, ThresholdSignatureResponse]
-        ]
+        signatures: Dict[ChecksumAddress, Tuple[ChecksumAddress, SignatureResponse]]
         errors: Dict[ChecksumAddress, str]
 
     class UrsulaVersionTooOld(Exception):
@@ -331,11 +330,11 @@ class Porter(Learner):
 
     def sign(
         self,
-        signing_requests: Dict[ChecksumAddress, ThresholdSignatureRequest],
+        signing_requests: Dict[ChecksumAddress, BaseSignatureRequest],
         threshold: int,
         timeout: Optional[int] = None,
     ) -> ThresholdSignatureOutcome:
-        signature_client = ThresholdSigningClient(self)
+        signature_client = SigningRequestClient(self)
         timeout = self._configure_timeout("signing", timeout, self.MAX_SIGNING_TIMEOUT)
         successes, failures = signature_client.gather_signatures(
             signing_requests=signing_requests,

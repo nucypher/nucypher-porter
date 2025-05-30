@@ -1,6 +1,11 @@
 # TODO: move this to nucypher_core
-from nucypher.types import ThresholdSignatureRequest as ThresholdSignatureRequestClass
-from nucypher.types import ThresholdSignatureResponse as ThresholdSignatureResponseClass
+from nucypher.network.signing import (
+    BaseSignatureRequest as SignatureRequestClass,
+)
+from nucypher.network.signing import SignatureResponse as SignatureResponseClass
+from nucypher.network.signing import (
+    deserialize_signature_request,
+)
 from nucypher_core import (
     EncryptedThresholdDecryptionRequest as EncryptedThresholdDecryptionRequestClass,
 )
@@ -66,15 +71,15 @@ class EncryptedThresholdDecryptionResponseField(Base64BytesRepresentation):
             ) from e
 
 
-class ThresholdSigningRequestField(Base64BytesRepresentation):
+class SignatureRequestField(Base64BytesRepresentation):
     """
     Parameter representation of threshold signing request.
     """
 
     def _serialize(self, value, attr, obj, **kwargs):
-        if not isinstance(value, ThresholdSignatureRequestClass):
+        if not isinstance(value, SignatureRequestClass):
             raise InvalidInputData(
-                f"Provided object is not an {ThresholdSignatureRequestClass.__name__}"
+                f"Provided object is not an {SignatureRequestClass.__name__}"
             )
 
         return super()._serialize(value, attr, obj, **kwargs)
@@ -84,24 +89,22 @@ class ThresholdSigningRequestField(Base64BytesRepresentation):
             threshold_signing_request_bytes = super()._deserialize(
                 value, attr, data, **kwargs
             )
-            return ThresholdSignatureRequestClass.from_bytes(
-                threshold_signing_request_bytes
-            )
+            return deserialize_signature_request(threshold_signing_request_bytes)
         except Exception as e:
             raise InvalidInputData(
-                f"Could not convert input for {self.name} to an {ThresholdSignatureRequestClass.__name__}: {e}"
+                f"Could not deserialize data for {self.name} to a valid SignatureRequest: {e}"
             ) from e
 
 
-class ThresholdSignatureResponseField(Base64BytesRepresentation):
+class SignatureResponseField(Base64BytesRepresentation):
     """
     Parameter representation of threshold signature response.
     """
 
     def _serialize(self, value, attr, obj, **kwargs):
-        if not isinstance(value, ThresholdSignatureResponseClass):
+        if not isinstance(value, SignatureResponseClass):
             raise InvalidInputData(
-                f"Provided object is not an {ThresholdSignatureResponseClass.__name__}"
+                f"Provided object is not an {SignatureResponseClass.__name__}"
             )
 
         return super()._serialize(value, attr, obj, **kwargs)
@@ -111,10 +114,10 @@ class ThresholdSignatureResponseField(Base64BytesRepresentation):
             encrypted_decryption_response_bytes = super()._deserialize(
                 value, attr, data, **kwargs
             )
-            return ThresholdSignatureResponseClass.from_bytes(
+            return SignatureResponseClass.from_bytes(
                 encrypted_decryption_response_bytes
             )
         except Exception as e:
             raise InvalidInputData(
-                f"Could not convert input for {self.name} to an {ThresholdSignatureResponseClass.__name__}: {e}"
+                f"Could not convert input for {self.name} to an {SignatureResponseClass.__name__}: {e}"
             ) from e
