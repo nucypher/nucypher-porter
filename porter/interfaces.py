@@ -2,7 +2,7 @@ import functools
 from typing import Dict, List, Optional
 
 from eth_typing import ChecksumAddress
-from nucypher.types import ThresholdSignatureRequest
+from nucypher.network.signing import BaseSignatureRequest
 from nucypher_core import EncryptedThresholdDecryptionRequest, RetrievalKit, TreasureMap
 from nucypher_core.umbral import PublicKey
 
@@ -104,7 +104,7 @@ class PorterInterface(ControlInterface):
     @attach_schema(schema.Sign)
     def sign(
         self,
-        signing_requests: Dict[ChecksumAddress, ThresholdSignatureRequest],
+        signing_requests: Dict[ChecksumAddress, BaseSignatureRequest],
         threshold: int,
         timeout: Optional[int] = None,
     ):
