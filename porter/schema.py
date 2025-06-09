@@ -16,8 +16,8 @@ from porter.fields.retrieve import CapsuleFrag, RetrievalKit
 from porter.fields.taco import (
     EncryptedThresholdDecryptionRequestField,
     EncryptedThresholdDecryptionResponseField,
-    ThresholdSignatureResponseField,
-    ThresholdSigningRequestField,
+    SignatureRequestField,
+    SignatureResponseField,
 )
 from porter.fields.treasuremap import TreasureMap
 from porter.fields.umbralkey import UmbralKey
@@ -259,7 +259,7 @@ class ThresholdSignatureOutcomeSchema(BaseSchema):
     signatures = marshmallow_fields.Dict(
         keys=UrsulaChecksumAddress(),
         values=marshmallow_fields.Tuple(
-            (UrsulaChecksumAddress(), ThresholdSignatureResponseField())
+            (UrsulaChecksumAddress(), SignatureResponseField())
         ),
     )
     errors = marshmallow_fields.Dict(
@@ -422,7 +422,7 @@ class Sign(BaseSchema):
     # input
     signing_requests = marshmallow_fields.Dict(
         keys=UrsulaChecksumAddress(),
-        values=ThresholdSigningRequestField(),
+        values=SignatureRequestField(),
         required=True,
         load_only=True,
         click=click.option(
