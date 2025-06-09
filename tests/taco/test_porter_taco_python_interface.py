@@ -2,7 +2,7 @@ import random
 from unittest.mock import ANY
 
 import pytest
-from nucypher.network.decryption import ThresholdDecryptionClient
+from nucypher.network.concurrency import ThresholdDecryptionClient
 from nucypher_core import SessionStaticSecret, ThresholdDecryptionRequest
 from nucypher_core.ferveo import (
     DecryptionShareSimple,
