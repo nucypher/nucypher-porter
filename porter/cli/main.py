@@ -4,7 +4,6 @@ from nucypher.characters.lawful import Ursula
 from nucypher.cli.config import group_general_config
 from nucypher.cli.options import (
     option_domain,
-    option_eth_endpoint,
     option_min_stake,
     option_registry_filepath,
     option_teacher_uri,
@@ -31,7 +30,13 @@ def porter_cli():
 @porter_cli.command()
 @group_general_config
 @option_domain(default=str(domains.DEFAULT_DOMAIN), validate=True, required=True)
-@option_eth_endpoint(required=True)
+@click.option(
+    "--eth-endpoint",
+    "eth_endpoint",
+    help="Blockchain provider's URI i.e. 'file:///path/to/geth.ipc'",
+    type=click.STRING,
+    required=True,
+)
 @click.option(
     "--polygon-endpoint",
     "polygon_endpoint",
