@@ -1,4 +1,4 @@
-FROM nucypher/rust-python:3.13.7
+FROM nucypher/rust-python:3.12.11
 
 # set default user
 USER $USER
@@ -7,10 +7,8 @@ USER $USER
 RUN sudo apt-get update -y
 RUN sudo apt-get full-upgrade -y
 
-
 # set default in-container workdir
 WORKDIR /code
-COPY . /code
 
 # Layer 1: Install dependencies
 COPY requirements.txt /code
