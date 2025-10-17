@@ -1,16 +1,22 @@
-# TODO: move this to nucypher_core
-from nucypher.network.signing import (
-    BaseSignatureRequest as SignatureRequestClass,
-)
-from nucypher.network.signing import SignatureResponse as SignatureResponseClass
-from nucypher.network.signing import (
-    deserialize_signature_request,
-)
+from typing import Union
+
 from nucypher_core import (
     EncryptedThresholdDecryptionRequest as EncryptedThresholdDecryptionRequestClass,
 )
 from nucypher_core import (
     EncryptedThresholdDecryptionResponse as EncryptedThresholdDecryptionResponseClass,
+)
+from nucypher_core import (
+    PackedUserOperationSignatureRequest as PackedUserOperationSignatureRequestClass,
+)
+from nucypher_core import (
+    SignatureResponse as SignatureResponseClass,
+)
+from nucypher_core import (
+    UserOperationSignatureRequest as UserOperationSignatureRequestClass,
+)
+from nucypher_core import (
+    deserialize_signature_request,
 )
 
 from porter.fields.base import Base64BytesRepresentation
@@ -73,26 +79,30 @@ class EncryptedThresholdDecryptionResponseField(Base64BytesRepresentation):
 
 class SignatureRequestField(Base64BytesRepresentation):
     """
-    Parameter representation of threshold signing request.
+    Parameter representation of threshold signature request.
     """
 
     def _serialize(self, value, attr, obj, **kwargs):
-        if not isinstance(value, SignatureRequestClass):
-            raise InvalidInputData(
-                f"Provided object is not an {SignatureRequestClass.__name__}"
-            )
+        if not isinstance(
+            value, PackedUserOperationSignatureRequestClass
+        ) and not isinstance(value, UserOperationSignatureRequestClass):
+            raise InvalidInputData("Provided object is not a valid signature request")
 
         return super()._serialize(value, attr, obj, **kwargs)
 
-    def _deserialize(self, value, attr, data, **kwargs):
+    def _deserialize(
+        self, value, attr, data, **kwargs
+    ) -> Union[
+        PackedUserOperationSignatureRequestClass, UserOperationSignatureRequestClass
+    ]:
         try:
-            threshold_signing_request_bytes = super()._deserialize(
+            threshold_signature_request_bytes = super()._deserialize(
                 value, attr, data, **kwargs
             )
-            return deserialize_signature_request(threshold_signing_request_bytes)
+            return deserialize_signature_request(threshold_signature_request_bytes)
         except Exception as e:
             raise InvalidInputData(
-                f"Could not deserialize data for {self.name} to a valid SignatureRequest: {e}"
+                f"Could not deserialize data for {self.name} to a valid signature request: {e}"
             ) from e
 
 

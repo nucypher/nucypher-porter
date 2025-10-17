@@ -1,9 +1,14 @@
 import functools
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from eth_typing import ChecksumAddress
-from nucypher.network.signing import BaseSignatureRequest
-from nucypher_core import EncryptedThresholdDecryptionRequest, RetrievalKit, TreasureMap
+from nucypher_core import (
+    EncryptedThresholdDecryptionRequest,
+    PackedUserOperationSignatureRequest,
+    RetrievalKit,
+    TreasureMap,
+    UserOperationSignatureRequest,
+)
 from nucypher_core.umbral import PublicKey
 
 from porter import main, schema
@@ -104,7 +109,10 @@ class PorterInterface(ControlInterface):
     @attach_schema(schema.Sign)
     def sign(
         self,
-        signing_requests: Dict[ChecksumAddress, BaseSignatureRequest],
+        signing_requests: Dict[
+            ChecksumAddress,
+            Union[PackedUserOperationSignatureRequest, UserOperationSignatureRequest],
+        ],
         threshold: int,
         timeout: Optional[int] = None,
     ):
