@@ -1,4 +1,4 @@
-FROM nucypher/rust-python:3.12.11
+FROM nucypher/rust-python:3.13.7
 
 # set default user
 USER $USER
@@ -6,6 +6,9 @@ USER $USER
 # update os
 RUN sudo apt-get update -y
 RUN sudo apt-get full-upgrade -y
+
+# install git (for git dependencies)
+RUN sudo apt-get install -y git
 
 # set default in-container workdir
 WORKDIR /code
