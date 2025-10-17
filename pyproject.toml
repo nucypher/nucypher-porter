@@ -10,7 +10,7 @@ python = ">=3.10,<4"
 ckzg = ">=2.1.1"  # required for python 3.13 support
 
 nucypher = {git = "https://github.com/nucypher/nucypher.git", branch = "v7.7.x"}
-nucypher-core = "==0.15.0"  # must be the same as nucypher
+nucypher-core = { git = "https://github.com/derekpierre/nucypher-core.git", branch = "signing", subdirectory = "nucypher-core-python" }
 flask-cors = "*"
 prometheus-flask-exporter = "*"
 
