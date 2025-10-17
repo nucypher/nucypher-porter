@@ -351,11 +351,12 @@ def dkg_setup(
 
     # configure validator cohort
     validators = []
-    for ursula in cohort:
+    for i, ursula in enumerate(cohort):
         validators.append(
             Validator(
                 address=ursula.checksum_address,
                 public_key=ursula.public_keys(RitualisticPower),
+                share_index=i,
             )
         )
 
@@ -363,7 +364,7 @@ def dkg_setup(
     cohort.sort(key=lambda x: x.checksum_address)  # sort to match
 
     # Go through ritual and set up Ursulas
-    transcripts = []
+    validator_messages = []
     for i, validator in enumerate(validators):
         transcript = dkg.generate_transcript(
             ritual_id=r_id,
@@ -372,14 +373,14 @@ def dkg_setup(
             threshold=threshold,
             nodes=validators,
         )
-        transcripts.append(transcript)
+        validator_messages.append(dkg.ValidatorMessage(validator, transcript))
 
-    aggregated_transcript, public_key = dkg.aggregate_transcripts(
+    aggregated_transcript = dkg.aggregate_transcripts(
         ritual_id=r_id,
         me=validators[0],
         shares=num_shares,
         threshold=threshold,
-        transcripts=list(zip(validators, transcripts)),
+        validator_messages=validator_messages,
     )
 
     now = maya.now()
@@ -394,14 +395,14 @@ def dkg_setup(
         threshold=threshold,
         total_transcripts=num_shares,
         total_aggregations=num_shares,
-        public_key=Ferveo.G1Point.from_dkg_public_key(public_key),
+        public_key=Ferveo.G1Point.from_dkg_public_key(aggregated_transcript.public_key),
         aggregation_mismatch=False,
         aggregated_transcript=bytes(aggregated_transcript),
         participants=[
             Coordinator.Participant(
                 provider=ursula.checksum_address,
                 aggregated=True,
-                transcript=bytes(transcripts[i]),
+                transcript=bytes(validator_messages[i].transcript),
                 decryption_request_static_key=ursula.threshold_request_power.get_pubkey_from_ritual_id(
                     r_id
                 ),
@@ -432,7 +433,7 @@ def dkg_setup(
 
     coordinator_agent.get_provider_public_key = mock_get_provider_public_key
 
-    return r_id, public_key, cohort, threshold
+    return r_id, aggregated_transcript.public_key, cohort, threshold
 
 
 PLAINTEXT = "peace at dawn"
