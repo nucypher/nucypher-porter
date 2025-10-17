@@ -9,9 +9,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.13'
       - uses: akaihola/darker@v2.1.1
         with:
           version: "2.1.1"  # defaults to same version, but can be modified
