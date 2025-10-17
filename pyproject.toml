@@ -9,14 +9,14 @@ python = ">=3.10,<4"
 
 ckzg = ">=2.1.1"  # required for python 3.13 support
 
-nucypher = {git = "https://github.com/nucypher/nucypher.git", branch = "v7.7.x"}
+nucypher = {git = "https://github.com/derekpierre/nucypher.git", branch = "common-signing-objects"}
 nucypher-core = { git = "https://github.com/derekpierre/nucypher-core.git", branch = "signing", subdirectory = "nucypher-core-python" }
 flask-cors = "*"
 prometheus-flask-exporter = "*"
 
 
 [tool.poetry.group.dev.dependencies]
-nucypher = {git = "https://github.com/nucypher/nucypher.git", branch = "v7.7.x", develop = true, extras = ["dev"]}  # needed for testerchain, and must be editable
+nucypher = {git = "https://github.com/derekpierre/nucypher.git", branch = "common-signing-objects", develop = true, extras = ["dev"]}  # needed for testerchain, and must be editable
 pytest = "*"
 pytest-cov = "*"
 pytest-mock = "*"
