@@ -463,3 +463,12 @@ class Sign(BaseSchema):
         ThresholdSignatureOutcomeSchema,
         dump_only=True,
     )
+
+    @validates_schema
+    def check_valid_threshold_and_requests(self, data, **kwargs):
+        threshold = data.get("threshold")
+        signing_requests = data.get("signing_requests")
+        if len(signing_requests) < threshold:
+            raise InvalidArgumentCombo(
+                "Number of provided requests must be >= the expected threshold"
+            )
