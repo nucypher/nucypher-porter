@@ -36,7 +36,9 @@ class EncryptedThresholdDecryptionRequestField(Base64BytesRepresentation):
 
         return super()._serialize(value, attr, obj, **kwargs)
 
-    def _deserialize(self, value, attr, data, **kwargs):
+    def _deserialize(
+        self, value, attr, data, **kwargs
+    ) -> EncryptedThresholdDecryptionRequestClass:
         try:
             encrypted_decryption_request_bytes = super()._deserialize(
                 value, attr, data, **kwargs
@@ -63,7 +65,9 @@ class EncryptedThresholdDecryptionResponseField(Base64BytesRepresentation):
 
         return super()._serialize(value, attr, obj, **kwargs)
 
-    def _deserialize(self, value, attr, data, **kwargs):
+    def _deserialize(
+        self, value, attr, data, **kwargs
+    ) -> EncryptedThresholdDecryptionResponseClass:
         try:
             encrypted_decryption_response_bytes = super()._deserialize(
                 value, attr, data, **kwargs
@@ -119,7 +123,7 @@ class SignatureResponseField(Base64BytesRepresentation):
 
         return super()._serialize(value, attr, obj, **kwargs)
 
-    def _deserialize(self, value, attr, data, **kwargs):
+    def _deserialize(self, value, attr, data, **kwargs) -> SignatureResponseClass:
         try:
             encrypted_decryption_response_bytes = super()._deserialize(
                 value, attr, data, **kwargs
