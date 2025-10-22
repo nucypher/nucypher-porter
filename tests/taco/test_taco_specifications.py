@@ -271,6 +271,11 @@ def test_taco_sign_schema(
         sender=get_random_checksum_address(),
         nonce=0,
         call_data=b"12345",
+        verification_gas_limit=100000,
+        call_gas_limit=200000,
+        pre_verification_gas=21000,
+        max_priority_fee_per_gas=1000000000,
+        max_fee_per_gas=2000000000,
     )
     signing_request = UserOperationSignatureRequest(
         user_op=user_op,
