@@ -232,10 +232,13 @@ def test_taco_sign_success(
     assert len(signing_outcome.signatures) >= threshold
 
     cohort_checksum_addresses = [ursula.checksum_address for ursula in cohort]
+    signer_addresses = {
+        ursula.checksum_address: ursula.operator_address for ursula in cohort
+    }
     common_hash = None
-    for ursula_address, response_tuple in signing_outcome.signatures.items():
+    for ursula_address, request_response in signing_outcome.signatures.items():
         assert ursula_address in cohort_checksum_addresses
-        request_response = response_tuple[1]
+        assert request_response.signer == signer_addresses[ursula_address]
         assert len(request_response.signature) == 65  # ECDSA signature length
         assert request_response.signature_type == signing_request.signature_type
         if common_hash is None:

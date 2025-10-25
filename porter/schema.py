@@ -257,10 +257,7 @@ class PRERetrieveCFrags(BaseSchema):
 class ThresholdSignatureOutcomeSchema(BaseSchema):
 
     signatures = marshmallow_fields.Dict(
-        keys=UrsulaChecksumAddress(),
-        values=marshmallow_fields.Tuple(
-            (UrsulaChecksumAddress(), SignatureResponseField())
-        ),
+        keys=UrsulaChecksumAddress(), values=SignatureResponseField()
     )
     errors = marshmallow_fields.Dict(
         keys=UrsulaChecksumAddress(), values=marshmallow_fields.String()

@@ -418,13 +418,12 @@ def test_taco_sign(porter, signing_cohort_setup, signature_request, request):
     signature_response_field = SignatureResponseField()
     for (
         ursula_checksum_address,
-        (operator_address, signature_response),
+        signature_response,
     ) in signing_outcome.signatures.items():
-        assert output["signing_results"]["signatures"][ursula_checksum_address] == (
-            operator_address,
-            signature_response_field._serialize(
-                value=signature_response, attr=None, obj=None
-            ),
+        assert output["signing_results"]["signatures"][
+            ursula_checksum_address
+        ] == signature_response_field._serialize(
+            value=signature_response, attr=None, obj=None
         )
 
     assert len(output["signing_results"]["errors"]) == 0
@@ -448,13 +447,12 @@ def test_taco_sign(porter, signing_cohort_setup, signature_request, request):
     assert output["signing_results"]["signatures"] == faked_outcome_json["signatures"]
     for (
         ursula_checksum_address,
-        (operator_address, signature_response),
+        signature_response,
     ) in faked_signing_outcome.signatures.items():
-        assert output["signing_results"]["signatures"][ursula_checksum_address] == (
-            operator_address,
-            signature_response_field._serialize(
-                value=signature_response, attr=None, obj=None
-            ),
+        assert output["signing_results"]["signatures"][
+            ursula_checksum_address
+        ] == signature_response_field._serialize(
+            value=signature_response, attr=None, obj=None
         )
 
     assert len(output["signing_results"]["errors"]) == len(errors)

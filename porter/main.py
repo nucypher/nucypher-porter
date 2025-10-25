@@ -134,7 +134,7 @@ class Porter(Learner):
         one or more Ursulas.
         """
 
-        signatures: Dict[ChecksumAddress, Tuple[ChecksumAddress, SignatureResponse]]
+        signatures: Dict[ChecksumAddress, SignatureResponse]
         errors: Dict[ChecksumAddress, str]
 
     class UrsulaVersionTooOld(Exception):
