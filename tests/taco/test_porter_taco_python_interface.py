@@ -233,7 +233,8 @@ def test_taco_sign_success(
 
     cohort_checksum_addresses = [ursula.checksum_address for ursula in cohort]
     signer_addresses = {
-        ursula.checksum_address: ursula.operator_address for ursula in cohort
+        ursula.checksum_address: ursula.threshold_signing_power.account
+        for ursula in cohort
     }
     common_hash = None
     for ursula_address, request_response in signing_outcome.signatures.items():

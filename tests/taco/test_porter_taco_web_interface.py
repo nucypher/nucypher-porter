@@ -246,7 +246,9 @@ def test_taco_sign(
 
     signature_response_field = SignatureResponseField()
     cohort_checksum_addresses = [ursula.checksum_address for ursula in cohort]
-    signer_addresses = {u.checksum_address: u.operator_address for u in cohort}
+    signer_addresses = {
+        u.checksum_address: u.threshold_signing_power.account for u in cohort
+    }
     common_hash = None
     for ursula_address, signature_response in signing_results["signatures"].items():
         assert ursula_address in cohort_checksum_addresses
