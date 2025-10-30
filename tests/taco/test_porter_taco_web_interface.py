@@ -280,7 +280,7 @@ def test_taco_sign_errors(
     signature_request_field = SignatureRequestField()
 
     #
-    # Errors (some invalid threshold decryption requests)
+    # Errors (some invalid threshold signing requests)
     #
     signing_requests = {}
     for i in range(0, len(cohort)):
