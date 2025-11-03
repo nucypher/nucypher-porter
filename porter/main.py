@@ -31,11 +31,10 @@ from nucypher.utilities.logging import Logger
 from nucypher_core import (
     EncryptedThresholdDecryptionRequest,
     EncryptedThresholdDecryptionResponse,
-    PackedUserOperationSignatureRequest,
+    EncryptedThresholdSignatureRequest,
+    EncryptedThresholdSignatureResponse,
     RetrievalKit,
-    SignatureResponse,
     TreasureMap,
-    UserOperationSignatureRequest,
 )
 from nucypher_core.umbral import PublicKey
 from packaging.version import Version, parse
@@ -134,7 +133,7 @@ class Porter(Learner):
         one or more Ursulas.
         """
 
-        signatures: Dict[ChecksumAddress, SignatureResponse]
+        signatures: Dict[ChecksumAddress, EncryptedThresholdSignatureResponse]
         errors: Dict[ChecksumAddress, str]
 
     class UrsulaVersionTooOld(Exception):
@@ -331,9 +330,9 @@ class Porter(Learner):
 
     def sign(
         self,
-        signing_requests: Dict[
+        encrypted_signing_requests: Dict[
             ChecksumAddress,
-            Union[PackedUserOperationSignatureRequest, UserOperationSignatureRequest],
+            EncryptedThresholdSignatureRequest,
         ],
         threshold: int,
         timeout: Optional[int] = None,
@@ -341,7 +340,7 @@ class Porter(Learner):
         signature_client = SigningRequestClient(self)
         timeout = self._configure_timeout("signing", timeout, self.MAX_SIGNING_TIMEOUT)
         successes, failures = signature_client.gather_signatures(
-            signing_requests=signing_requests,
+            encrypted_requests=encrypted_signing_requests,
             threshold=threshold,
             timeout=timeout,
         )

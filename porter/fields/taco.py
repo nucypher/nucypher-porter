@@ -1,11 +1,8 @@
-from typing import Union
-
 from nucypher_core import (
     EncryptedThresholdDecryptionRequest,
     EncryptedThresholdDecryptionResponse,
-    PackedUserOperationSignatureRequest,
-    SignatureResponse,
-    UserOperationSignatureRequest,
+    EncryptedThresholdSignatureRequest,
+    EncryptedThresholdSignatureResponse,
     deserialize_signature_request,
 )
 
@@ -38,7 +35,8 @@ class EncryptedThresholdDecryptionRequestField(Base64BytesRepresentation):
             )
         except Exception as e:
             raise InvalidInputData(
-                f"Could not convert input for {self.name} to an {EncryptedThresholdDecryptionRequest.__name__}: {e}"
+                f"Could not convert input for {self.name} to an "
+                f"{EncryptedThresholdDecryptionRequest.__name__}: {e}"
             ) from e
 
 
@@ -67,61 +65,66 @@ class EncryptedThresholdDecryptionResponseField(Base64BytesRepresentation):
             )
         except Exception as e:
             raise InvalidInputData(
-                f"Could not convert input for {self.name} to an {EncryptedThresholdDecryptionResponse.__name__}: {e}"
+                f"Could not convert input for {self.name} to an "
+                f"{EncryptedThresholdDecryptionResponse.__name__}: {e}"
             ) from e
 
 
-class SignatureRequestField(Base64BytesRepresentation):
+class EncryptedThresholdSignatureRequestField(Base64BytesRepresentation):
     """
     Parameter representation of threshold signature request.
     """
 
     def _serialize(self, value, attr, obj, **kwargs):
-        if not isinstance(
-            value,
-            (
-                PackedUserOperationSignatureRequest,
-                UserOperationSignatureRequest,
-            ),
-        ):
-            raise InvalidInputData("Provided object is not a valid signature request")
+        if not isinstance(value, EncryptedThresholdSignatureRequest):
+            raise InvalidInputData(
+                f"Provided object is not an {EncryptedThresholdSignatureRequest.__name__}"
+            )
 
         return super()._serialize(value, attr, obj, **kwargs)
 
     def _deserialize(
         self, value, attr, data, **kwargs
-    ) -> Union[PackedUserOperationSignatureRequest, UserOperationSignatureRequest]:
+    ) -> EncryptedThresholdSignatureRequest:
         try:
-            threshold_signature_request_bytes = super()._deserialize(
+            encrypted_threshold_signature_request_bytes = super()._deserialize(
                 value, attr, data, **kwargs
             )
-            return deserialize_signature_request(threshold_signature_request_bytes)
+            return EncryptedThresholdSignatureRequest.from_bytes(
+                encrypted_threshold_signature_request_bytes
+            )
         except Exception as e:
             raise InvalidInputData(
-                f"Could not deserialize data for {self.name} to a valid signature request: {e}"
+                f"Could not convert input for {self.name} to an "
+                f"{EncryptedThresholdSignatureRequest.__name__}: {e}"
             ) from e
 
 
-class SignatureResponseField(Base64BytesRepresentation):
+class EncryptedThresholdSignatureResponseField(Base64BytesRepresentation):
     """
     Parameter representation of threshold signature response.
     """
 
     def _serialize(self, value, attr, obj, **kwargs):
-        if not isinstance(value, SignatureResponse):
+        if not isinstance(value, EncryptedThresholdSignatureResponse):
             raise InvalidInputData(
-                f"Provided object is not an {SignatureResponse.__name__}"
+                f"Provided object is not an {EncryptedThresholdSignatureResponse.__name__}"
             )
 
         return super()._serialize(value, attr, obj, **kwargs)
 
-    def _deserialize(self, value, attr, data, **kwargs) -> SignatureResponse:
+    def _deserialize(
+        self, value, attr, data, **kwargs
+    ) -> EncryptedThresholdSignatureResponse:
         try:
             encrypted_decryption_response_bytes = super()._deserialize(
                 value, attr, data, **kwargs
             )
-            return SignatureResponse.from_bytes(encrypted_decryption_response_bytes)
+            return EncryptedThresholdSignatureResponse.from_bytes(
+                encrypted_decryption_response_bytes
+            )
         except Exception as e:
             raise InvalidInputData(
-                f"Could not convert input for {self.name} to an {SignatureResponse.__name__}: {e}"
+                f"Could not convert input for {self.name} to an "
+                f"{EncryptedThresholdSignatureResponse.__name__}: {e}"
             ) from e
