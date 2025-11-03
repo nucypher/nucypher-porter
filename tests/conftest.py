@@ -506,7 +506,10 @@ def signing_cohort_setup(
         signers=[
             SigningCoordinator.SigningCohortParticipant(
                 provider=ursula.checksum_address,
-                signerAddress=ursula.threshold_signing_power.account,
+                signer_address=ursula.threshold_signing_power.account,
+                signing_request_key=ursula.signing_request_power.get_pubkey_from_ritual_id(
+                    c_id
+                ),
             )
             for i, ursula in enumerate(cohort)
         ],

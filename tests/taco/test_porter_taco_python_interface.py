@@ -215,13 +215,26 @@ def test_taco_sign_success(
     cohort_id, cohort, threshold = signing_cohort_setup
     signing_request = request.getfixturevalue(signing_request)
 
-    signing_requests = {}
+    requester_secret_key = SessionStaticSecret.random()
+
+    encrypted_signing_requests = {}
+    shared_secrets = {}
     for ursula in cohort:
-        signing_requests[ursula.checksum_address] = signing_request
+        ursula_signature_request_static_key = (
+            ursula.signing_request_power.get_pubkey_from_ritual_id(cohort_id)
+        )
+        shared_secret = requester_secret_key.derive_shared_secret(
+            ursula_signature_request_static_key
+        )
+        encrypted_signing_requests[ursula.checksum_address] = signing_request.encrypt(
+            shared_secret=shared_secret,
+            requester_public_key=requester_secret_key.public_key(),
+        )
+        shared_secrets[ursula.checksum_address] = shared_secret
 
     signing_outcome = porter.sign(
         threshold=threshold,
-        signing_requests=signing_requests,
+        encrypted_signing_requests=encrypted_signing_requests,
         timeout=timeout,
     )
 
@@ -237,8 +250,15 @@ def test_taco_sign_success(
         for ursula in cohort
     }
     common_hash = None
-    for ursula_address, request_response in signing_outcome.signatures.items():
+    for (
+        ursula_address,
+        encrypted_request_response,
+    ) in signing_outcome.signatures.items():
         assert ursula_address in cohort_checksum_addresses
+        shared_secret = shared_secrets[ursula_address]
+        request_response = encrypted_request_response.decrypt(
+            shared_secret=shared_secret
+        )
         assert request_response.signer == signer_addresses[ursula_address]
         assert len(request_response.signature) == 65  # ECDSA signature length
         assert request_response.signature_type == signing_request.signature_type
@@ -264,6 +284,8 @@ def test_taco_sign_failure(
 ):
     cohort_id, cohort, threshold = signing_cohort_setup
     signing_request_fixture = request.getfixturevalue(signing_request)
+    requester_secret_key = SessionStaticSecret.random()
+
     if isinstance(signing_request_fixture, UserOperationSignatureRequest):
         # make the cohort inactive to simulate failure
         signing_request = UserOperationSignatureRequest(
@@ -282,14 +304,23 @@ def test_taco_sign_failure(
             context=None,
         )
 
-    signing_requests = {}
+    encrypted_signing_requests = {}
     for ursula in cohort:
-        signing_requests[ursula.checksum_address] = signing_request
+        ursula_signature_request_static_key = (
+            ursula.signing_request_power.get_pubkey_from_ritual_id(cohort_id)
+        )
+        shared_secret = requester_secret_key.derive_shared_secret(
+            ursula_signature_request_static_key
+        )
+        encrypted_signing_requests[ursula.checksum_address] = signing_request.encrypt(
+            shared_secret=shared_secret,
+            requester_public_key=requester_secret_key.public_key(),
+        )
 
     # errors - invalid encrypting key used for request
     sign_outcome = porter.sign(
         threshold=threshold,
-        signing_requests=signing_requests,
+        encrypted_signing_requests=encrypted_signing_requests,
         timeout=timeout,
     )
 
@@ -304,9 +335,22 @@ def test_taco_sign_request_ordering(
     mocker, porter, signing_cohort_setup, user_op_signature_request
 ):
     cohort_id, cohort, threshold = signing_cohort_setup
-    signing_requests = {}
+    requester_secret_key = SessionStaticSecret.random()
+
+    encrypted_signing_requests = {}
     for ursula in cohort:
-        signing_requests[ursula.checksum_address] = user_op_signature_request
+        ursula_signature_request_static_key = (
+            ursula.signing_request_power.get_pubkey_from_ritual_id(cohort_id)
+        )
+        shared_secret = requester_secret_key.derive_shared_secret(
+            ursula_signature_request_static_key
+        )
+        encrypted_signing_requests[ursula.checksum_address] = (
+            user_op_signature_request.encrypt(
+                shared_secret=shared_secret,
+                requester_public_key=requester_secret_key.public_key(),
+            )
+        )
 
     # make up fake latency stats
     latency_stats = {}
@@ -339,7 +383,7 @@ def test_taco_sign_request_ordering(
 
     sign_outcome = porter.sign(
         threshold=threshold,
-        signing_requests=signing_requests,
+        encrypted_signing_requests=encrypted_signing_requests,
     )
 
     # check that proper ordering of ursulas used for worker pool factory for requests
