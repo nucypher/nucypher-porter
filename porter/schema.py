@@ -254,20 +254,6 @@ class PRERetrieveCFrags(BaseSchema):
 #
 
 
-class ThresholdSignatureOutcomeSchema(BaseSchema):
-
-    signatures = marshmallow_fields.Dict(
-        keys=UrsulaChecksumAddress(), values=SignatureResponseField()
-    )
-    errors = marshmallow_fields.Dict(
-        keys=UrsulaChecksumAddress(), values=marshmallow_fields.String()
-    )
-
-    # maintain field declaration ordering
-    class Meta:
-        ordered = True
-
-
 class DecryptOutcomeSchema(BaseSchema):
     """Schema for the result of /retrieve_cfrags endpoint."""
 
@@ -413,6 +399,20 @@ class BucketSampling(BaseSchema):
     # output
     ursulas = marshmallow_fields.List(UrsulaChecksumAddress, dump_only=True)
     block_number = marshmallow_fields.Int(dump_only=True)
+
+
+class ThresholdSignatureOutcomeSchema(BaseSchema):
+
+    signatures = marshmallow_fields.Dict(
+        keys=UrsulaChecksumAddress(), values=SignatureResponseField()
+    )
+    errors = marshmallow_fields.Dict(
+        keys=UrsulaChecksumAddress(), values=marshmallow_fields.String()
+    )
+
+    # maintain field declaration ordering
+    class Meta:
+        ordered = True
 
 
 class Sign(BaseSchema):
