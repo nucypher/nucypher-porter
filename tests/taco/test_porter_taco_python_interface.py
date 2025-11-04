@@ -242,7 +242,7 @@ def test_taco_sign_success(
     assert len(signing_outcome.errors) == 0, signing_outcome.errors
 
     # sufficient successes
-    assert len(signing_outcome.signatures) >= threshold
+    assert len(signing_outcome.encrypted_signature_responses) >= threshold
 
     cohort_checksum_addresses = [ursula.checksum_address for ursula in cohort]
     signer_addresses = {
@@ -252,11 +252,11 @@ def test_taco_sign_success(
     common_hash = None
     for (
         ursula_address,
-        encrypted_request_response,
-    ) in signing_outcome.signatures.items():
+        encrypted_signature_response,
+    ) in signing_outcome.encrypted_signature_responses.items():
         assert ursula_address in cohort_checksum_addresses
         shared_secret = shared_secrets[ursula_address]
-        request_response = encrypted_request_response.decrypt(
+        request_response = encrypted_signature_response.decrypt(
             shared_secret=shared_secret
         )
         assert request_response.signer == signer_addresses[ursula_address]
@@ -325,7 +325,7 @@ def test_taco_sign_failure(
     )
 
     # no successes
-    assert len(sign_outcome.signatures) == 0
+    assert len(sign_outcome.encrypted_signature_responses) == 0
 
     # no errors
     assert len(sign_outcome.errors) == len(cohort)  # all ursulas fail
@@ -395,7 +395,7 @@ def test_taco_sign_request_ordering(
     )
 
     # sufficient successes
-    assert len(sign_outcome.signatures) >= threshold
+    assert len(sign_outcome.encrypted_signature_responses) >= threshold
 
     # no errors
     assert len(sign_outcome.errors) == 0

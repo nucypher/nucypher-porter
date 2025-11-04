@@ -263,8 +263,8 @@ def test_taco_sign(
     errors = signing_results["errors"]
     assert len(errors) == 0, f"{errors}"  # no errors
 
-    assert len(signing_results["signatures"]) >= threshold
-    encrypted_signature_responses = signing_results["signatures"]
+    assert len(signing_results["encrypted_signature_responses"]) >= threshold
+    encrypted_signature_responses = signing_results["encrypted_signature_responses"]
 
     signature_response_field = EncryptedThresholdSignatureResponseField()
     cohort_checksum_addresses = [ursula.checksum_address for ursula in cohort]
@@ -353,6 +353,6 @@ def test_taco_sign_errors(
 
     decryption_results = response_data["result"]["signing_results"]
     assert decryption_results
-    assert len(decryption_results["signatures"]) == (threshold - 1)
+    assert len(decryption_results["encrypted_signature_responses"]) == (threshold - 1)
     errors = decryption_results["errors"]
     assert len(errors) == (len(cohort) - (threshold - 1))

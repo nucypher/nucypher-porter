@@ -416,20 +416,23 @@ def test_taco_sign(porter, signing_cohort_setup, signature_request, request):
     )
 
     assert len(signing_outcome.errors) == 0, f"{signing_outcome.errors}"
-    assert len(signing_outcome.signatures) >= threshold
+    assert len(signing_outcome.encrypted_signature_responses) >= threshold
 
     sign_outcome_schema = ThresholdSignatureOutcomeSchema()
     outcome_json = sign_outcome_schema.dump(signing_outcome)
     output = sign_schema.dump(obj={"signing_results": signing_outcome})
-    assert len(output["signing_results"]["signatures"]) >= threshold
-    assert output["signing_results"]["signatures"] == outcome_json["signatures"]
+    assert len(output["signing_results"]["encrypted_signature_responses"]) >= threshold
+    assert (
+        output["signing_results"]["encrypted_signature_responses"]
+        == outcome_json["encrypted_signature_responses"]
+    )
 
     encrypted_signature_response_field = EncryptedThresholdSignatureResponseField()
     for (
         ursula_checksum_address,
         encrypted_signature_response,
-    ) in signing_outcome.signatures.items():
-        assert output["signing_results"]["signatures"][
+    ) in signing_outcome.encrypted_signature_responses.items():
+        assert output["signing_results"]["encrypted_signature_responses"][
             ursula_checksum_address
         ] == encrypted_signature_response_field._serialize(
             value=encrypted_signature_response, attr=None, obj=None
@@ -447,18 +450,21 @@ def test_taco_sign(porter, signing_cohort_setup, signature_request, request):
         errors[ursula_checksum_address] = f"Error Message {i}"
 
     faked_signing_outcome = Porter.ThresholdSignatureOutcome(
-        signatures=signing_outcome.signatures,
+        encrypted_signature_responses=signing_outcome.encrypted_signature_responses,
         errors=errors,
     )
     faked_outcome_json = sign_outcome_schema.dump(faked_signing_outcome)
     output = sign_schema.dump(obj={"signing_results": faked_signing_outcome})
-    assert len(output["signing_results"]["signatures"]) >= threshold
-    assert output["signing_results"]["signatures"] == faked_outcome_json["signatures"]
+    assert len(output["signing_results"]["encrypted_signature_responses"]) >= threshold
+    assert (
+        output["signing_results"]["encrypted_signature_responses"]
+        == faked_outcome_json["encrypted_signature_responses"]
+    )
     for (
         ursula_checksum_address,
         encrypted_signature_response,
-    ) in faked_signing_outcome.signatures.items():
-        assert output["signing_results"]["signatures"][
+    ) in faked_signing_outcome.encrypted_signature_responses.items():
+        assert output["signing_results"]["encrypted_signature_responses"][
             ursula_checksum_address
         ] == encrypted_signature_response_field._serialize(
             value=encrypted_signature_response, attr=None, obj=None

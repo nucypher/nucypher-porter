@@ -403,7 +403,7 @@ class BucketSampling(BaseSchema):
 
 class ThresholdSignatureOutcomeSchema(BaseSchema):
 
-    signatures = marshmallow_fields.Dict(
+    encrypted_signature_responses = marshmallow_fields.Dict(
         keys=UrsulaChecksumAddress(), values=EncryptedThresholdSignatureResponseField()
     )
     errors = marshmallow_fields.Dict(

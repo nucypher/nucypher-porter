@@ -133,7 +133,9 @@ class Porter(Learner):
         one or more Ursulas.
         """
 
-        signatures: Dict[ChecksumAddress, EncryptedThresholdSignatureResponse]
+        encrypted_signature_responses: Dict[
+            ChecksumAddress, EncryptedThresholdSignatureResponse
+        ]
         errors: Dict[ChecksumAddress, str]
 
     class UrsulaVersionTooOld(Exception):
@@ -345,7 +347,7 @@ class Porter(Learner):
             timeout=timeout,
         )
         signature_outcome = Porter.ThresholdSignatureOutcome(
-            signatures=successes, errors=failures
+            encrypted_signature_responses=successes, errors=failures
         )
         return signature_outcome
 
