@@ -48,12 +48,19 @@ def test_ursula_checksum_address_field(get_random_checksum_address):
     assert serialized != other_address
 
     # test letter case of address
-    serialized = field._serialize(value=ursula_checksum.lower(), attr=None, obj=None)
-    assert serialized == ursula_checksum
-    assert serialized != ursula_checksum.lower()
-    serialized = field._serialize(value=ursula_checksum.upper(), attr=None, obj=None)
-    assert serialized == ursula_checksum
-    assert serialized != ursula_checksum.lower()
+    if ursula_checksum != ursula_checksum.lower():
+        serialized = field._serialize(
+            value=ursula_checksum.lower(), attr=None, obj=None
+        )
+        assert serialized == ursula_checksum
+        assert serialized != ursula_checksum.lower()
+
+    if ursula_checksum != ursula_checksum.upper():
+        serialized = field._serialize(
+            value=ursula_checksum.upper(), attr=None, obj=None
+        )
+        assert serialized == ursula_checksum
+        assert serialized != ursula_checksum.upper()
 
     with pytest.raises(InvalidInputData):
         field._serialize(value="0xdeadbeef", attr=None, obj=None)
