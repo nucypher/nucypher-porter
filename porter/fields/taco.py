@@ -3,7 +3,6 @@ from nucypher_core import (
     EncryptedThresholdDecryptionResponse,
     EncryptedThresholdSignatureRequest,
     EncryptedThresholdSignatureResponse,
-    deserialize_signature_request,
 )
 
 from porter.fields.base import Base64BytesRepresentation
@@ -87,11 +86,11 @@ class EncryptedThresholdSignatureRequestField(Base64BytesRepresentation):
         self, value, attr, data, **kwargs
     ) -> EncryptedThresholdSignatureRequest:
         try:
-            encrypted_threshold_signature_request_bytes = super()._deserialize(
+            encrypted_signature_request_bytes = super()._deserialize(
                 value, attr, data, **kwargs
             )
             return EncryptedThresholdSignatureRequest.from_bytes(
-                encrypted_threshold_signature_request_bytes
+                encrypted_signature_request_bytes
             )
         except Exception as e:
             raise InvalidInputData(
@@ -117,11 +116,11 @@ class EncryptedThresholdSignatureResponseField(Base64BytesRepresentation):
         self, value, attr, data, **kwargs
     ) -> EncryptedThresholdSignatureResponse:
         try:
-            encrypted_decryption_response_bytes = super()._deserialize(
+            encrypted_signature_response_bytes = super()._deserialize(
                 value, attr, data, **kwargs
             )
             return EncryptedThresholdSignatureResponse.from_bytes(
-                encrypted_decryption_response_bytes
+                encrypted_signature_response_bytes
             )
         except Exception as e:
             raise InvalidInputData(

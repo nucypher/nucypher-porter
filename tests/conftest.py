@@ -517,8 +517,6 @@ def signing_cohort_setup(
         conditions={TESTERCHAIN_CHAIN_ID: json.dumps(CONDITIONS).encode("utf-8")},
     )
 
-    cohort_checksum_addresses = [ursula.checksum_address for ursula in cohort]
-
     # Configure SigningCoordinatorAgent
     signing_coordinator_agent.is_cohort_active = lambda cohort_id: cohort_id == c_id
     signing_coordinator_agent.is_signer = (
