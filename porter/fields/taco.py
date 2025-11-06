@@ -1,21 +1,11 @@
 from typing import Union
 
 from nucypher_core import (
-    EncryptedThresholdDecryptionRequest as EncryptedThresholdDecryptionRequestClass,
-)
-from nucypher_core import (
-    EncryptedThresholdDecryptionResponse as EncryptedThresholdDecryptionResponseClass,
-)
-from nucypher_core import (
-    PackedUserOperationSignatureRequest as PackedUserOperationSignatureRequestClass,
-)
-from nucypher_core import (
-    SignatureResponse as SignatureResponseClass,
-)
-from nucypher_core import (
-    UserOperationSignatureRequest as UserOperationSignatureRequestClass,
-)
-from nucypher_core import (
+    EncryptedThresholdDecryptionRequest,
+    EncryptedThresholdDecryptionResponse,
+    PackedUserOperationSignatureRequest,
+    SignatureResponse,
+    UserOperationSignatureRequest,
     deserialize_signature_request,
 )
 
@@ -29,26 +19,26 @@ class EncryptedThresholdDecryptionRequestField(Base64BytesRepresentation):
     """
 
     def _serialize(self, value, attr, obj, **kwargs):
-        if not isinstance(value, EncryptedThresholdDecryptionRequestClass):
+        if not isinstance(value, EncryptedThresholdDecryptionRequest):
             raise InvalidInputData(
-                f"Provided object is not an {EncryptedThresholdDecryptionRequestClass.__name__}"
+                f"Provided object is not an {EncryptedThresholdDecryptionRequest.__name__}"
             )
 
         return super()._serialize(value, attr, obj, **kwargs)
 
     def _deserialize(
         self, value, attr, data, **kwargs
-    ) -> EncryptedThresholdDecryptionRequestClass:
+    ) -> EncryptedThresholdDecryptionRequest:
         try:
             encrypted_decryption_request_bytes = super()._deserialize(
                 value, attr, data, **kwargs
             )
-            return EncryptedThresholdDecryptionRequestClass.from_bytes(
+            return EncryptedThresholdDecryptionRequest.from_bytes(
                 encrypted_decryption_request_bytes
             )
         except Exception as e:
             raise InvalidInputData(
-                f"Could not convert input for {self.name} to an {EncryptedThresholdDecryptionRequestClass.__name__}: {e}"
+                f"Could not convert input for {self.name} to an {EncryptedThresholdDecryptionRequest.__name__}: {e}"
             ) from e
 
 
@@ -58,26 +48,26 @@ class EncryptedThresholdDecryptionResponseField(Base64BytesRepresentation):
     """
 
     def _serialize(self, value, attr, obj, **kwargs):
-        if not isinstance(value, EncryptedThresholdDecryptionResponseClass):
+        if not isinstance(value, EncryptedThresholdDecryptionResponse):
             raise InvalidInputData(
-                f"Provided object is not an {EncryptedThresholdDecryptionResponseClass.__name__}"
+                f"Provided object is not an {EncryptedThresholdDecryptionResponse.__name__}"
             )
 
         return super()._serialize(value, attr, obj, **kwargs)
 
     def _deserialize(
         self, value, attr, data, **kwargs
-    ) -> EncryptedThresholdDecryptionResponseClass:
+    ) -> EncryptedThresholdDecryptionResponse:
         try:
             encrypted_decryption_response_bytes = super()._deserialize(
                 value, attr, data, **kwargs
             )
-            return EncryptedThresholdDecryptionResponseClass.from_bytes(
+            return EncryptedThresholdDecryptionResponse.from_bytes(
                 encrypted_decryption_response_bytes
             )
         except Exception as e:
             raise InvalidInputData(
-                f"Could not convert input for {self.name} to an {EncryptedThresholdDecryptionResponseClass.__name__}: {e}"
+                f"Could not convert input for {self.name} to an {EncryptedThresholdDecryptionResponse.__name__}: {e}"
             ) from e
 
 
@@ -88,17 +78,19 @@ class SignatureRequestField(Base64BytesRepresentation):
 
     def _serialize(self, value, attr, obj, **kwargs):
         if not isinstance(
-            value, PackedUserOperationSignatureRequestClass
-        ) and not isinstance(value, UserOperationSignatureRequestClass):
+            value,
+            (
+                PackedUserOperationSignatureRequest,
+                UserOperationSignatureRequest,
+            ),
+        ):
             raise InvalidInputData("Provided object is not a valid signature request")
 
         return super()._serialize(value, attr, obj, **kwargs)
 
     def _deserialize(
         self, value, attr, data, **kwargs
-    ) -> Union[
-        PackedUserOperationSignatureRequestClass, UserOperationSignatureRequestClass
-    ]:
+    ) -> Union[PackedUserOperationSignatureRequest, UserOperationSignatureRequest]:
         try:
             threshold_signature_request_bytes = super()._deserialize(
                 value, attr, data, **kwargs
@@ -116,22 +108,20 @@ class SignatureResponseField(Base64BytesRepresentation):
     """
 
     def _serialize(self, value, attr, obj, **kwargs):
-        if not isinstance(value, SignatureResponseClass):
+        if not isinstance(value, SignatureResponse):
             raise InvalidInputData(
-                f"Provided object is not an {SignatureResponseClass.__name__}"
+                f"Provided object is not an {SignatureResponse.__name__}"
             )
 
         return super()._serialize(value, attr, obj, **kwargs)
 
-    def _deserialize(self, value, attr, data, **kwargs) -> SignatureResponseClass:
+    def _deserialize(self, value, attr, data, **kwargs) -> SignatureResponse:
         try:
             encrypted_decryption_response_bytes = super()._deserialize(
                 value, attr, data, **kwargs
             )
-            return SignatureResponseClass.from_bytes(
-                encrypted_decryption_response_bytes
-            )
+            return SignatureResponse.from_bytes(encrypted_decryption_response_bytes)
         except Exception as e:
             raise InvalidInputData(
-                f"Could not convert input for {self.name} to an {SignatureResponseClass.__name__}: {e}"
+                f"Could not convert input for {self.name} to an {SignatureResponse.__name__}: {e}"
             ) from e
