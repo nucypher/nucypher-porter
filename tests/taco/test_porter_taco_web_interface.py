@@ -50,7 +50,7 @@ def test_taco_decrypt(
     shared_secrets = {}
     for ursula in cohort:
         ursula_decryption_request_static_key = (
-            ursula.threshold_request_power.get_pubkey_from_ritual_id(ritual_id)
+            ursula.decrypting_request_power.get_pubkey_from_id(ritual_id)
         )
         shared_secret = requester_secret_key.derive_shared_secret(
             ursula_decryption_request_static_key
@@ -166,7 +166,7 @@ def test_taco_decrypt_errors(
 
         ursula_decryption_request_static_key = cohort[
             i
-        ].threshold_request_power.get_pubkey_from_ritual_id(ritual_id=ritual_id)
+        ].decrypting_request_power.get_pubkey_from_id(ritual_id)
         shared_secret = requester_secret_key.derive_shared_secret(
             ursula_decryption_request_static_key
         )
@@ -226,7 +226,7 @@ def test_taco_sign(
     shared_secrets = {}
     for ursula in cohort:
         ursula_signature_request_static_key = (
-            ursula.signing_request_power.get_pubkey_from_ritual_id(cohort_id)
+            ursula.signing_request_power.get_pubkey_from_id(cohort_id)
         )
         shared_secret = requester_secret_key.derive_shared_secret(
             ursula_signature_request_static_key
@@ -327,7 +327,7 @@ def test_taco_sign_errors(
 
         ursula_signature_request_static_key = cohort[
             i
-        ].signing_request_power.get_pubkey_from_ritual_id(cohort_id)
+        ].signing_request_power.get_pubkey_from_id(cohort_id)
         shared_secret = requester_secret_key.derive_shared_secret(
             ursula_signature_request_static_key
         )

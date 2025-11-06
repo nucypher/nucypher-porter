@@ -243,7 +243,7 @@ def _generate_encrypted_decryption_requests(
     encrypted_decryption_requests = {}
     for ursula in cohort:
         ursula_decryption_request_static_key = (
-            ursula.threshold_request_power.get_pubkey_from_ritual_id(ritual_id)
+            ursula.decrypting_request_power.get_pubkey_from_id(ritual_id)
         )
         shared_secret = requester_secret_key.derive_shared_secret(
             ursula_decryption_request_static_key
@@ -488,9 +488,7 @@ def _generate_encrypted_signature_requests(
     encrypted_signing_requests = {}
     for ursula in cohort:
         ursula_decryption_request_static_key = (
-            ursula.signing_request_power.get_pubkey_from_ritual_id(
-                signature_request.cohort_id
-            )
+            ursula.signing_request_power.get_pubkey_from_id(signature_request.cohort_id)
         )
         shared_secret = requester_secret_key.derive_shared_secret(
             ursula_decryption_request_static_key

@@ -35,7 +35,7 @@ def test_taco_decryption_success(porter, dkg_setup, dkg_encrypted_data, timeout)
     shared_secrets = {}
     for ursula in cohort:
         ursula_decryption_request_static_key = (
-            ursula.threshold_request_power.get_pubkey_from_ritual_id(ritual_id)
+            ursula.decrypting_request_power.get_pubkey_from_id(ritual_id)
         )
         shared_secret = requester_secret_key.derive_shared_secret(
             ursula_decryption_request_static_key
@@ -142,7 +142,7 @@ def test_taco_decryption_request_ordering(
     shared_secrets = {}
     for ursula in cohort:
         ursula_decryption_request_static_key = (
-            ursula.threshold_request_power.get_pubkey_from_ritual_id(ritual_id)
+            ursula.decrypting_request_power.get_pubkey_from_id(ritual_id)
         )
         shared_secret = requester_secret_key.derive_shared_secret(
             ursula_decryption_request_static_key
@@ -221,7 +221,7 @@ def test_taco_sign_success(
     shared_secrets = {}
     for ursula in cohort:
         ursula_signature_request_static_key = (
-            ursula.signing_request_power.get_pubkey_from_ritual_id(cohort_id)
+            ursula.signing_request_power.get_pubkey_from_id(cohort_id)
         )
         shared_secret = requester_secret_key.derive_shared_secret(
             ursula_signature_request_static_key
@@ -304,14 +304,13 @@ def test_taco_sign_failure(
             context=None,
         )
 
+    #
+    # errors - invalid encrypting key used for request
+    #
+    random_public_key = SessionStaticSecret.random().public_key()
+    shared_secret = requester_secret_key.derive_shared_secret(random_public_key)
     encrypted_signing_requests = {}
     for ursula in cohort:
-        ursula_signature_request_static_key = (
-            ursula.signing_request_power.get_pubkey_from_ritual_id(cohort_id)
-        )
-        shared_secret = requester_secret_key.derive_shared_secret(
-            ursula_signature_request_static_key
-        )
         encrypted_signing_requests[ursula.checksum_address] = signing_request.encrypt(
             shared_secret=shared_secret,
             requester_public_key=requester_secret_key.public_key(),
@@ -340,7 +339,7 @@ def test_taco_sign_request_ordering(
     encrypted_signing_requests = {}
     for ursula in cohort:
         ursula_signature_request_static_key = (
-            ursula.signing_request_power.get_pubkey_from_ritual_id(cohort_id)
+            ursula.signing_request_power.get_pubkey_from_id(cohort_id)
         )
         shared_secret = requester_secret_key.derive_shared_secret(
             ursula_signature_request_static_key

@@ -426,7 +426,7 @@ def dkg_setup(
                 provider=ursula.checksum_address,
                 aggregated=True,
                 transcript=bytes(validator_messages[i].transcript),
-                decryption_request_static_key=ursula.threshold_request_power.get_pubkey_from_ritual_id(
+                decryption_request_static_key=ursula.decrypting_request_power.get_pubkey_from_id(
                     r_id
                 ),
             )
@@ -507,7 +507,7 @@ def signing_cohort_setup(
             SigningCoordinator.SigningCohortParticipant(
                 provider=ursula.checksum_address,
                 signer_address=ursula.threshold_signing_power.account,
-                signing_request_key=ursula.signing_request_power.get_pubkey_from_ritual_id(
+                signing_request_key=ursula.signing_request_power.get_pubkey_from_id(
                     c_id
                 ),
             )
