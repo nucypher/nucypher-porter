@@ -20,8 +20,6 @@ from nucypher.blockchain.eth.registry import ContractRegistry
 from nucypher.characters.lawful import Ursula
 from nucypher.crypto.powers import DecryptingPower
 from nucypher.network.concurrency import (
-    BaseSignatureRequest,
-    SignatureResponse,
     SigningRequestClient,
     ThresholdDecryptionClient,
 )
@@ -33,8 +31,11 @@ from nucypher.utilities.logging import Logger
 from nucypher_core import (
     EncryptedThresholdDecryptionRequest,
     EncryptedThresholdDecryptionResponse,
+    PackedUserOperationSignatureRequest,
     RetrievalKit,
+    SignatureResponse,
     TreasureMap,
+    UserOperationSignatureRequest,
 )
 from nucypher_core.umbral import PublicKey
 from packaging.version import Version, parse
@@ -133,7 +134,7 @@ class Porter(Learner):
         one or more Ursulas.
         """
 
-        signatures: Dict[ChecksumAddress, Tuple[ChecksumAddress, SignatureResponse]]
+        signatures: Dict[ChecksumAddress, SignatureResponse]
         errors: Dict[ChecksumAddress, str]
 
     class UrsulaVersionTooOld(Exception):
@@ -330,7 +331,10 @@ class Porter(Learner):
 
     def sign(
         self,
-        signing_requests: Dict[ChecksumAddress, BaseSignatureRequest],
+        signing_requests: Dict[
+            ChecksumAddress,
+            Union[PackedUserOperationSignatureRequest, UserOperationSignatureRequest],
+        ],
         threshold: int,
         timeout: Optional[int] = None,
     ) -> ThresholdSignatureOutcome:

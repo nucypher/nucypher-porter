@@ -1,15 +1,29 @@
 import pytest
 from eth_utils import to_checksum_address
-from nucypher_core import SessionStaticSecret, ThresholdDecryptionRequest
+from nucypher_core import (
+    AAVersion,
+    SessionStaticSecret,
+    ThresholdDecryptionRequest,
+    UserOperation,
+    UserOperationSignatureRequest,
+)
 from nucypher_core.ferveo import FerveoVariant
+from tests.constants import TESTERCHAIN_CHAIN_ID
 
 from porter.fields.exceptions import InvalidArgumentCombo, InvalidInputData
 from porter.fields.taco import (
     EncryptedThresholdDecryptionRequestField,
     EncryptedThresholdDecryptionResponseField,
+    SignatureRequestField,
+    SignatureResponseField,
 )
 from porter.main import Porter
-from porter.schema import Decrypt, DecryptOutcomeSchema
+from porter.schema import (
+    Decrypt,
+    DecryptOutcomeSchema,
+    Sign,
+    ThresholdSignatureOutcomeSchema,
+)
 
 
 def test_taco_decrypt_schema(dkg_setup, dkg_encrypted_data):
@@ -243,3 +257,211 @@ def _generate_encrypted_requests(
         )
 
     return encrypted_decryption_requests
+
+
+@pytest.mark.parametrize("aa_version", [AAVersion.V08, AAVersion.MDT])
+def test_taco_sign_schema(
+    signing_cohort_setup, get_random_checksum_address, aa_version
+):
+    cohort_id, cohort, threshold = signing_cohort_setup
+
+    sign_schema = Sign()
+
+    user_op = UserOperation(
+        sender=get_random_checksum_address(),
+        nonce=0,
+        call_data=b"12345",
+        verification_gas_limit=100000,
+        call_gas_limit=200000,
+        pre_verification_gas=21000,
+        max_priority_fee_per_gas=1000000000,
+        max_fee_per_gas=2000000000,
+    )
+    signing_request = UserOperationSignatureRequest(
+        user_op=user_op,
+        aa_version=aa_version,
+        chain_id=TESTERCHAIN_CHAIN_ID,
+        cohort_id=cohort_id,
+        context=None,
+    )
+
+    signature_request_field = SignatureRequestField()
+    signing_requests = {}
+    for ursula in cohort:
+        signing_requests[ursula.checksum_address] = signature_request_field._serialize(
+            value=signing_request, attr=None, obj=None
+        )
+
+    # no args
+    with pytest.raises(InvalidInputData):
+        sign_schema.load({})
+
+    # missing required args
+    with pytest.raises(InvalidInputData):
+        request_data = {"threshold": threshold}
+        sign_schema.load(request_data)
+
+    with pytest.raises(InvalidInputData):
+        request_data = {
+            "signing_requests": signing_requests,
+        }
+        sign_schema.load(request_data)
+
+    # invalid param names
+    with pytest.raises(InvalidInputData):
+        request_data = {
+            "dkg_threshold": threshold,
+            "signing_requests": signing_requests,
+        }
+        sign_schema.load(request_data)
+
+    with pytest.raises(InvalidInputData):
+        request_data = {
+            "threshold": threshold,
+            "sig_requests": signing_requests,
+        }
+        sign_schema.load(request_data)
+
+    # invalid param types
+    with pytest.raises(InvalidInputData):
+        request_data = {
+            "threshold": "threshold? we don't need no stinking threshold",
+            "signing_requests": signing_requests,
+        }
+        sign_schema.load(request_data)
+
+    # invalid threshold value
+    with pytest.raises(InvalidInputData):
+        request_data = {
+            "threshold": 0,
+            "signing_requests": signing_requests,
+        }
+        sign_schema.load(request_data)
+
+    with pytest.raises(InvalidInputData):
+        request_data = {
+            "threshold": -1,
+            "signing_requests": signing_requests,
+        }
+        sign_schema.load(request_data)
+
+    # invalid timeout value
+    with pytest.raises(InvalidInputData):
+        request_data = {
+            "threshold": threshold,
+            "signing_requests": signing_requests,
+            "timeout": "some number",
+        }
+        sign_schema.load(request_data)
+
+    with pytest.raises(InvalidInputData):
+        request_data = {
+            "threshold": threshold,
+            "signing_requests": signing_requests,
+            "timeout": 0,
+        }
+        sign_schema.load(request_data)
+
+    with pytest.raises(InvalidInputData):
+        request_data = {
+            "threshold": threshold,
+            "signing_requests": signing_requests,
+            "timeout": -1,
+        }
+        sign_schema.load(request_data)
+
+    # invalid param combination
+    with pytest.raises(InvalidArgumentCombo):
+        request_data = {
+            "threshold": (
+                len(signing_requests) + 1
+            ),  # threshold larger than number of requests
+            "signing_requests": signing_requests,
+        }
+        sign_schema.load(request_data)
+
+    # simple schema successful load
+    request_data = {
+        "threshold": threshold,
+        "signing_requests": signing_requests,
+    }
+    sign_schema.load(request_data)
+
+
+@pytest.mark.parametrize(
+    "signature_request",
+    ["user_op_signature_request", "packed_user_op_signature_request"],
+)
+def test_taco_sign(porter, signing_cohort_setup, signature_request, request):
+    signature_request = request.getfixturevalue(signature_request)
+    cohort_id, cohort, threshold = signing_cohort_setup
+
+    sign_schema = Sign()
+
+    signing_requests = {}
+    for ursula in cohort:
+        signing_requests[ursula.checksum_address] = signature_request
+
+    signing_outcome = porter.sign(
+        threshold=threshold, signing_requests=signing_requests
+    )
+
+    assert len(signing_outcome.errors) == 0, f"{signing_outcome.errors}"
+    assert len(signing_outcome.signatures) >= threshold
+
+    sign_outcome_schema = ThresholdSignatureOutcomeSchema()
+    outcome_json = sign_outcome_schema.dump(signing_outcome)
+    output = sign_schema.dump(obj={"signing_results": signing_outcome})
+    assert len(output["signing_results"]["signatures"]) >= threshold
+    assert output["signing_results"]["signatures"] == outcome_json["signatures"]
+
+    signature_response_field = SignatureResponseField()
+    for (
+        ursula_checksum_address,
+        signature_response,
+    ) in signing_outcome.signatures.items():
+        assert output["signing_results"]["signatures"][
+            ursula_checksum_address
+        ] == signature_response_field._serialize(
+            value=signature_response, attr=None, obj=None
+        )
+
+    assert len(output["signing_results"]["errors"]) == 0
+    assert output["signing_results"]["errors"] == outcome_json["errors"]
+
+    assert output == {"signing_results": outcome_json}
+
+    # now include errors
+    errors = {}
+    for i in range(len(cohort) - threshold, len(cohort)):
+        ursula_checksum_address = to_checksum_address(cohort[i].checksum_address)
+        errors[ursula_checksum_address] = f"Error Message {i}"
+
+    faked_signing_outcome = Porter.ThresholdSignatureOutcome(
+        signatures=signing_outcome.signatures,
+        errors=errors,
+    )
+    faked_outcome_json = sign_outcome_schema.dump(faked_signing_outcome)
+    output = sign_schema.dump(obj={"signing_results": faked_signing_outcome})
+    assert len(output["signing_results"]["signatures"]) >= threshold
+    assert output["signing_results"]["signatures"] == faked_outcome_json["signatures"]
+    for (
+        ursula_checksum_address,
+        signature_response,
+    ) in faked_signing_outcome.signatures.items():
+        assert output["signing_results"]["signatures"][
+            ursula_checksum_address
+        ] == signature_response_field._serialize(
+            value=signature_response, attr=None, obj=None
+        )
+
+    assert len(output["signing_results"]["errors"]) == len(errors)
+    assert output["signing_results"]["errors"] == faked_outcome_json["errors"]
+    for i in range(len(cohort) - threshold, len(cohort)):
+        ursula_checksum_address = to_checksum_address(cohort[i].checksum_address)
+        assert (
+            output["signing_results"]["errors"][ursula_checksum_address]
+            == f"Error Message {i}"
+        )
+
+    assert output == {"signing_results": faked_outcome_json}

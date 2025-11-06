@@ -254,23 +254,6 @@ class PRERetrieveCFrags(BaseSchema):
 #
 
 
-class ThresholdSignatureOutcomeSchema(BaseSchema):
-
-    signatures = marshmallow_fields.Dict(
-        keys=UrsulaChecksumAddress(),
-        values=marshmallow_fields.Tuple(
-            (UrsulaChecksumAddress(), SignatureResponseField())
-        ),
-    )
-    errors = marshmallow_fields.Dict(
-        keys=UrsulaChecksumAddress(), values=marshmallow_fields.String()
-    )
-
-    # maintain field declaration ordering
-    class Meta:
-        ordered = True
-
-
 class DecryptOutcomeSchema(BaseSchema):
     """Schema for the result of /retrieve_cfrags endpoint."""
 
@@ -418,6 +401,20 @@ class BucketSampling(BaseSchema):
     block_number = marshmallow_fields.Int(dump_only=True)
 
 
+class ThresholdSignatureOutcomeSchema(BaseSchema):
+
+    signatures = marshmallow_fields.Dict(
+        keys=UrsulaChecksumAddress(), values=SignatureResponseField()
+    )
+    errors = marshmallow_fields.Dict(
+        keys=UrsulaChecksumAddress(), values=marshmallow_fields.String()
+    )
+
+    # maintain field declaration ordering
+    class Meta:
+        ordered = True
+
+
 class Sign(BaseSchema):
     # input
     signing_requests = marshmallow_fields.Dict(
@@ -463,3 +460,12 @@ class Sign(BaseSchema):
         ThresholdSignatureOutcomeSchema,
         dump_only=True,
     )
+
+    @validates_schema
+    def check_valid_threshold_and_requests(self, data, **kwargs):
+        threshold = data.get("threshold")
+        signing_requests = data.get("signing_requests")
+        if len(signing_requests) < threshold:
+            raise InvalidArgumentCombo(
+                "Number of provided requests must be >= the expected threshold"
+            )

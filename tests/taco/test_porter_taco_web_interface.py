@@ -4,9 +4,11 @@ from base64 import b64decode
 import pytest
 from eth_utils import to_checksum_address
 from nucypher_core import (
+    AAVersion,
     EncryptedThresholdDecryptionResponse,
     SessionStaticSecret,
     ThresholdDecryptionRequest,
+    UserOperationSignatureRequest,
 )
 from nucypher_core.ferveo import (
     DecryptionShareSimple,
@@ -14,7 +16,11 @@ from nucypher_core.ferveo import (
     combine_decryption_shares_simple,
 )
 
-from porter.fields.taco import EncryptedThresholdDecryptionRequestField
+from porter.fields.taco import (
+    EncryptedThresholdDecryptionRequestField,
+    SignatureRequestField,
+    SignatureResponseField,
+)
 
 
 def test_taco_decrypt_bad_input(porter_web_controller):
@@ -180,5 +186,134 @@ def test_taco_decrypt_errors(
     decryption_results = response_data["result"]["decryption_results"]
     assert decryption_results
     assert len(decryption_results["encrypted_decryption_responses"]) == (threshold - 1)
+    errors = decryption_results["errors"]
+    assert len(errors) == (len(cohort) - (threshold - 1))
+
+
+def test_taco_sign_bad_input(porter_web_controller):
+    # Send bad data to assert error return
+    response = porter_web_controller.post("/sign", data=json.dumps({"bad": "input"}))
+    assert response.status_code == 400
+
+
+@pytest.mark.parametrize("timeout", [None, 5])
+@pytest.mark.parametrize("aa_version", [AAVersion.V08, AAVersion.MDT])
+@pytest.mark.parametrize(
+    "signing_request", ["user_op_signature_request", "packed_user_op_signature_request"]
+)
+def test_taco_sign(
+    porter,
+    porter_web_controller,
+    signing_cohort_setup,
+    aa_version,
+    signing_request,
+    timeout,
+    request,
+):
+    # Setup
+    cohort_id, cohort, threshold = signing_cohort_setup
+    signing_request = request.getfixturevalue(signing_request)
+
+    signature_request_field = SignatureRequestField()
+    signing_requests = {}
+    for ursula in cohort:
+        signing_requests[ursula.checksum_address] = signature_request_field._serialize(
+            value=signing_request, attr=None, obj=None
+        )
+
+    request_data = {
+        "threshold": threshold,
+        "signing_requests": signing_requests,
+    }
+    if timeout:
+        request_data["timeout"] = timeout
+
+    #
+    # Success
+    #
+    response = porter_web_controller.post("/sign", data=json.dumps(request_data))
+    assert response.status_code == 200
+
+    response_data = json.loads(response.data)
+
+    signing_results = response_data["result"]["signing_results"]
+    assert signing_results
+
+    errors = signing_results["errors"]
+    assert len(errors) == 0, f"{errors}"  # no errors
+
+    assert len(signing_results["signatures"]) >= threshold
+
+    signature_response_field = SignatureResponseField()
+    cohort_checksum_addresses = [ursula.checksum_address for ursula in cohort]
+    signer_addresses = {
+        u.checksum_address: u.threshold_signing_power.account for u in cohort
+    }
+    common_hash = None
+    for ursula_address, signature_response in signing_results["signatures"].items():
+        assert ursula_address in cohort_checksum_addresses
+        request_response = signature_response_field._deserialize(
+            value=signature_response, attr=None, data=None
+        )
+        assert request_response.signer == signer_addresses[ursula_address]
+        assert len(request_response.signature) == 65  # ECDSA signature length
+        assert request_response.signature_type == signing_request.signature_type
+        if common_hash is None:
+            common_hash = request_response.hash
+        else:
+            assert common_hash == request_response.hash
+
+
+@pytest.mark.parametrize("timeout", [None, 5])
+@pytest.mark.parametrize("aa_version", [AAVersion.V08, AAVersion.MDT])
+def test_taco_sign_errors(
+    porter,
+    porter_web_controller,
+    signing_cohort_setup,
+    aa_version,
+    user_op_signature_request,
+    timeout,
+    request,
+):
+    # Setup
+    cohort_id, cohort, threshold = signing_cohort_setup
+    signature_request_field = SignatureRequestField()
+
+    #
+    # Errors (some invalid threshold signing requests)
+    #
+    signing_requests = {}
+    for i in range(0, len(cohort)):
+        if i < threshold - 1:
+            # less than threshold valid data
+            request = user_op_signature_request
+
+        else:
+            # invalid data
+            request = UserOperationSignatureRequest(
+                user_op=user_op_signature_request.user_op,
+                aa_version=user_op_signature_request.aa_version,
+                chain_id=user_op_signature_request.chain_id,
+                cohort_id=999,  # random invalid cohort id
+                context=None,
+            )
+
+        signing_requests[cohort[i].checksum_address] = (
+            signature_request_field._serialize(value=request, attr=None, obj=None)
+        )
+
+    request_data = {
+        "threshold": threshold,
+        "signing_requests": signing_requests,
+    }
+    if timeout:
+        request_data["timeout"] = timeout
+
+    response = porter_web_controller.post("/sign", data=json.dumps(request_data))
+    response_data = json.loads(response.data)
+
+    decryption_results = response_data["result"]["signing_results"]
+    assert decryption_results
+    assert len(decryption_results["signatures"]) == (threshold - 1)
     errors = decryption_results["errors"]
     assert len(errors) == (len(cohort) - (threshold - 1))

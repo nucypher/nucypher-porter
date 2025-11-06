@@ -1,3 +1,4 @@
+import json
 import os
 from typing import Iterable, List, Optional, Tuple
 from unittest.mock import MagicMock
@@ -12,11 +13,12 @@ from nucypher.blockchain.eth.actors import Operator
 from nucypher.blockchain.eth.agents import (
     ContractAgency,
     CoordinatorAgent,
+    SigningCoordinatorAgent,
     StakingProvidersReservoir,
     TACoChildApplicationAgent,
 )
 from nucypher.blockchain.eth.interfaces import BlockchainInterfaceFactory
-from nucypher.blockchain.eth.models import Coordinator, Ferveo
+from nucypher.blockchain.eth.models import Coordinator, Ferveo, SigningCoordinator
 from nucypher.blockchain.eth.registry import ContractRegistry
 from nucypher.blockchain.eth.signers.software import Web3Signer
 from nucypher.characters.lawful import Enrico, Ursula
@@ -25,12 +27,19 @@ from nucypher.crypto.powers import DecryptingPower, RitualisticPower
 from nucypher.network.nodes import Learner, Teacher
 from nucypher.policy.conditions.lingo import ConditionLingo
 from nucypher.utilities.logging import GlobalLoggerSettings
-from nucypher_core import HRAC, Address, ThresholdMessageKit, TreasureMap
+from nucypher_core import (
+    HRAC,
+    AAVersion,
+    Address,
+    PackedUserOperation,
+    PackedUserOperationSignatureRequest,
+    ThresholdMessageKit,
+    TreasureMap,
+    UserOperation,
+    UserOperationSignatureRequest,
+)
 from nucypher_core.ferveo import DkgPublicKey, Validator
 from prometheus_flask_exporter import PrometheusMetrics
-
-from porter.emitters import WebEmitter
-from porter.main import Porter
 from tests.constants import (
     MOCK_ETH_PROVIDER_URI,
     TEMPORARY_DOMAIN,
@@ -40,6 +49,9 @@ from tests.constants import (
 from tests.mock.interfaces import MockBlockchain
 from tests.utils.middleware import MockRestMiddleware, _TestMiddlewareClient
 from tests.utils.registry import MockRegistrySource, mock_registry_sources
+
+from porter.emitters import WebEmitter
+from porter.main import Porter
 
 # Crash on server error by default
 WebEmitter._crash_on_error_default = True
@@ -157,6 +169,16 @@ def coordinator_agent(mock_contract_agency):
         CoordinatorAgent, registry=None, provider_uri=None  # parameters don't matter
     )
     return coordinator_agent
+
+
+@pytest.fixture(scope="module")
+def signing_coordinator_agent(mock_contract_agency):
+    signing_coordinator_agent = mock_contract_agency.get_agent(
+        SigningCoordinatorAgent,
+        registry=None,
+        provider_uri=None,  # parameters don't matter
+    )
+    return signing_coordinator_agent
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -459,3 +481,86 @@ def dkg_encrypted_data(dkg_setup, mock_signer) -> Tuple[ThresholdMessageKit, byt
     )
 
     return threshold_message_kit, PLAINTEXT.encode()
+
+
+@pytest.fixture(scope="module")
+def signing_cohort_setup(
+    get_random_checksum_address, ursulas, signing_coordinator_agent
+) -> Tuple[int, List[Ursula], int]:
+    c_id = 0
+    num_shares = 8
+    threshold = 5
+    cohort = ursulas[:num_shares]
+    now = maya.now()
+    cohort_checksum_addresses = [ursula.checksum_address for ursula in cohort]
+
+    cohort_ritual = SigningCoordinator.SigningCohort(
+        id=c_id,
+        init_timestamp=now.epoch,
+        end_timestamp=now.add(days=1).epoch,
+        initiator=get_random_checksum_address(),
+        authority=get_random_checksum_address(),
+        total_signatures=num_shares,
+        num_signers=num_shares,
+        threshold=threshold,
+        signers=[
+            SigningCoordinator.SigningCohortParticipant(
+                provider=ursula.checksum_address,
+                signerAddress=ursula.threshold_signing_power.account,
+            )
+            for i, ursula in enumerate(cohort)
+        ],
+        chains=[TESTERCHAIN_CHAIN_ID],
+        conditions={TESTERCHAIN_CHAIN_ID: json.dumps(CONDITIONS).encode("utf-8")},
+    )
+
+    cohort_checksum_addresses = [ursula.checksum_address for ursula in cohort]
+
+    # Configure SigningCoordinatorAgent
+    signing_coordinator_agent.is_cohort_active = lambda cohort_id: cohort_id == c_id
+    signing_coordinator_agent.is_signer = (
+        lambda cohort_id, provider_address: cohort_id == c_id
+        and provider_address in cohort_checksum_addresses
+    )
+    signing_coordinator_agent.get_signing_cohort.return_value = cohort_ritual
+
+    return c_id, cohort, threshold
+
+
+@pytest.fixture(scope="module")
+def user_op_signature_request(get_random_checksum_address, signing_cohort_setup):
+    cohort_id, _, _ = signing_cohort_setup
+    user_op = UserOperation(
+        sender=get_random_checksum_address(),
+        nonce=0,
+        call_data=b"12345",
+        verification_gas_limit=100000,
+        call_gas_limit=200000,
+        pre_verification_gas=21000,
+        max_priority_fee_per_gas=1000000000,
+        max_fee_per_gas=2000000000,
+    )
+    signing_request = UserOperationSignatureRequest(
+        user_op=user_op,
+        aa_version=AAVersion.V08,
+        chain_id=TESTERCHAIN_CHAIN_ID,
+        cohort_id=cohort_id,
+        context=None,
+    )
+
+    return signing_request
+
+
+@pytest.fixture(scope="module")
+def packed_user_op_signature_request(user_op_signature_request):
+    packed_user_op = PackedUserOperation.from_user_operation(
+        user_op=user_op_signature_request.user_op,
+    )
+    signing_request = PackedUserOperationSignatureRequest(
+        packed_user_op=packed_user_op,
+        aa_version=user_op_signature_request.aa_version,
+        chain_id=user_op_signature_request.chain_id,
+        cohort_id=user_op_signature_request.cohort_id,
+        context=None,
+    )
+    return signing_request
