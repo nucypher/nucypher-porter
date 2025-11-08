@@ -16,8 +16,8 @@ from porter.fields.retrieve import CapsuleFrag, RetrievalKit
 from porter.fields.taco import (
     EncryptedThresholdDecryptionRequestField,
     EncryptedThresholdDecryptionResponseField,
-    SignatureRequestField,
-    SignatureResponseField,
+    EncryptedThresholdSignatureRequestField,
+    EncryptedThresholdSignatureResponseField,
 )
 from porter.fields.treasuremap import TreasureMap
 from porter.fields.umbralkey import UmbralKey
@@ -403,8 +403,8 @@ class BucketSampling(BaseSchema):
 
 class ThresholdSignatureOutcomeSchema(BaseSchema):
 
-    signatures = marshmallow_fields.Dict(
-        keys=UrsulaChecksumAddress(), values=SignatureResponseField()
+    encrypted_signature_responses = marshmallow_fields.Dict(
+        keys=UrsulaChecksumAddress(), values=EncryptedThresholdSignatureResponseField()
     )
     errors = marshmallow_fields.Dict(
         keys=UrsulaChecksumAddress(), values=marshmallow_fields.String()
@@ -417,15 +417,15 @@ class ThresholdSignatureOutcomeSchema(BaseSchema):
 
 class Sign(BaseSchema):
     # input
-    signing_requests = marshmallow_fields.Dict(
+    encrypted_signing_requests = marshmallow_fields.Dict(
         keys=UrsulaChecksumAddress(),
-        values=SignatureRequestField(),
+        values=EncryptedThresholdSignatureRequestField(),
         required=True,
         load_only=True,
         click=click.option(
-            "--signing-requests",
+            "--encrypted-signing-requests",
             "-e",
-            help="Signing requests",
+            help="Encrypted signing requests",
             type=click.STRING,
             required=True,
         ),
@@ -464,7 +464,7 @@ class Sign(BaseSchema):
     @validates_schema
     def check_valid_threshold_and_requests(self, data, **kwargs):
         threshold = data.get("threshold")
-        signing_requests = data.get("signing_requests")
+        signing_requests = data.get("encrypted_signing_requests")
         if len(signing_requests) < threshold:
             raise InvalidArgumentCombo(
                 "Number of provided requests must be >= the expected threshold"

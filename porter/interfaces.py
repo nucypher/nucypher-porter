@@ -1,13 +1,12 @@
 import functools
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 from eth_typing import ChecksumAddress
 from nucypher_core import (
     EncryptedThresholdDecryptionRequest,
-    PackedUserOperationSignatureRequest,
+    EncryptedThresholdSignatureRequest,
     RetrievalKit,
     TreasureMap,
-    UserOperationSignatureRequest,
 )
 from nucypher_core.umbral import PublicKey
 
@@ -109,15 +108,15 @@ class PorterInterface(ControlInterface):
     @attach_schema(schema.Sign)
     def sign(
         self,
-        signing_requests: Dict[
+        encrypted_signing_requests: Dict[
             ChecksumAddress,
-            Union[PackedUserOperationSignatureRequest, UserOperationSignatureRequest],
+            EncryptedThresholdSignatureRequest,
         ],
         threshold: int,
         timeout: Optional[int] = None,
     ):
         signing_outcome = self.implementer.sign(
-            signing_requests=signing_requests,
+            encrypted_signing_requests=encrypted_signing_requests,
             threshold=threshold,
             timeout=timeout,
         )
