@@ -5,7 +5,6 @@ import os
 import sys
 from pathlib import Path
 from typing import Dict
-from urllib.parse import urlparse
 
 from setuptools import find_packages, setup
 from setuptools.command.develop import develop
@@ -20,7 +19,7 @@ BASE_DIR = Path(__file__).parent
 PYPI_CLASSIFIERS = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)"
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
@@ -80,24 +79,7 @@ class PostDevelopCommand(develop):
 
 def read_requirements(path):
     with open(BASE_DIR / path) as f:
-        _pipenv_flags, *lines = f.read().split('\n')
-
-    # TODO remove when will be no more git dependencies in requirements.txt
-    # Transforms VCS requirements to PEP 508
-    requirements = []
-    for line in lines:
-        if line.startswith('-e git:') or line.startswith('-e git+') or \
-                line.startswith('git:') or line.startswith('git+'):
-            # parse out egg=... fragment from VCS URL
-            line = line.replace('-e ', '')  # editable does not apply for setuptools; remove
-            parsed = urlparse(line)
-            egg_name = parsed.fragment.partition("egg=")[-1]
-            without_fragment = parsed._replace(fragment="").geturl()
-            requirements.append(f"{egg_name} @ {without_fragment}")
-        else:
-            requirements.append(line)
-
-    return requirements
+        return f.read().split("\n")
 
 
 INSTALL_REQUIRES = read_requirements('requirements.txt')
@@ -114,10 +96,13 @@ EXTRAS = {
     'deploy': DEPLOY_REQUIRES
 }
 
+# read the contents of the README file
+long_description = (BASE_DIR / "README.rst").read_text()
+
 setup(
 
     # Requirements
-    python_requires='>=3',
+    python_requires=">=3.10,<4",
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRAS,
 
@@ -145,8 +130,8 @@ setup(
     author_email=ABOUT['__email__'],
     description=ABOUT['__summary__'],
     license=ABOUT['__license__'],
-    long_description_content_type="text/markdown",
-    long_description_markdown_filename='README.md',
+    long_description_content_type="text/x-rst",
+    long_description=long_description,
     keywords="porter",
-    classifiers=PYPI_CLASSIFIERS
+    classifiers=PYPI_CLASSIFIERS,
 )
