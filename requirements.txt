@@ -55,7 +55,7 @@ maya==0.6.1 ; python_version >= "3.10" and python_version < "4" and (implementat
 mnemonic==0.21 ; python_version >= "3.10" and python_version < "4" and (implementation_name == "cpython" or implementation_name == "pypy")
 msgpack-python==0.5.6 ; python_version >= "3.10" and python_version < "4" and (implementation_name == "cpython" or implementation_name == "pypy")
 multidict==6.7.0 ; python_version >= "3.10" and python_version < "4" and (implementation_name == "cpython" or implementation_name == "pypy")
-nucypher @ git+https://github.com/nucypher/nucypher.git@c75da08fd72e5ccb94688046dbc832db615c5d1d ; python_version >= "3.10" and python_version < "4" and (implementation_name == "cpython" or implementation_name == "pypy")
+nucypher @ git+https://github.com/nucypher/nucypher.git@9f9034f58c69cf7185278e3f96d230285965b2a6 ; python_version >= "3.10" and python_version < "4" and (implementation_name == "cpython" or implementation_name == "pypy")
 nucypher-core @ git+https://github.com/nucypher/nucypher-core.git@a36151b3deecc649ec01d057b8586d3c2afbcbaf#subdirectory=nucypher-core-python ; python_version >= "3.10" and python_version < "4" and (implementation_name == "cpython" or implementation_name == "pypy")
 nucypher-pychalk==2.0.2 ; python_version >= "3.10" and python_version < "4" and (implementation_name == "cpython" or implementation_name == "pypy")
 nucypher-snaptime==0.2.5 ; python_version >= "3.10" and python_version < "4" and (implementation_name == "cpython" or implementation_name == "pypy")
