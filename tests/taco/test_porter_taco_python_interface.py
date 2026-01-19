@@ -1,4 +1,5 @@
 import random
+import time
 from unittest.mock import ANY
 
 import pytest
@@ -204,6 +205,64 @@ def test_taco_decryption_request_ordering(
     assert len(decrypt_outcome.errors) == 0
 
 
+def test_taco_decrypt_node_no_response(mocker, porter, dkg_setup, dkg_encrypted_data):
+    ritual_id, public_key, cohort, threshold = dkg_setup
+    threshold_message_kit, expected_plaintext = dkg_encrypted_data
+
+    decryption_request = ThresholdDecryptionRequest(
+        ritual_id=ritual_id,
+        variant=FerveoVariant.Simple,
+        ciphertext_header=threshold_message_kit.ciphertext_header,
+        acp=threshold_message_kit.acp,
+    )
+
+    requester_secret_key = SessionStaticSecret.random()
+
+    encrypted_decryption_requests = {}
+    for ursula in cohort:
+        ursula_decryption_request_static_key = (
+            ursula.decrypting_request_power.get_pubkey_from_id(ritual_id)
+        )
+        shared_secret = requester_secret_key.derive_shared_secret(
+            ursula_decryption_request_static_key
+        )
+        encrypted_decryption_requests[ursula.checksum_address] = (
+            decryption_request.encrypt(
+                shared_secret=shared_secret,
+                requester_public_key=requester_secret_key.public_key(),
+            )
+        )
+
+    timeout = 1
+
+    def timed_out_decryption_share(*args, **kwargs):
+        time.sleep(timeout + 1)  # ensures node never responds in time
+        raise ValueError("Fake exception should be after worker pool timeout")
+
+    with mocker.patch.object(
+        porter.network_middleware,
+        "get_encrypted_decryption_share",
+        side_effect=timed_out_decryption_share,
+    ):
+        decrypt_outcome = porter.decrypt(
+            threshold=threshold,
+            encrypted_decryption_requests=encrypted_decryption_requests,
+            timeout=timeout,
+        )
+
+    # no successes
+    assert len(decrypt_outcome.encrypted_decryption_responses) == 0
+    # all failures due to timeout
+
+    assert len(decrypt_outcome.errors) == len(cohort)
+    for ursula in cohort:
+        # porter's "no response" message
+        assert (
+            decrypt_outcome.errors[ursula.checksum_address]
+            == f"Node {ursula.checksum_address} did not respond before timeout ({timeout}s)."
+        )
+
+
 @pytest.mark.parametrize("timeout", [None, 5])
 @pytest.mark.parametrize("aa_version", [AAVersion.V08, AAVersion.MDT])
 @pytest.mark.parametrize(
@@ -398,3 +457,54 @@ def test_taco_sign_request_ordering(
 
     # no errors
     assert len(sign_outcome.errors) == 0
+
+
+def test_taco_sign_node_no_response(
+    mocker, porter, signing_cohort_setup, user_op_signature_request
+):
+    cohort_id, cohort, threshold = signing_cohort_setup
+    requester_secret_key = SessionStaticSecret.random()
+
+    encrypted_signing_requests = {}
+    for ursula in cohort:
+        ursula_signature_request_static_key = (
+            ursula.signing_request_power.get_pubkey_from_id(cohort_id)
+        )
+        shared_secret = requester_secret_key.derive_shared_secret(
+            ursula_signature_request_static_key
+        )
+        encrypted_signing_requests[ursula.checksum_address] = (
+            user_op_signature_request.encrypt(
+                shared_secret=shared_secret,
+                requester_public_key=requester_secret_key.public_key(),
+            )
+        )
+
+    timeout = 1
+
+    def timed_out_request_signature(*args, **kwargs):
+        time.sleep(timeout + 1)  # ensures node never responds in time
+        raise ValueError("Fake exception should be after worker pool timeout")
+
+    with mocker.patch.object(
+        porter.network_middleware,
+        "request_signature",
+        side_effect=timed_out_request_signature,
+    ):
+        sign_outcome = porter.sign(
+            threshold=threshold,
+            encrypted_signing_requests=encrypted_signing_requests,
+            timeout=timeout,
+        )
+
+    # no successes
+    assert len(sign_outcome.encrypted_signature_responses) == 0
+    # all failures due to timeout
+
+    assert len(sign_outcome.errors) == len(cohort)
+    for ursula in cohort:
+        # porter's "no response" message
+        assert (
+            sign_outcome.errors[ursula.checksum_address]
+            == f"Node {ursula.checksum_address} did not respond before timeout ({timeout}s)."
+        )
