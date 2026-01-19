@@ -331,13 +331,13 @@ def test_taco_sign_errors(
         shared_secret = requester_secret_key.derive_shared_secret(
             ursula_signature_request_static_key
         )
-        encrypted_decryption_request = request.encrypt(
+        encrypted_signing_request = request.encrypt(
             shared_secret=shared_secret,
             requester_public_key=requester_secret_key.public_key(),
         )
         encrypted_signing_requests[cohort[i].checksum_address] = (
             encrypted_signature_request_field._serialize(
-                value=encrypted_decryption_request, attr=None, obj=None
+                value=encrypted_signing_request, attr=None, obj=None
             )
         )
 
@@ -351,8 +351,8 @@ def test_taco_sign_errors(
     response = porter_web_controller.post("/sign", data=json.dumps(request_data))
     response_data = json.loads(response.data)
 
-    decryption_results = response_data["result"]["signing_results"]
-    assert decryption_results
-    assert len(decryption_results["encrypted_signature_responses"]) == (threshold - 1)
-    errors = decryption_results["errors"]
+    signing_results = response_data["result"]["signing_results"]
+    assert signing_results
+    assert len(signing_results["encrypted_signature_responses"]) == (threshold - 1)
+    errors = signing_results["errors"]
     assert len(errors) == (len(cohort) - (threshold - 1))
