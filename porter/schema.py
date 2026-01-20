@@ -16,6 +16,8 @@ from porter.fields.retrieve import CapsuleFrag, RetrievalKit
 from porter.fields.taco import (
     EncryptedThresholdDecryptionRequestField,
     EncryptedThresholdDecryptionResponseField,
+    EncryptedThresholdSignatureRequestField,
+    EncryptedThresholdSignatureResponseField,
 )
 from porter.fields.treasuremap import TreasureMap
 from porter.fields.umbralkey import UmbralKey
@@ -397,3 +399,73 @@ class BucketSampling(BaseSchema):
     # output
     ursulas = marshmallow_fields.List(UrsulaChecksumAddress, dump_only=True)
     block_number = marshmallow_fields.Int(dump_only=True)
+
+
+class ThresholdSignatureOutcomeSchema(BaseSchema):
+
+    encrypted_signature_responses = marshmallow_fields.Dict(
+        keys=UrsulaChecksumAddress(), values=EncryptedThresholdSignatureResponseField()
+    )
+    errors = marshmallow_fields.Dict(
+        keys=UrsulaChecksumAddress(), values=marshmallow_fields.String()
+    )
+
+    # maintain field declaration ordering
+    class Meta:
+        ordered = True
+
+
+class Sign(BaseSchema):
+    # input
+    encrypted_signing_requests = marshmallow_fields.Dict(
+        keys=UrsulaChecksumAddress(),
+        values=EncryptedThresholdSignatureRequestField(),
+        required=True,
+        load_only=True,
+        click=click.option(
+            "--encrypted-signing-requests",
+            "-e",
+            help="Encrypted signing requests",
+            type=click.STRING,
+            required=True,
+        ),
+    )
+
+    threshold = PositiveInteger(
+        required=True,
+        load_only=True,
+        click=click.option(
+            "--threshold",
+            "-d",
+            help="Threshold of required signing responses",
+            type=click.INT,
+            required=True,
+        ),
+    )
+
+    timeout = PositiveInteger(
+        required=False,
+        load_only=True,
+        click=click.option(
+            "--timeout",
+            "-t",
+            help="Timeout for getting the required quantity of ursulas",
+            type=click.INT,
+            required=False,
+        ),
+    )
+
+    # output
+    signing_results = marshmallow_fields.Nested(
+        ThresholdSignatureOutcomeSchema,
+        dump_only=True,
+    )
+
+    @validates_schema
+    def check_valid_threshold_and_requests(self, data, **kwargs):
+        threshold = data.get("threshold")
+        signing_requests = data.get("encrypted_signing_requests")
+        if len(signing_requests) < threshold:
+            raise InvalidArgumentCombo(
+                "Number of provided requests must be >= the expected threshold"
+            )

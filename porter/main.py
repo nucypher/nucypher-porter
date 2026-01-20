@@ -19,7 +19,10 @@ from nucypher.blockchain.eth.interfaces import BlockchainInterfaceFactory
 from nucypher.blockchain.eth.registry import ContractRegistry
 from nucypher.characters.lawful import Ursula
 from nucypher.crypto.powers import DecryptingPower
-from nucypher.network.decryption import ThresholdDecryptionClient
+from nucypher.network.concurrency import (
+    SigningRequestClient,
+    ThresholdDecryptionClient,
+)
 from nucypher.network.nodes import Learner
 from nucypher.network.retrieval import PRERetrievalClient
 from nucypher.policy.reservoir import PrefetchStrategy, make_staking_provider_reservoir
@@ -28,6 +31,8 @@ from nucypher.utilities.logging import Logger
 from nucypher_core import (
     EncryptedThresholdDecryptionRequest,
     EncryptedThresholdDecryptionResponse,
+    EncryptedThresholdSignatureRequest,
+    EncryptedThresholdSignatureResponse,
     RetrievalKit,
     TreasureMap,
 )
@@ -83,7 +88,14 @@ class Porter(Learner):
     MAX_DECRYPTION_TIMEOUT = int(
         os.getenv(
             "PORTER_MAX_DECRYPTION_TIMEOUT",
-            default=ThresholdDecryptionClient.DEFAULT_DECRYPTION_TIMEOUT,
+            default=ThresholdDecryptionClient.DEFAULT_TIMEOUT,
+        )
+    )
+
+    MAX_SIGNING_TIMEOUT = int(
+        os.getenv(
+            "PORTER_MAX_SIGNING_TIMEOUT",
+            default=SigningRequestClient.DEFAULT_TIMEOUT,
         )
     )
 
@@ -112,6 +124,17 @@ class Porter(Learner):
 
         encrypted_decryption_responses: Dict[
             ChecksumAddress, EncryptedThresholdDecryptionResponse
+        ]
+        errors: Dict[ChecksumAddress, str]
+
+    class ThresholdSignatureOutcome(NamedTuple):
+        """
+        Simple object that stores the results and errors of TACo sign operations across
+        one or more Ursulas.
+        """
+
+        encrypted_signature_responses: Dict[
+            ChecksumAddress, EncryptedThresholdSignatureResponse
         ]
         errors: Dict[ChecksumAddress, str]
 
@@ -306,6 +329,27 @@ class Porter(Learner):
             encrypted_decryption_responses=successes, errors=failures
         )
         return decrypt_outcome
+
+    def sign(
+        self,
+        encrypted_signing_requests: Dict[
+            ChecksumAddress,
+            EncryptedThresholdSignatureRequest,
+        ],
+        threshold: int,
+        timeout: Optional[int] = None,
+    ) -> ThresholdSignatureOutcome:
+        signature_client = SigningRequestClient(self)
+        timeout = self._configure_timeout("signing", timeout, self.MAX_SIGNING_TIMEOUT)
+        successes, failures = signature_client.gather_signatures(
+            encrypted_requests=encrypted_signing_requests,
+            threshold=threshold,
+            timeout=timeout,
+        )
+        signature_outcome = Porter.ThresholdSignatureOutcome(
+            encrypted_signature_responses=successes, errors=failures
+        )
+        return signature_outcome
 
     def _configure_timeout(
         self, operation: str, timeout: Union[int, None], max_timeout: int
@@ -605,6 +649,13 @@ class Porter(Learner):
             response = controller(
                 method_name="bucket_sampling", control_request=request
             )
+            return response
+
+        @porter_flask_control.route("/sign", methods=["POST"])
+        @by_path_counter
+        def sign() -> Response:
+            """Porter control endpoint for executing a TACo signing request."""
+            response = controller(method_name="sign", control_request=request)
             return response
 
         return controller

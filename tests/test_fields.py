@@ -9,8 +9,11 @@ from nucypher_core import (
     Address,
     EncryptedThresholdDecryptionRequest,
     EncryptedThresholdDecryptionResponse,
+    EncryptedThresholdSignatureRequest,
+    EncryptedThresholdSignatureResponse,
     MessageKit,
     SessionStaticSecret,
+    SignatureResponse,
     ThresholdDecryptionRequest,
     ThresholdDecryptionResponse,
 )
@@ -31,6 +34,8 @@ from porter.fields.retrieve import RetrievalKit
 from porter.fields.taco import (
     EncryptedThresholdDecryptionRequestField,
     EncryptedThresholdDecryptionResponseField,
+    EncryptedThresholdSignatureRequestField,
+    EncryptedThresholdSignatureResponseField,
 )
 from porter.fields.umbralkey import UmbralKey
 from porter.fields.ursula import UrsulaChecksumAddress
@@ -48,12 +53,19 @@ def test_ursula_checksum_address_field(get_random_checksum_address):
     assert serialized != other_address
 
     # test letter case of address
-    serialized = field._serialize(value=ursula_checksum.lower(), attr=None, obj=None)
-    assert serialized == ursula_checksum
-    assert serialized != ursula_checksum.lower()
-    serialized = field._serialize(value=ursula_checksum.upper(), attr=None, obj=None)
-    assert serialized == ursula_checksum
-    assert serialized != ursula_checksum.lower()
+    if ursula_checksum != ursula_checksum.lower():
+        serialized = field._serialize(
+            value=ursula_checksum.lower(), attr=None, obj=None
+        )
+        assert serialized == ursula_checksum
+        assert serialized != ursula_checksum.lower()
+
+    if ursula_checksum != ursula_checksum.upper():
+        serialized = field._serialize(
+            value=ursula_checksum.upper(), attr=None, obj=None
+        )
+        assert serialized == ursula_checksum
+        assert serialized != ursula_checksum.upper()
 
     with pytest.raises(InvalidInputData):
         field._serialize(value="0xdeadbeef", attr=None, obj=None)
@@ -256,7 +268,7 @@ def test_json_field():
     for expected_type in test_types:
         field = JSON(expected_type=expected_type)
         for d in test_data:
-            if type(d) == expected_type:
+            if type(d) is expected_type:
                 # serialization/deserialization should work
                 serialized = field._serialize(value=d, attr=None, obj=None)
                 assert serialized == json.dumps(d)
@@ -393,6 +405,99 @@ def test_encrypted_threshold_decryption_response():
         shared_secret=shared_secret
     )
     assert bytes(deserialized_response) == bytes(decryption_response)
+
+    with pytest.raises(InvalidInputData):
+        field._serialize(value=[1, 2, 3, 4, 5], attr=None, obj=None)
+
+    with pytest.raises(InvalidInputData):
+        field._deserialize(value=os.urandom(32), attr=None, data=None)
+
+
+@pytest.mark.parametrize(
+    "signature_request",
+    ["user_op_signature_request", "packed_user_op_signature_request"],
+)
+def test_encrypted_threshold_signing_request(
+    signature_request, signing_cohort_setup, request
+):
+    signature_request = request.getfixturevalue(signature_request)
+
+    field = EncryptedThresholdSignatureRequestField()
+
+    ursula_public_key = SessionStaticSecret.random().public_key()
+    requester_secret_key = SessionStaticSecret.random()
+
+    shared_secret = requester_secret_key.derive_shared_secret(ursula_public_key)
+    encrypted_request = signature_request.encrypt(
+        shared_secret=shared_secret,
+        requester_public_key=requester_secret_key.public_key(),
+    )
+
+    serialized_data = field._serialize(value=encrypted_request, attr=None, obj=None)
+    assert serialized_data == b64encode(bytes(encrypted_request)).decode()
+
+    deserialized_signature_request = field._deserialize(
+        value=serialized_data, attr=None, data=None
+    )
+    assert isinstance(
+        deserialized_signature_request, EncryptedThresholdSignatureRequest
+    )
+    assert deserialized_signature_request.cohort_id == signature_request.cohort_id
+    assert (
+        deserialized_signature_request.requester_public_key
+        == requester_secret_key.public_key()
+    )
+    assert bytes(deserialized_signature_request) == bytes(encrypted_request)
+
+    deserialized_request = deserialized_signature_request.decrypt(
+        shared_secret=shared_secret
+    )
+    assert bytes(deserialized_request) == bytes(signature_request)
+
+    with pytest.raises(InvalidInputData):
+        field._serialize(
+            value="EncryptedThresholdSignatureRequestString", attr=None, obj=None
+        )
+
+    with pytest.raises(InvalidInputData):
+        field._deserialize(value=os.urandom(32), attr=None, data=None)
+
+
+def test_encrypted_threshold_signature_response(get_random_checksum_address):
+    signature_response = SignatureResponse(
+        signer=get_random_checksum_address(),
+        hash=os.urandom(32),
+        signature=os.urandom(65),
+        signature_type=0,
+    )
+
+    field = EncryptedThresholdSignatureResponseField()
+
+    requester_public_key = SessionStaticSecret.random().public_key()
+    ursula_secret_key = SessionStaticSecret.random()
+    shared_secret = ursula_secret_key.derive_shared_secret(requester_public_key)
+
+    encrypted_response = signature_response.encrypt(shared_secret=shared_secret)
+
+    serialized_data = field._serialize(value=encrypted_response, attr=None, obj=None)
+    assert serialized_data == b64encode(bytes(encrypted_response)).decode()
+
+    deserialized_encrypted_response = field._deserialize(
+        value=serialized_data, attr=None, data=None
+    )
+    assert isinstance(
+        deserialized_encrypted_response, EncryptedThresholdSignatureResponse
+    )
+    assert bytes(deserialized_encrypted_response) == bytes(encrypted_response)
+
+    deserialized_response = deserialized_encrypted_response.decrypt(
+        shared_secret=shared_secret
+    )
+    assert bytes(deserialized_response) == bytes(signature_response)
+    assert deserialized_response.signer == signature_response.signer
+    assert deserialized_response.hash == signature_response.hash
+    assert deserialized_response.signature == signature_response.signature
+    assert deserialized_response.signature_type == signature_response.signature_type
 
     with pytest.raises(InvalidInputData):
         field._serialize(value=[1, 2, 3, 4, 5], attr=None, obj=None)

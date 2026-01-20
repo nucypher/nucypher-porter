@@ -143,7 +143,7 @@ class WebController(InterfaceControlServer):
 
     def make_control_transport(self):
         self._transport = Flask(self.app_name)
-        self._transport.config['MAX_CONTENT_LENGTH'] = MAX_UPLOAD_CONTENT_LENGTH
+        self._transport.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_CONTENT_LENGTH
 
         # Return FlaskApp decorator
         return self._transport
