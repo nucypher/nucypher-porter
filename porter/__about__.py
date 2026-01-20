@@ -12,7 +12,7 @@ __title__ = "porter"
 
 __url__ = "https://github.com/nucypher/nucypher-porter"
 
-__summary__ = "The gateway for TACo application operations on the Threshold Network."
+__summary__ = "The gateway for TACo protocol operations."
 
 __version__ = "3.8.0"
 

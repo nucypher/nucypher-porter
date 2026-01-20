@@ -53,7 +53,7 @@ BANNER = r"""
 | |   | |_| | |   | |_( (/ /| |
 |_|    \___/|_|    \___)____)_|
 
-the Pipe for TACo Application operations
+the gateway for TACo protocol operations
 """
 
 
