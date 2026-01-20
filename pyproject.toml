@@ -2,7 +2,7 @@
 name = "porter"
 version = "3.8.0"
 authors = ["NuCypher <dev@nucypher.com>"]
-description = "The gateway for TACo application operations on the Threshold Network."
+description = "The gateway for TACo protocol operations."
 
 [tool.poetry.dependencies]
 python = ">=3.10,<4"
