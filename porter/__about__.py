@@ -14,7 +14,7 @@ __url__ = "https://github.com/nucypher/nucypher-porter"
 
 __summary__ = "The gateway for TACo protocol operations."
 
-__version__ = "3.8.0"
+__version__ = "3.9.0"
 
 __author__ = "NuCypher"
 
