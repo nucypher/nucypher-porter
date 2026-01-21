@@ -243,7 +243,7 @@ Parameters
 |                                   |                      | | keyed by node staking provider address.      |
 +-----------------------------------+----------------------+------------------------------------------------+
 | ``timeout``                       | *(Optional)* int     | | The timeout for the operation. Default value |
-|                                   |                      | | is 15s unless the Porter instance is         |
+|                                   |                      | | is 30s unless the Porter instance is         |
 |                                   |                      | | configured to modify the default setting via |
 |                                   |                      | | the ``PORTER_MAX_DECRYPTION_TIMEOUT`` env    |
 |                                   |                      | | variable on startup. Timeouts provided that  |
@@ -302,13 +302,95 @@ Example Response
              }
           }
        },
-       "version": "3.3.0"
+       "version": "3.9.0"
     }
 
 .. note::
 
     Only a threshold of responses are returned if the request is successful.
 
+
+POST /sign
+*****************
+Use TACo nodes to sign data based on signing conditions defined in contract.
+
+Parameters
+^^^^^^^^^^
++-----------------------------------+----------------------+------------------------------------------------+
+| **Parameter**                     | **Type**             | **Description**                                |
++===================================+======================+================================================+
+| ``threshold``                     | Integer              | | Threshold of nodes needed to respond         |
+|                                   |                      | | successfully.                                |
++-----------------------------------+----------------------+------------------------------------------------+
+| ``encrypted_signing_requests``    | Dict[String, String] | | Base64 encoded encrypted signing requests    |
+|                                   |                      | | keyed by node staking provider address.      |
++-----------------------------------+----------------------+------------------------------------------------+
+| ``timeout``                       | *(Optional)* int     | | The timeout for the operation. Default value |
+|                                   |                      | | is 30s unless the Porter instance is         |
+|                                   |                      | | configured to modify the default setting via |
+|                                   |                      | | the ``PORTER_MAX_SIGNING_TIMEOUT`` env       |
+|                                   |                      | | variable on startup. Timeouts provided that  |
+|                                   |                      | | are greater than this max default value are  |
+|                                   |                      | | capped at the default value                  |
++-----------------------------------+----------------------+------------------------------------------------+
+
+
+Returns
+^^^^^^^
+The result of the signing operations performed:
+
+    * ``signing_results`` - The list of signature responses from the signing operations performed; contains a mapping of
+      Node staking provider address/signing response pairs. The signing responses are base64 encoded.
+
+
+Example Request
+^^^^^^^^^^^^^^^
+.. code:: bash
+
+    curl -X POST <PORTER URI>/decrypt \
+        -H "Content-Type: application/json" \
+        -d '{"threshold":5,
+             "encrypted_signing_requests":{
+                "0x90F79bf6EB2c4f870365E785982E1f101E93b906":"RVRTUgABAACTAMQg16PSAaq1lF8MQgdlgKatzBlLf1ckFWGHRnX3Vh8lsyfEwYQINwYW22D1N9FaVVNd6ZLKExoLDJhgUifwQIW878vbpnf7eOc0+qzv8mubcSnXBn/VTXAI0x5reGdzW+1/hoEqPU9622DTEf8+Vl0P5gaXsQJbe3oPTtldLMHLsJIRa/vLeZpjb0/HNgmQzjS6TSgQLQOyKHR7yTr8BGUQmRGrcYR3jZ168A9a1070/ycteKMeqikMyfqFlWsyZCDFNcm4ugcNT5xSx8BKFNqetTJZmXWUZT9PE/tBcpUy8aPcOfA=",
+                "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65":"RVRTUgABAACTAMQg16PSAaq1lF8MQgdlgKatzBlLf1ckFWGHRnX3Vh8lsyfEwbhRzoBN++bXt3kywoIvs4/LEzEU0d2kacaE1vwLUuxc1XPNs8rGNFxxSin0HQ55MH/GY9piKK2WyFk0TLA19NRmCNrgvyc4dex+Eu+x2PLxaU5bQZTFHZms/IsSoxSXfEv1zwgdrS/OVFwSNnvmqKpVelvi2ynhrjHZM5E7XrtyonLUZGBAXjYfjoVnihnDXZB547KZ9TiNK07QvfzW0aev+GgeIPa40aueFuim315SgBFbjGzGv0s+Fh4rYcMewis=",
+                "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc":"RVRTUgABAACTAMQg16PSAaq1lF8MQgdlgKatzBlLf1ckFWGHRnX3Vh8lsyfEwRJ0yE75iEkdOd17RCMIcbqwkEHFYx2JRvMelZQ4hGmB2sfYs4/tEBIPZkw0OxDJhx9b8kc1n488BsRjz59uOHk6TkpFIVOeiJxv/WUlyYRMtkxCkVjWuzpIOECmJzbIsDpZrIOeoTy2F/iKuKWNqCSdmcNRzkWwsF725AIYM08SmKveJxNIYR7TYo3fBBi916zf2BbWtLmheud2e6i+FmyX4Lt2lJsGP1hc1Ar5ldXRxj7kRVA8Qpe4Sr73PVj2aTE=",
+                "0x976EA74026E726554dB657fA54763abd0C3a0aa9":"RVRTUgABAACTAMQg16PSAaq1lF8MQgdlgKatzBlLf1ckFWGHRnX3Vh8lsyfEwWGp6oqsO5jtFScdVBly6Od0D7xXzAOyQVk7adaQ6Cvy6Y+3BkLmmW8GHvzsJPJfLuQu58k+QbA2JDzJGkMRYqUWTJsSCr1gYiqq2CMsnBhMyH7dOxVMw3ti0V6FakuvSOIL5+X/z8YdAS0Y3NFdeVtKOhTuHknjRRTL8DZvT/WkSVBIGpk/6ZBOVy+QQ+I/jtgLK4aIl+rvy+pKtVe0SKgGTs3k1nRVZJ/2GvAYY+0XD9dprqVfrXlWsl7XxFrLd4g=",
+                "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955":"RVRTUgABAACTAMQg16PSAaq1lF8MQgdlgKatzBlLf1ckFWGHRnX3Vh8lsyfEwczaWSOBgQGl2RiZQHIwnsSC4sSEFME8EyIRdM7pYJVrI7zTA3DiR/zoxAyLi0FvtlKK4yvpHh786e1ygwzH2rYS7If3uUk0NE46TfD8/N2OMENawh177LIOA5dS0qnlUBolgyuGdDFMiyu4hJn2PTj6IjZUsgOZXEjyL2fjbEoAqbzAgstOduHV8xeJylCQIqS4+zpslbsO2bwHS2QP8/bs53FTIftD9QzaNsBoAQRevtne2nxTZh20tiYiLrtsdtA=",
+                "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f":"RVRTUgABAACTAMQg16PSAaq1lF8MQgdlgKatzBlLf1ckFWGHRnX3Vh8lsyfEwf8nRdTw4NyKMMYayuxiztCfMQfwXgwcSTAdjr34DdGG9GnMpf91KXyVPb1ih1iVkbtR1rKlMrliftLXLdDKQqzxen4KMu+7m2JuTUzsIWNHQ5rx+23UxFDEM0sridQtM8BdI+WjrRMdxu2ZMgAUJMGSr5b9/EsfRTvVU+TCl+2F55lHG97ZlW/pj9zrVtP/nkcF0CIALyClIM1QgwtDsVlefjk6W0nj+GOVA13OlH5nyGx5z8fin7QqOwV4RsXDjwk=",
+                "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720":"RVRTUgABAACTAMQg16PSAaq1lF8MQgdlgKatzBlLf1ckFWGHRnX3Vh8lsyfEwY3Iu6cELTjY3LKRzRBHIQ4iMvcb+9dbQ0J9JpxP5yHoQMYVFx8HuLx9ZGkJRSUhy/TNmF1A0VH/L08Q4QTZVQmix+McjMLYtNAwzOlmvATd1BmIY2F8jbdFdAevzKb9lTgadEOSb9YYTDh+WkHGP7zC06MJ3VSrILFkMIDYk6wTh4lnumiQXpmVqnu6YAOR1OPhZLxTe2TT7f1qKevscMuaTeL+5utq6ZjIvqg58EyD+QtwePsReaEU+H6KwUl68dU=",
+                "0x09DB0a93B389bEF724429898f539AEB7ac2Dd55f":"RVRTUgABAACTAMQg16PSAaq1lF8MQgdlgKatzBlLf1ckFWGHRnX3Vh8lsyfEwTirWpSgenrmrLwzMzBP54c5MfTL8E9nBjVL5DagjWeqtpU21YYwai+Im+23N7XU7LB1oHcGDg9l3B879L8MghJGQQOqTlhxqjzdQX9YDjRKKXaWm0mrArUcz0ubmifgcM4h6it48itoFmU+RJ9FmJSX/5zFGXbBI6NIMNQT35AGkaXv2lYXg1TVLBpdI9WZz7f14uIVzVt9QL5t2xbIBE5HofjmNbVCutedev/585b511x2zEe7rXzGVcguEOehkS4="
+            }}'
+
+
+Example Response
+^^^^^^^^^^^^^^^^
+.. code::
+
+    Status: 200 OK
+
+
+.. code:: json
+
+    {
+       "result":{
+          "signing_results":{
+             "encrypted_signature_responses":{
+                "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65":"RVRSZQABAACRxK+NtI8o+DvYN9iB3jctKdwn8YYqFBOS4kaYW9LC6kCZEpyD/QWtI/Rv0e2WxtFpANaC107iJ7g4r2++nNOQZHF4g/3WgoJHiiGcdzJMQD3lhKCtIAlDLDTP7zTcDNgnOwi0hDjyEIut80RbZHQii7r9CSCPjmEzSNNwSIT2rc25xhwS9USxik7IAskiBUo+1pkFPze3qzYDUOrRHX1ka9xbaDO/c27AgZaRWoKjY7Vx",
+                "0x90F79bf6EB2c4f870365E785982E1f101E93b906":"RVRSZQABAACRxK9OjiIoD20VlZWs5P+vSYzmsbY5UgSZTp9e5ulzfZXm2XFU52ZSSj9IknoiNlcDyxtl65ekuwYpk5p5N3Wx91bW2389CGFMIlg1Jgw2PDlG+1e/desmKxVpuZj0bn0KgWk6xErnBfdJV2ucjZiCoE8ewhCLxH72EHyI0YJGg89E+NWz1yD+kIu2MPyvgS2JMkdUOnbR0NBMoz/WXt/i6p6iK3CZRCJgsewXDgUIHttN",
+                "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f":"RVRSZQABAACRxK9W4ser6pc5LJzIZjISpx7So42w0EWLBj0PdcUypi97i5ZenUAlgpn5A11kqrijb1pnVgiL4mktswkx8fNmUVvRxmFOTEhBFSRE88RkpsG7A+MdDM91s8m+Z5Bb4r1jbUkVglpKVmW3a5tsmC8cP4Q4G5seMnxKSBau72n96MXgbEtTi66KrXePnEsqm6kviNYO7VcINYXLXmdlR0TrZnYgIcBZC8USNjntPcjb9mjl",
+                "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955":"RVRSZQABAACRxK/zGPsbOHgigfLKokPs2htPlBuGwWjjcqqS66Rsu3l+bVE8uh+ipe/vcCEaUrdi6ninEbC0730mTJBFDwewNjquXRH/tvhgSoMxugkvZNPxUYQg6hDDXlEXQrx3kAYuFiSTGG7PehpNL3B327wM6zS5DvPkYcpwdy5hPg5QFfUVhmNJ//G4IvWcfK4BFfxiMwA/3i0E0zfOknIw8sijd5+Swr95svbkWqlPNcDutNOR",
+                "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720":"RVRSZQABAACRxK+Ntoxfz+7NO+JR7dKy4L/LvVz/zkncqUOraDG635bAb7saVUT/mBQuOMfkYmhIIRdXgD/9SYYGfzMD3SkgypLnyg4riUcFOF/qJ5aCpD/6TxGko8wake1P8hywbdjNhG38uTyrm7ox5smahCEA5xzzrjsVfFxj5oK4o1w/M56SzxcF6zIX9KgqNKDrTYKD+/tTxmHwhp+zgAF2o5soTdXwyPXCW6RP9ymuC0vwKArZ"
+             },
+             "errors":{
+             }
+          }
+       },
+       "version": "3.9.0"
+    }
+
+.. note::
+
+    Only a threshold of responses are returned if the request is successful.
 
 
 GET /get_ursulas
@@ -408,7 +490,7 @@ Example Response
              }
           ]
        },
-       "version": "3.3.0"
+       "version": "3.9.0"
     }
 
 
@@ -512,5 +594,5 @@ Example Response
              }
           ]
        },
-       "version": "3.3.0"
+       "version": "3.9.0"
     }
