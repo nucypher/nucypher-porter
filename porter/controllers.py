@@ -1,5 +1,6 @@
 import inspect
 import json
+import os
 from abc import ABC, abstractmethod
 from json import JSONDecodeError
 from pathlib import Path
@@ -14,6 +15,7 @@ from nucypher.network.resources import get_static_resources
 from nucypher.utilities.concurrency import WorkerPoolException
 from nucypher.utilities.emitters import StdoutEmitter
 from nucypher.utilities.logging import GlobalLoggerSettings, Logger
+from twisted.python.threadpool import ThreadPool
 
 from porter import interfaces
 from porter.emitters import WebEmitter
@@ -125,6 +127,13 @@ class WebController(InterfaceControlServer):
     handles web requests to exert control over an implemented interface.
     """
 
+    _DEPLOYER_MAX_THREADPOOL_SIZE = int(
+        os.getenv("PORTER_DEPLOYER_MAX_THREADPOOL_SIZE", default=50)
+    )
+    _DEPLOYER_MIN_THREADPOOL_SIZE = int(
+        os.getenv("PORTER_DEPLOYER_MIN_THREADPOOL_SIZE", default=10)
+    )
+
     _emitter_class = WebEmitter
     _crash_on_error_default = False
 
@@ -156,27 +165,34 @@ class WebController(InterfaceControlServer):
         if dry_run:
             return
 
+        base_deploy_kwargs = {
+            "action": "start",
+            "threadpool": ThreadPool(
+                name="Hendrix Web Service",
+                maxthreads=self._DEPLOYER_MAX_THREADPOOL_SIZE,
+                minthreads=self._DEPLOYER_MIN_THREADPOOL_SIZE,
+            ),
+            "options": {
+                "wsgi": self._transport,
+                "resources": get_static_resources(),
+            },
+        }
+
         if tls_key_filepath and tls_certificate_filepath:
             self.log.info("Starting HTTPS Control...")
             # HTTPS endpoint
-            hx_deployer = HendrixDeployTLS(action="start",
-                                           key=str(tls_key_filepath.absolute()),
-                                           cert=str(tls_certificate_filepath.absolute()),
-                                           options={
-                                               "wsgi": self._transport,
-                                               "https_port": port,
-                                               "resources": get_static_resources()
-                                           })
+            base_deploy_kwargs["options"]["https_port"] = port
+            hx_deployer = HendrixDeployTLS(
+                key=str(tls_key_filepath.absolute()),
+                cert=str(tls_certificate_filepath.absolute()),
+                **base_deploy_kwargs,
+            )
         else:
-            # HTTP endpoint
-            # TODO #845: Make non-blocking web control startup
             self.log.info("Starting HTTP Control...")
-            hx_deployer = HendrixDeploy(action="start",
-                                        options={
-                                            "wsgi": self._transport,
-                                            "http_port": port,
-                                            "resources": get_static_resources()
-                                        })
+            # HTTP endpoint
+            base_deploy_kwargs["options"]["http_port"] = port
+            # TODO #845: Make non-blocking web control startup
+            hx_deployer = HendrixDeploy(**base_deploy_kwargs)
 
         hx_deployer.run()  # <--- Blocking Call to Reactor
 
