@@ -181,13 +181,6 @@ def signing_coordinator_agent(mock_contract_agency):
     return signing_coordinator_agent
 
 
-@pytest.fixture(scope="module", autouse=True)
-def mock_condition_provider_configuration(module_mocker, testerchain):
-    module_mocker.patch.object(
-        Operator, "_make_condition_provider", return_value=testerchain.provider
-    )
-
-
 @pytest.fixture(scope="module")
 def excluded_staker_address_for_duration_greater_than_0(accounts):
     yield accounts.staking_provider_account(0)
@@ -513,8 +506,6 @@ def signing_cohort_setup(
             )
             for i, ursula in enumerate(cohort)
         ],
-        chains=[TESTERCHAIN_CHAIN_ID],
-        conditions={TESTERCHAIN_CHAIN_ID: json.dumps(CONDITIONS).encode("utf-8")},
     )
 
     # Configure SigningCoordinatorAgent
@@ -524,6 +515,16 @@ def signing_cohort_setup(
         and provider_address in cohort_checksum_addresses
     )
     signing_coordinator_agent.get_signing_cohort.return_value = cohort_ritual
+    signing_coordinator_agent.get_chains.side_effect = lambda cohort_id: (
+        [TESTERCHAIN_CHAIN_ID] if cohort_id == c_id else []
+    )
+    signing_coordinator_agent.get_signing_cohort_conditions.side_effect = (
+        lambda cohort_id, chain_id: (
+            json.dumps(CONDITIONS).encode("utf-8")
+            if cohort_id == c_id and chain_id == TESTERCHAIN_CHAIN_ID
+            else b""
+        )
+    )
 
     return c_id, cohort, threshold
 
