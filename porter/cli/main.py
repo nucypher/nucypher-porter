@@ -1,5 +1,6 @@
 import click
 from nucypher.blockchain.eth import domains
+from nucypher.blockchain.eth.utils import obfuscate_rpc_url
 from nucypher.characters.lawful import Ursula
 from nucypher.cli.config import group_general_config
 from nucypher.cli.options import (
@@ -107,8 +108,12 @@ def run(
     )
 
     emitter.message(f"TACo Domain: {str(PORTER.domain).capitalize()}", color="green")
-    emitter.message(f"ETH Endpoint URI: {eth_endpoint}", color="green")
-    emitter.message(f"Polygon Endpoint URI: {polygon_endpoint}", color="green")
+    emitter.message(
+        f"ETH Endpoint URI: {obfuscate_rpc_url(eth_endpoint)}", color="green"
+    )
+    emitter.message(
+        f"Polygon Endpoint URI: {obfuscate_rpc_url(polygon_endpoint)}", color="green"
+    )
 
     # firm up falsy status (i.e. change specified empty string to None)
     allow_origins = allow_origins if allow_origins else None
