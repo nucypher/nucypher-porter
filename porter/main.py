@@ -99,6 +99,11 @@ class Porter(Learner):
         )
     )
 
+    IN_FLIGHT_UNCAPPED_PATHS = {
+        "/get_ursulas",
+        "/bucket_sampling",
+    }  # these are used for health checks and should not be subject to in-flight request limits
+
     _interface_class = PorterInterface
 
     class UrsulaInfo(NamedTuple):
@@ -560,9 +565,13 @@ class Porter(Learner):
                             crash_on_error: bool = False,
                             htpasswd_filepath: Path = None,
                             cors_allow_origins_list: List[str] = None):
-        controller = WebController(app_name=self.APP_NAME,
-                                   crash_on_error=crash_on_error,
-                                   interface=self._interface_class(porter=self))
+        controller = WebController(
+            in_flight_uncapped_paths=self.IN_FLIGHT_UNCAPPED_PATHS,
+            app_name=self.APP_NAME,
+            crash_on_error=crash_on_error,
+            interface=self._interface_class(porter=self),
+        )
+
         self.controller = controller
 
         # Register Flask Decorator
