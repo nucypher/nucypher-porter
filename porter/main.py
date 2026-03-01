@@ -1,3 +1,4 @@
+import math
 import os
 from collections import defaultdict
 from json import JSONDecodeError
@@ -97,6 +98,10 @@ class Porter(Learner):
             "PORTER_MAX_SIGNING_TIMEOUT",
             default=SigningRequestClient.DEFAULT_TIMEOUT,
         )
+    )
+
+    REQUEST_CLIENT_MAX_WORKER_THREADS = int(
+        os.getenv("PORTER_REQUEST_CLIENT_MAX_WORKER_THREADS", default=10)
     )
 
     IN_FLIGHT_UNCAPPED_PATHS = {
@@ -321,11 +326,15 @@ class Porter(Learner):
         timeout = self._configure_timeout(
             "decryption", timeout, self.MAX_DECRYPTION_TIMEOUT
         )
+        max_worker_threads = min(
+            self.REQUEST_CLIENT_MAX_WORKER_THREADS, math.ceil(threshold * 1.5)
+        )
 
         successes, failures = decryption_client.gather_encrypted_decryption_shares(
             encrypted_requests=encrypted_decryption_requests,
             threshold=threshold,
             timeout=timeout,
+            max_worker_threads=max_worker_threads,
         )
 
         decrypt_outcome = Porter.DecryptOutcome(
@@ -344,10 +353,15 @@ class Porter(Learner):
     ) -> ThresholdSignatureOutcome:
         signature_client = SigningRequestClient(self)
         timeout = self._configure_timeout("signing", timeout, self.MAX_SIGNING_TIMEOUT)
+        max_worker_threads = min(
+            self.REQUEST_CLIENT_MAX_WORKER_THREADS, math.ceil(threshold * 1.5)
+        )
+
         successes, failures = signature_client.gather_signatures(
             encrypted_requests=encrypted_signing_requests,
             threshold=threshold,
             timeout=timeout,
+            max_worker_threads=max_worker_threads,
         )
         signature_outcome = Porter.ThresholdSignatureOutcome(
             encrypted_signature_responses=successes, errors=failures
