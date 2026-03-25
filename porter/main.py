@@ -215,7 +215,6 @@ class Porter(Learner):
         exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
         include_ursulas: Optional[Sequence[ChecksumAddress]] = None,
         timeout: Optional[int] = None,
-        duration: Optional[int] = None,
         min_version: Optional[str] = None,
     ) -> List[UrsulaInfo]:
         timeout = self._configure_timeout(
@@ -223,10 +222,9 @@ class Porter(Learner):
             timeout or self.DEFAULT_GET_URSULAS_TIMEOUT,
             self.MAX_GET_URSULAS_TIMEOUT,
         )
-        duration = duration or 0
         parse_min_version = parse(min_version) if min_version else None
 
-        reservoir = self._make_reservoir(exclude_ursulas, include_ursulas, duration)
+        reservoir = self._make_reservoir(exclude_ursulas, include_ursulas)
         available_nodes_to_sample = len(reservoir.values) + len(reservoir.reservoir)
         if available_nodes_to_sample < quantity:
             raise ValueError(
@@ -369,13 +367,11 @@ class Porter(Learner):
         self,
         exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
         include_ursulas: Optional[Sequence[ChecksumAddress]] = None,
-        duration: Optional[int] = 0,
     ):
         return make_staking_provider_reservoir(
             application_agent=self.taco_child_application_agent,
             exclude_addresses=exclude_ursulas,
             include_addresses=include_ursulas,
-            duration=duration,
         )
 
     def bucket_sampling(
@@ -384,7 +380,6 @@ class Porter(Learner):
         random_seed: Optional[int] = None,
         exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
         timeout: Optional[int] = None,
-        duration: Optional[int] = None,
         min_version: Optional[str] = None,
     ) -> Tuple[List[ChecksumAddress], int]:
         timeout = self._configure_timeout(
@@ -392,7 +387,6 @@ class Porter(Learner):
             timeout or self.DEFAULT_BUCKET_SAMPLING_TIMEOUT,
             self.MAX_BUCKET_SAMPLING_TIMEOUT,
         )
-        duration = duration or 0
         parse_min_version = parse(min_version) if min_version else None
 
         if self.domain not in self._ALLOWED_DOMAINS_FOR_BUCKET_SAMPLING:
@@ -429,9 +423,7 @@ class Porter(Learner):
                     return None
 
         block_number = self.taco_child_application_agent.blockchain.client.block_number
-        _, sp_map = self.taco_child_application_agent.get_all_active_staking_providers(
-            duration=duration
-        )
+        _, sp_map = self.taco_child_application_agent.get_all_active_staking_providers()
         for e in exclude_ursulas or []:
             if e in sp_map:
                 del sp_map[e]
