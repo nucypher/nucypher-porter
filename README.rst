@@ -21,7 +21,7 @@ cross-platform functionality, including web and mobile applications.
 
 
 You can utilize any publicly available Porter to interface with the
-Threshold Network. Alternatively, some application developers may choose to
+TACo Network. Alternatively, some application developers may choose to
 operate their own.
 
 Running a Porter Instance
