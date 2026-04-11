@@ -447,7 +447,7 @@ class Porter(Learner):
             BUCKET_CAP = 2
             BUCKETS_URL = (
                 "https://raw.githubusercontent.com/"
-                "threshold-network/trust/main/taco-self-disclosed-buckets.json"
+                "nucypher/nucypher-porter/refs/heads/main/taco-self-disclosed-buckets.json"
             )
 
             def __init__(self, _reservoir, need_successes: int):
