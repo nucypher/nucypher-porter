@@ -181,20 +181,13 @@ def signing_coordinator_agent(mock_contract_agency):
     return signing_coordinator_agent
 
 
-@pytest.fixture(scope="module")
-def excluded_staker_address_for_duration_greater_than_0(accounts):
-    yield accounts.staking_provider_account(0)
-
-
 @pytest.fixture(scope="module", autouse=True)
 def mock_sample_reservoir(
     accounts,
     mock_contract_agency,
-    excluded_staker_address_for_duration_greater_than_0,
 ):
     def mock_reservoir(
         without: Optional[Iterable[ChecksumAddress]] = None,
-        duration: int = 0,
         *args,
         **kwargs
     ):
@@ -202,12 +195,7 @@ def mock_sample_reservoir(
         for address in accounts.staking_providers_accounts:
             if address in without:
                 continue
-            if (
-                duration > 0
-                and address == excluded_staker_address_for_duration_greater_than_0
-            ):
-                # skip
-                continue
+
             addresses[address] = 1
         return StakingProvidersReservoir(addresses)
 
@@ -219,17 +207,10 @@ def mock_sample_reservoir(
 def mock_get_all_active_staking_providers(
     accounts,
     mock_contract_agency,
-    excluded_staker_address_for_duration_greater_than_0,
 ):
-    def get_all_active_staking_providers(duration):
+    def get_all_active_staking_providers():
         addresses = dict()
         for address in accounts.staking_providers_accounts:
-            if (
-                duration > 0
-                and address == excluded_staker_address_for_duration_greater_than_0
-            ):
-                # skip
-                continue
             addresses[address] = 1
         return len(addresses), addresses
 

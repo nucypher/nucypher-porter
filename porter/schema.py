@@ -6,7 +6,6 @@ from porter.cli.types import EIP55_CHECKSUM_ADDRESS
 from porter.fields.base import (
     JSON,
     Integer,
-    NonNegativeInteger,
     PositiveInteger,
     StringList,
     VersionString,
@@ -111,18 +110,6 @@ class GetUrsulas(BaseSchema):
             "--timeout",
             "-t",
             help="Timeout for getting the required quantity of ursulas",
-            type=click.INT,
-            required=False,
-        ),
-    )
-
-    duration = NonNegativeInteger(
-        required=False,
-        load_only=True,
-        click=click.option(
-            "--duration",
-            "-d",
-            help="Minimum duration, in seconds, for which the node should be actively staking",
             type=click.INT,
             required=False,
         ),
@@ -367,18 +354,6 @@ class BucketSampling(BaseSchema):
             "--timeout",
             "-t",
             help="Timeout for getting the required quantity of ursulas",
-            type=click.INT,
-            required=False,
-        ),
-    )
-
-    duration = NonNegativeInteger(
-        required=False,
-        load_only=True,
-        click=click.option(
-            "--duration",
-            "-d",
-            help="Minimum duration, in seconds, for which the node should be actively staking",
             type=click.INT,
             required=False,
         ),

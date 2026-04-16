@@ -57,17 +57,6 @@ def test_bucket_sampling_schema(get_random_checksum_address):
 
     # optional components
 
-    # only duration
-    updated_data = dict(required_data)
-    updated_data["duration"] = 0
-    BucketSampling().load(updated_data)
-
-    updated_data["duration"] = 60 * 60 * 24
-    BucketSampling().load(updated_data)
-
-    updated_data["duration"] = 60 * 60 * 365
-    BucketSampling().load(updated_data)
-
     # only exclude
     updated_data = dict(required_data)
     exclude_ursulas = []
@@ -137,17 +126,6 @@ def test_bucket_sampling_schema(get_random_checksum_address):
         updated_data["random_seed"] = "a string"
         BucketSampling().load(updated_data)
 
-    # invalid duration value
-    with pytest.raises(InvalidInputData):
-        updated_data = dict(required_data)
-        updated_data["duration"] = "some number"
-        BucketSampling().load(updated_data)
-
-    with pytest.raises(InvalidInputData):
-        updated_data = dict(required_data)
-        updated_data["duration"] = -1
-        BucketSampling().load(updated_data)
-
     # invalid min version
     with pytest.raises(InvalidInputData):
         updated_data = dict(required_data)
@@ -175,25 +153,13 @@ def test_bucket_sampling_schema(get_random_checksum_address):
     assert output == {"ursulas": expected_ursulas, "block_number": 42}
 
 
-def test_bucket_sampling_python_interface(
-    porter, ursulas, excluded_staker_address_for_duration_greater_than_0
-):
+def test_bucket_sampling_python_interface(porter, ursulas):
     porter._ALLOWED_DOMAINS_FOR_BUCKET_SAMPLING = (TEMPORARY_DOMAIN,)
 
     # simple
     quantity = 4
     sampled_ursulas, _block = porter.bucket_sampling(quantity=quantity)
     assert len(set(sampled_ursulas)) == quantity  # ensure no repeats
-
-    # simple w/ duration
-    quantity = 4
-    sampled_ursulas, _block = porter.bucket_sampling(
-        quantity=quantity, duration=60 * 60 * 24 * 182
-    )
-    assert len(set(sampled_ursulas)) == quantity  # ensure no repeats
-
-    # duration > 0
-    assert excluded_staker_address_for_duration_greater_than_0 not in sampled_ursulas
 
     ursulas_list = list(ursulas)
 
@@ -250,15 +216,12 @@ def test_bucket_sampling_python_interface(
 
 @pytest.mark.parametrize("timeout", [None, 10])
 @pytest.mark.parametrize("random_seed", [None, 42])
-@pytest.mark.parametrize("duration", [None, 0, 60 * 60 * 24, 60 * 60 * 24 * 365])
 def test_bucket_sampling_web_interface(
     porter,
     porter_web_controller,
     ursulas,
     timeout,
     random_seed,
-    duration,
-    excluded_staker_address_for_duration_greater_than_0,
 ):
 
     # Send bad data to assert error return
@@ -285,9 +248,6 @@ def test_bucket_sampling_web_interface(
     if random_seed:
         get_ursulas_params["random_seed"] = random_seed
 
-    if duration:
-        get_ursulas_params["duration"] = duration
-
     #
     # Success
     #
@@ -301,10 +261,6 @@ def test_bucket_sampling_web_interface(
     assert len(set(sampled_ursulas)) == quantity
     for address in exclude_ursulas:
         assert address not in sampled_ursulas
-    if duration and duration > 0:
-        assert (
-            excluded_staker_address_for_duration_greater_than_0 not in sampled_ursulas
-        )
 
     #
     # Test Query parameters
@@ -320,9 +276,6 @@ def test_bucket_sampling_web_interface(
     if random_seed:
         query_params += f"&random_seed={random_seed}"
 
-    if duration:
-        query_params += f"&duration={duration}"
-
     response = porter_web_controller.get(
         "/bucket_sampling", data=json.dumps(get_ursulas_params)
     )
@@ -333,10 +286,6 @@ def test_bucket_sampling_web_interface(
     assert len(set(sampled_ursulas)) == quantity
     for address in exclude_ursulas:
         assert address not in sampled_ursulas
-    if duration and duration > 0:
-        assert (
-            excluded_staker_address_for_duration_greater_than_0 not in sampled_ursulas
-        )
 
     #
     # Failure case: too many ursulas requested
