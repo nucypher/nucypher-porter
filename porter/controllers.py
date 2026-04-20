@@ -1,13 +1,14 @@
 import inspect
 import json
 import os
+import threading
 from abc import ABC, abstractmethod
 from json import JSONDecodeError
 from pathlib import Path
 from typing import Optional
 
 import maya
-from flask import Flask, Response
+from flask import Flask, Response, g, jsonify, make_response, request
 from hendrix.deploy.base import HendrixDeploy
 from hendrix.deploy.tls import HendrixDeployTLS
 from nucypher.config.constants import MAX_UPLOAD_CONTENT_LENGTH
@@ -128,11 +129,17 @@ class WebController(InterfaceControlServer):
     """
 
     _DEPLOYER_MAX_THREADPOOL_SIZE = int(
-        os.getenv("PORTER_DEPLOYER_MAX_THREADPOOL_SIZE", default=50)
+        os.getenv("PORTER_DEPLOYER_MAX_THREADPOOL_SIZE", default=20)
     )
     _DEPLOYER_MIN_THREADPOOL_SIZE = int(
         os.getenv("PORTER_DEPLOYER_MIN_THREADPOOL_SIZE", default=10)
     )
+    _DEPLOYER_MAX_IN_FLIGHT_REQUESTS = int(
+        os.getenv("PORTER_DEPLOYER_MAX_IN_FLIGHT_REQUESTS", default=15)
+    )
+    _DEPLOYER_IN_FLIGHT_ACQUIRE_TIMEOUT_S = float(
+        os.getenv("PORTER_DEPLOYER_IN_FLIGHT_ACQUIRE_TIMEOUT_S", 3.0)
+    )  # 3s
 
     _emitter_class = WebEmitter
     _crash_on_error_default = False
@@ -141,6 +148,11 @@ class WebController(InterfaceControlServer):
                               400: 'BAD REQUEST',
                               404: 'NOT FOUND',
                               500: 'INTERNAL SERVER ERROR'}
+
+    def __init__(self, in_flight_uncapped_paths=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.in_flight_uncapped_paths = in_flight_uncapped_paths or set()
 
     def test_client(self):
         test_client = self._transport.test_client()
@@ -153,6 +165,40 @@ class WebController(InterfaceControlServer):
     def make_control_transport(self):
         self._transport = Flask(self.app_name)
         self._transport.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_CONTENT_LENGTH
+        self._inflight_sem = threading.BoundedSemaphore(
+            self._DEPLOYER_MAX_IN_FLIGHT_REQUESTS
+        )
+
+        @self._transport.before_request
+        def before_request():
+            path = request.path
+
+            # skip acquiring for non-inflight capped path
+            if path in self.in_flight_uncapped_paths:
+                return None
+
+            acquired = self._inflight_sem.acquire(
+                timeout=self._DEPLOYER_IN_FLIGHT_ACQUIRE_TIMEOUT_S
+            )
+            if not acquired:
+                self.log.warn("Too many in-flight requests.")
+                response_data = {
+                    "error": "too_many_requests",
+                    "message": "Too many in-flight requests.",
+                }
+                response = make_response(
+                    jsonify(response_data), 429, {"Retry-After": "3"}
+                )
+                return response
+
+            g._inflight_slot_acquired = True
+            return None
+
+        @self._transport.teardown_request
+        def teardown_request(response):
+            if getattr(g, "_inflight_slot_acquired", False):
+                self._inflight_sem.release()
+            return response
 
         # Return FlaskApp decorator
         return self._transport

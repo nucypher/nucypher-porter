@@ -194,7 +194,6 @@ def test_taco_decryption_request_ordering(
     value_factory_spy.assert_called_once_with(
         ANY,
         ursulas_to_contact=expected_ursula_request_order,
-        batch_size=ANY,
         threshold=ANY,
     )
 
@@ -448,7 +447,6 @@ def test_taco_sign_request_ordering(
     value_factory_spy.assert_called_once_with(
         ANY,
         ursulas_to_contact=expected_ursula_request_order,
-        batch_size=ANY,
         threshold=ANY,
     )
 
