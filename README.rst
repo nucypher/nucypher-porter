@@ -1,6 +1,13 @@
 .. image:: https://codecov.io/gh/nucypher/nucypher-porter/branch/main/graph/badge.svg?token=8N55VR1TO1
  :target: https://codecov.io/gh/nucypher/nucypher-porter
 
+⚠️ Inactive Project
+===================
+
+The NuCypher organization is no longer active and will not continue development or maintenance of this code base. The code remains available for reference and historical purposes, but no updates, fixes, or support should be expected.
+
+_The original TACo project is expected to be forked and relaunched by the World Ethical Data Forum (WEDF) in the latter half of 2026, supported by a coalition of node operators drawn from organizations with deep experience in privacy advocacy, anti-surveillance technologies, human rights, encryption, whistleblower protection, and academic research._
+
 
 Porter
 ======
